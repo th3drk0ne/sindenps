@@ -36,10 +36,10 @@ fi
 cd /etc/systemd/system
 svc1=lightgun.service
 
-if [ -e $svc2 ];
+if [ -e $svc1 ];
 	then
 		
-		echo "$svc2 already configured."
+		echo "$svc1 already configured."
 	else
 
 cat > /etc/systemd/system/$svc2 <<EOF
