@@ -115,6 +115,13 @@ sudo apt install -y libjpeg-dev
 cd /opt/
 sudo mkdir sinden
 sudo chown sinden /opt/sinden
+wget "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun.sh"
+wget "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun-monitor.sh"
+sudo chmod +x lightgun-monitor.sh
+sudo chmod +x lightgun.sh
+
+
+
 
 cd /home/sinden
 sudo mkdir Lightgun
