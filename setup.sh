@@ -42,7 +42,7 @@ if [ -e $svc1 ];
 		echo "$svc1 already configured."
 	else
 
-cat > /etc/systemd/system/$svc2 <<EOF
+cat > /etc/systemd/system/$svc1 <<EOF
 [Unit]
 Description=Sinden LightGun Service
 After=network.target
