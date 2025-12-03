@@ -1,0 +1,14 @@
+[Unit]
+Description=Sinden LightGun Service
+After=network.target
+
+[Service]
+User=sinden
+WorkingDirectory=/home/sinden
+ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
+Restart=always
+StandardOutput=Console
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,14 @@
+[Unit]
+Description=Lightgun USB Device Monitor
+After=network.target
+
+[Service]
+ExecStart=/opt/sinden/lightgun-monitor.sh
+Restart=always
+RestartSec=5
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
