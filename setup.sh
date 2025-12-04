@@ -441,6 +441,26 @@ sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
 </VirtualHost>
 APACHE
 
+sudo tee /etc/apache2/sites-available/000-logviewer-ssl.conf >/dev/null <<'APACHE'
+<VirtualHost *:443>
+    DocumentRoot /var/www/logviewer
+    DirectoryIndex index.html
+
+    <Directory /var/www/logviewer>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    <Files "sinden.log">
+        Require all granted
+    </Files>
+
+    ErrorLog ${APACHE_LOG_DIR}/logviewer_error.log
+    CustomLog ${APACHE_LOG_DIR}/logviewer_access.log combined
+</VirtualHost>
+APACHE
+
 # 5) Silence FQDN warning (optional but recommended)
 echo 'ServerName localhost' | sudo tee /etc/apache2/conf-available/servername.conf >/dev/null
 sudo a2enconf servername >/dev/null || true
