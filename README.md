@@ -20,7 +20,7 @@ VERSION=current sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/
 
 
 
-psiloc uberlag pathed Driver
+psiloc uberlag patched Driver
 
 
 
@@ -40,7 +40,7 @@ VERSION=current SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- 
 
 
 
-psiloc uberlag pathed Driver
+psiloc uberlag patched Driver
 
 
 
