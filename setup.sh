@@ -365,10 +365,10 @@ sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
 sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
 
 cd /etc/apache2/sites-available
-  wget --quiet --show-progress --https-only --timestamping \
+  sudo wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/etc/apache2/sites-available/logviewer.conf"
 cd 	/var/www/logviewer
-  wget --quiet --show-progress --https-only --timestamping \
+  sudo wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/var/www/logviewer/index.html"
 	
 sudo a2dissite 000-default.conf || true
