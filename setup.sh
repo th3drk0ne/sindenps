@@ -361,19 +361,24 @@ log "Assets deployment complete."
 log "Install Apache Log Site"
 sudo mkdir -p /var/www/logviewer
 sudo ln -s /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
+
+sudo chown -R www-data:www-data /var/www/logviewer
+sudo chmod -R 755 /var/www/logviewer
 sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
 sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
 
+
+
+
 cd /etc/apache2/sites-available
   sudo wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/etc/apache2/sites-available/logviewer.conf"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/etc/apache2/sites-available/000-logviewer.conf"
 cd 	/var/www/logviewer
   sudo wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/var/www/logviewer/index.html"
 	
+
 sudo a2dissite 000-default.conf || true
-sudo a2dissite 000-default-ssl.conf || true
-sudo rm -rf /var/www/html
-sudo systemctl reload apache2
-sudo a2ensite logviewer.conf
-sudo systemctl reload apache2
+sudo a2ensite 000-logviewer.conf
+sudo apache2ctl configtest && sudo systemctl reload apache2
+
