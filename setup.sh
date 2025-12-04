@@ -369,8 +369,8 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
   <meta charset="utf-8">
   <title>Sinden Log Viewer</title>
   <style>
-    body { background: #000; color: #02b; font-family: monospace; margin: 0; }
-    header { padding: 10px 14px; border-bottom: 1px solid #02b; }
+    body { background: #000; color: #fff; font-family: monospace; margin: 0; }
+    header { padding: 10px 14px; border-bottom: 1px solid #fff; }
     #log { white-space: pre-wrap; overflow-y: auto; height: calc(100vh - 60px); border: 0; padding: 12px 14px; }
     a, a:visited { color: #39f; }
   </style>
