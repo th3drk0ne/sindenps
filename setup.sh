@@ -372,6 +372,7 @@ cd 	/var/www/logviewer
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/var/www/logviewer/index.html"
 	
 sudo a2dissite 000-default.conf || true
+sudo a2dissite 000-default-ssl.conf || true
 sudo rm -rf /var/www/html
 sudo systemctl reload apache2
 sudo a2ensite logviewer.conf
