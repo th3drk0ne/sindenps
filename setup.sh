@@ -88,7 +88,7 @@ fi
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
   err "Cannot find ${CONFIG_FILE}. Aborting."
-  exit 1
+  #exit 1
 fi
 
 log "Updating ${CONFIG_FILE} (backup will be created)."
