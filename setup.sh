@@ -1,48 +1,172 @@
+
 #!/bin/bash
+#
+# Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
+# Downloads different PS1/PS2 assets based on VERSION ("current" or "psiloc")
+# Tested on Debian/Ubuntu/Raspberry Pi OS variants using /boot/firmware layout
+#
 
-#Step 1) Check if root--------------------------------------
+set -euo pipefail
+
+log()  { echo "[INFO] $*"; }
+warn() { echo "[WARN] $*" >&2; }
+err()  { echo "[ERROR] $*" >&2; }
+
+#-----------------------------------------------------------
+# Step 1) Check if root
+#-----------------------------------------------------------
 if [[ $EUID -ne 0 ]]; then
-   echo "Please execute script as root." 
-   exit 1
+  err "Please execute script as root."
+  exit 1
 fi
-#-----------------------------------------------------------
-
-
-#Step 2) Update config.txt----------------------------------
-cd /boot/firmware
-File=config.txt
-
-if grep -q "dtoverlay=uart5" "$File";
-        then
-                echo "uart5 already enabled. Doing nothing."
-        else
-                echo "enable_uart=5" >> "$File"
-                echo "uart5 enabled."
-fi
-
-if grep -q "dtoverlay=uart5" "$File";
-        then
-                echo "uart5 dtoverlay already enabled. Doing nothing."
-        else
-                echo "dtoverlay=uart5" >> "$File"
-                echo "uart5 dtoverlay enabled."
-fi
+log "Running as root."
 
 #-----------------------------------------------------------
+# Step 0) Version selection menu (sets VERSION + VERSION_TAG)
+# - Non-interactive: set VERSION env var before running (current/psiloc/new/old/latest/legacy)
+# - Interactive: prompts user if VERSION is not preset
+#-----------------------------------------------------------
+normalize_version() {
+  local v="${1,,}"       # lowercase
+  case "$v" in
+    current|latest|new|2|n) echo "current" ;;
+    psiloc|old|legacy|uberlag|1|o) echo "psiloc" ;;
+    *) echo "" ;;
+  esac
+}
 
+if [[ -z "${VERSION:-}" ]]; then
+  log "Select Sinden setup version:"
+  echo "  [1] Latest version"
+  echo "  [2] Psiloc version"
+  while true; do
+    read -r -p "Enter choice (1/2) [default: 2]: " choice
+    choice="${choice:-2}"
+    case "$choice" in
+      1) VERSION="current"; break ;;
+      2) VERSION="psiloc";  break ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
+    esac
+  done
+else
+  VERSION="$(normalize_version "$VERSION")"
+  if [[ -z "$VERSION" ]]; then
+    warn "Unrecognized VERSION environment value. Falling back to interactive selection."
+    unset VERSION
+    echo "  [1] Latest version"
+    echo "  [2] Psiloc version"
+    while true; do
+      read -r -p "Enter choice (1/2) [default: 2]: " choice
+      choice="${choice:-2}"
+      case "$choice" in
+        1) VERSION="current"; break ;;
+        2) VERSION="psiloc";  break ;;
+        *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
+      esac
+    done
+  fi
+fi
 
-#Step 4) Install systemd services----------------------------
+# Optional tag for branching (e.g., URLs/flags)
+if [[ "$VERSION" == "current" ]]; then
+  VERSION_TAG="v2"
+else
+  VERSION_TAG="v1"
+fi
+log "Version selected: ${VERSION} (${VERSION_TAG})"
 
-cd /etc/systemd/system
-svc1=lightgun.service
+#-----------------------------------------------------------
+# Step 2) Update config.txt (UART5 enable + overlay)
+#-----------------------------------------------------------
+BOOT_DIR="/boot/firmware"
+CONFIG_FILE="${BOOT_DIR}/config.txt"
 
-if [ -e $svc1 ];
-	then
-		
-		echo "$svc1 already configured."
-	else
+if [[ ! -d "$BOOT_DIR" ]]; then
+  BOOT_DIR="/boot"
+  CONFIG_FILE="${BOOT_DIR}/config.txt"
+fi
 
-cat > /etc/systemd/system/$svc1 <<EOF
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  err "Cannot find ${CONFIG_FILE}. Aborting."
+  exit 1
+fi
+
+log "Updating ${CONFIG_FILE} (backup will be created)."
+cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
+
+if ! grep -qE '^enable_uart=5\b' "$CONFIG_FILE"; then
+  echo "enable_uart=5" >> "$CONFIG_FILE"
+  log "Added enable_uart=5."
+else
+  log "enable_uart=5 already present."
+fi
+
+if ! grep -qE '^dtoverlay=uart5\b' "$CONFIG_FILE"; then
+  echo "dtoverlay=uart5" >> "$CONFIG_FILE"
+  log "Added dtoverlay=uart5."
+else
+  log "dtoverlay=uart5 already present."
+fi
+
+#-----------------------------------------------------------
+# Step 3) Ensure 'sinden' user exists
+#-----------------------------------------------------------
+if ! id -u sinden &>/dev/null; then
+  log "Creating user 'sinden'."
+  useradd -m -s /bin/bash sinden
+else
+  log "User 'sinden' already exists."
+fi
+
+# Optionally add device-access groups (uncomment if needed)
+# usermod -aG video,plugdev,dialout sinden
+
+#-----------------------------------------------------------
+# Step 3a) Add 'sinden' to sudoers (validated)
+#-----------------------------------------------------------
+SUDOERS_D="/etc/sudoers.d"
+SINDEN_SUDO_FILE="${SUDOERS_D}/sinden"
+
+log "Configuring sudoers entry for 'sinden'."
+mkdir -p "$SUDOERS_D"
+
+SUDO_LINE='sinden ALL=(ALL) NOPASSWD:ALL'   # change to 'ALL' to require password
+
+TMP_FILE="$(mktemp)"
+echo "$SUDO_LINE" > "$TMP_FILE"
+chmod 0440 "$TMP_FILE"
+
+if visudo -cf "$TMP_FILE"; then
+  if [[ -f "$SINDEN_SUDO_FILE" ]] && cmp -s "$TMP_FILE" "$SINDEN_SUDO_FILE"; then
+    log "Sudoers entry already present and up to date."
+    rm -f "$TMP_FILE"
+  else
+    log "Installing validated sudoers entry at ${SINDEN_SUDO_FILE}."
+    mv "$TMP_FILE" "$SINDEN_SUDO_FILE"
+    chown root:root "$SINDEN_SUDO_FILE"
+    chmod 0440 "$SINDEN_SUDO_FILE"
+  fi
+else
+  rm -f "$TMP_FILE"
+  err "visudo validation failed; NOT installing sudoers change."
+  exit 1
+fi
+
+#-----------------------------------------------------------
+# Step 4) Install systemd services
+#-----------------------------------------------------------
+SYSTEMD_DIR="/etc/systemd/system"
+log "Configuring systemd services in ${SYSTEMD_DIR}."
+
+svc1="lightgun.service"
+svc2="lightgun-monitor.service"
+
+# Service 1: Sinden LightGun Service
+if [[ -e "${SYSTEMD_DIR}/${svc1}" ]]; then
+  log "${svc1} already configured."
+else
+  log "Creating ${svc1}."
+  cat > "${SYSTEMD_DIR}/${svc1}" <<'EOF'
 [Unit]
 Description=Sinden LightGun Service
 After=network.target
@@ -52,30 +176,20 @@ User=sinden
 WorkingDirectory=/home/sinden
 ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
 Restart=always
-StandardOutput=Console
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl daemon-reload
-systemctl enable $svc1
-systemctl start $svc1
-
-echo "$svc1 configured."
 fi
 
-
-cd /etc/systemd/system
-
-svc2=lightgun-monitor.service
-
-if [ -e $svc2 ];
-	then
-		
-		echo "$svc2 already configured."
-	else
-
-cat > /etc/systemd/system/$svc2 <<EOF
+# Service 2: Lightgun USB Device Monitor
+if [[ -e "${SYSTEMD_DIR}/${svc2}" ]]; then
+  log "${svc2} already configured."
+else
+  log "Creating ${svc2}."
+  cat > "${SYSTEMD_DIR}/${svc2}" <<'EOF'
 [Unit]
 Description=Lightgun USB Device Monitor
 After=network.target
@@ -91,65 +205,145 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl daemon-reload
-systemctl enable $svc2
-systemctl start $svc2
-
-echo "$svc2 configured."
 fi
 
+log "Reloading systemd daemon."
+systemctl daemon-reload
+
+log "Enabling services."
+systemctl enable "${svc1}" "${svc2}"
+
+log "Starting services."
+systemctl start "${svc1}" || warn "Failed to start ${svc1}. Check logs: journalctl -u ${svc1}"
+systemctl start "${svc2}" || warn "Failed to start ${svc2}. Check logs: journalctl -u ${svc2}"
+
+systemctl is-active "${svc1}" &>/dev/null && log "${svc1} is active." || warn "${svc1} is not active."
+systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "${svc2} is not active."
 
 #-----------------------------------------------------------
-
-
-#Step 5) Install sinden lightgun prereq --------------------
-sudo apt install -y mono-complete
-sudo apt install -y v4l-utils
-sudo apt install -y libsdl1.2-dev
-sudo apt install -y libsdl-image1.2-dev
-sudo apt install -y libjpeg-dev
+# Step 5) Install prerequisites
+#-----------------------------------------------------------
+log "Installing prerequisites via apt."
+apt-get update -y
+apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev
+log "Prerequisites installed."
 
 #-----------------------------------------------------------
+# Step 6) Create folders, download VERSION-based assets
+#-----------------------------------------------------------
+log "Preparing /opt/sinden and user directories; downloading VERSION-based PS1/PS2 assets."
 
-#Step 6) Create Folders and set permissions ----------------
-cd /opt/
-sudo mkdir sinden
-sudo chown sinden /opt/sinden
-wget "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun.sh"
-wget "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun-monitor.sh"
-sudo chmod +x lightgun-monitor.sh
-sudo chmod +x lightgun.sh
+install -d -o root -g root /opt
+install -d -o sinden -g sinden /opt/sinden
 
+# Download service scripts
+(
+  cd /opt/sinden
+  log "Downloading lightgun scripts to /opt/sinden."
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun.sh" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun-monitor.sh"
 
+  chmod +x lightgun.sh lightgun-monitor.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh
+)
 
+USER_HOME="/home/sinden"
+LIGHTGUN_DIR="${USER_HOME}/Lightgun"
+install -d -o sinden -g sinden "${LIGHTGUN_DIR}"
 
-cd /home/sinden
-sudo mkdir Lightgun
-cd lightgun
-sudo mkdir PS1
-sudo mkdir PS2
+# Helper: download a set of URLs into a destination, fix perms and exe bit
+download_assets() {
+  local dest="$1"; shift
+  install -d -o sinden -g sinden "$dest"
+  (
+    cd "$dest"
+    if [[ $# -gt 0 ]]; then
+      log "Downloading $(($#)) assets into ${dest}."
+      wget --quiet --show-progress --https-only --timestamping "$@"
+    else
+      warn "No asset URLs provided for ${dest}."
+    fi
+    if [[ -f "LightgunMono.exe" ]]; then
+      chmod +x LightgunMono.exe
+    fi
+    chown -R sinden:sinden "$dest"
+  )
+}
 
-sudo chown sinden /home/sinden/Lightgun
+# --- Define asset sets based on VERSION ---
+declare -a PS1_URLS PS2_URLS
 
+if [[ "$VERSION" == "current" ]]; then
+  # CURRENT (Latest) asset set
+  PS1_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/test.bmp"
+  )
+  PS2_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/test.bmp"
+  )
+else
+  # PSILOC (Legacy) asset set — UPDATED with your URLs
+  PS1_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/test.bmp"
+  )
+  PS2_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/test.bmp"
+  )
+fi
 
+# Create PS1/PS2 and download according to version
+download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
 
+log "Assets deployment complete."
 
 #-----------------------------------------------------------
-
+# Step 8) Reboot to apply changes
 #-----------------------------------------------------------
-
-#Step 7) copy configuration files --------------------------
-
-
-
-
-
-#-----------------------------------------------------------
-
-exit 1
-#Step 8) Reboot to apply changes----------------------------
-echo "Will now reboot after 3 seconds."
-sleep 4
-sudo reboot
-#-----------------------------------------------------------
-
+log "Setup completed. System will reboot in 3 seconds to apply changes."
+sleep 3
