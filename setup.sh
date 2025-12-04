@@ -89,8 +89,8 @@ fi
 if [[ ! -f "$CONFIG_FILE" ]]; then
   err "Cannot find ${CONFIG_FILE}. Aborting."
   #exit 1
-fi
-
+  else
+   
 log "Updating ${CONFIG_FILE} (backup will be created)."
 cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
 
@@ -107,16 +107,24 @@ if ! grep -qE '^dtoverlay=uart5\b' "$CONFIG_FILE"; then
 else
   log "dtoverlay=uart5 already present."
 fi
+  
+fi
+
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
 #-----------------------------------------------------------
 if ! id -u sinden &>/dev/null; then
-  log "Creating user 'sinden'."
+  log "Creating user 'sinden' with password."
   useradd -m -s /bin/bash sinden
+  
+  read -s -p "Enter password for sinden: " PASSWORD
+  echo
+  echo "sinden:${PASSWORD}" | chpasswd
 else
   log "User 'sinden' already exists."
 fi
+
 
 # Optionally add device-access groups (uncomment if needed)
 # usermod -aG video,plugdev,dialout sinden
@@ -225,7 +233,7 @@ systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "$
 #-----------------------------------------------------------
 log "Installing prerequisites via apt."
 apt-get update -y
-apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev
+apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev apache2
 log "Prerequisites installed."
 
 #-----------------------------------------------------------
@@ -350,9 +358,7 @@ log "Assets deployment complete."
 #-----------------------------------------------------------
 # Step 8) apache logging site
 #-----------------------------------------------------------
-
-sudo apt-get update
-sudo apt-get install apache2 -y
+log "Install Apache Log Site"
 sudo mkdir -p /var/www/logviewer
 sudo ln -s /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
 sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
@@ -371,8 +377,3 @@ sudo a2dissite 000-default.conf || true
 sudo rm -rf /var/www/html
 sudo systemctl reload apache2
 
-#-----------------------------------------------------------
-# Step 9) Reboot to apply changes
-#-----------------------------------------------------------
-log "Setup completed. System will reboot in 3 seconds to apply changes."
-sleep 3
