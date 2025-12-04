@@ -359,26 +359,103 @@ log "Assets deployment complete."
 # Step 8) apache logging site
 #-----------------------------------------------------------
 log "Install Apache Log Site"
-sudo mkdir -p /var/www/logviewer
-sudo ln -s /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
 
+set -euo pipefail
+
+# 1) Ensure docroot & files
+sudo mkdir -p /var/www/logviewer
+# If you already have index.html, skip the next heredoc
+sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sinden Log Viewer</title>
+  <style>
+    body { background:#000; color:#02b; font-family:monospace; }
+    #log { white-space: pre-wrap; overflow-y: scroll; height: 90vh; border: 1px solid #02b; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Sinden Lightgun Log</h2>
+  <div id="log"></div>
+  <script>
+    async function fetchLog() {
+      const response = await fetch('sinden.log', { cache: 'no-store' });
+      const text = await response.text();
+      const el = document.getElementById('log');
+      el.textContent = text;
+      el.scrollTop = el.scrollHeight;
+    }
+    setInterval(fetchLog, 2000);
+    fetchLog();
+  </script>
+</body>
+</html>
+HTML
+
+# Link the log file (adjust the source path if different)
+sudo ln -sf /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
+
+# Permissions
 sudo chown -R www-data:www-data /var/www/logviewer
 sudo chmod -R 755 /var/www/logviewer
-sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
-sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
+sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log || true
+sudo chmod 644 /home/sinden/Lightgun/log/sinden.log || true
 
+# 2) Create a high-priority vhost that acts as default for all requests on :80
+sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
+<VirtualHost *:80>
+    # No ServerName on purpose -> becomes the default catch-all for port 80
+    DocumentRoot /var/www/logviewer
 
+    <Directory /var/www/logviewer>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
 
+    # Explicitly allow reading the log file via the symlink
+    <Files "sinden.log">
+        Require all granted
+    </Files>
 
-cd /etc/apache2/sites-available
-  sudo wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/etc/apache2/sites-available/000-logviewer.conf"
-cd 	/var/www/logviewer
-  sudo wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/var/www/logviewer/index.html"
-	
+    ErrorLog ${APACHE_LOG_DIR}/logviewer_error.log
+    CustomLog ${APACHE_LOG_DIR}/logviewer_access.log combined
+</VirtualHost>
+APACHE
 
-sudo a2dissite 000-default.conf || true
-sudo a2ensite 000-logviewer.conf
-sudo apache2ctl configtest && sudo systemctl reload apache2
+# 3) Make sure Apache is listening on port 80 (and not shadowed)
+if ! grep -qE '^\s*Listen\s+80\b' /etc/apache2/ports.conf; then
+  echo "Listen 80" | sudo tee -a /etc/apache2/ports.conf >/dev/null
+fi
+
+# 4) Enable required module(s) and your site; disable defaults/others
+sudo a2enmod headers >/dev/null || true
+
+# Disable the distro default site if present
+sudo a2dissite 000-default.conf >/dev/null 2>&1 || true
+
+# Disable any other sites bound to :80 that might be stealing default
+for s in $(ls /etc/apache2/sites-enabled/*.conf || true); do
+  # Skip our chosen default
+  if [[ "$s" != "/etc/apache2/sites-enabled/000-logviewer.conf" ]]; then
+    # If the file defines a :80 vhost, disable it
+    if grep -qE '<VirtualHost\s+[^>]*:80[^>]*>' "$s"; then
+      sudo a2dissite "$(basename "$s")" >/dev/null || true
+    fi
+  fi
+done
+
+# Enable our default site
+sudo a2ensite 000-logviewer.conf >/dev/null
+
+# 5) Validate config and reload
+sudo apache2ctl configtest
+sudo systemctl reload apache2
+
+# 6) Show active vhost mapping for verification
+echo "==== apache2ctl -S ===="
+sudo apache2ctl -S || true
+echo "======================="
+
 
