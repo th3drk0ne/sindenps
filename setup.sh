@@ -343,7 +343,31 @@ download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
 log "Assets deployment complete."
 
 #-----------------------------------------------------------
-# Step 8) Reboot to apply changes
+# Step 8) apache logging site
+#-----------------------------------------------------------
+
+sudo apt-get update
+sudo apt-get install apache2 -y
+sudo mkdir -p /var/www/logviewer
+sudo ln -s /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
+sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
+sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
+
+cd /etc/apache2/sites-available
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/etc/apache2/sites-available/logviewer.conf"
+cd 	/var/www/logviewer
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/var/www/logviewer/index.html"
+	
+sudo a2ensite logviewer.conf
+sudo systemctl reload apache2
+sudo a2dissite 000-default.conf || true
+sudo rm -rf /var/www/html
+sudo systemctl reload apache2
+
+#-----------------------------------------------------------
+# Step 9) Reboot to apply changes
 #-----------------------------------------------------------
 log "Setup completed. System will reboot in 3 seconds to apply changes."
 sleep 3
