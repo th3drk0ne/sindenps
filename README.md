@@ -2,7 +2,11 @@
 
 
 
-install by running the following command on Raspberry OS Lite x64 (by default uses psiloc patched binaries)
+Install by running the following command on Raspberry OS Lite x64 (by default uses psiloc patched binaries)
+
+https://github.com/th3drk0ne/sindenps/blob/main/sinden-base-os-install.pdf
+
+
 
 
 
