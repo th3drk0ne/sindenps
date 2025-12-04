@@ -2,7 +2,7 @@
 
 
 
-install by running the following command on Raspberry OS Lite x64
+install by running the following command on Raspberry OS Lite x64 (by default uses psiloc patched binaries)
 
 
 
