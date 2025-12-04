@@ -404,10 +404,21 @@ HTML
 sudo ln -sf /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
 
 # 3) Permissions
+
+# File permissions (readable to Apache)
+sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
+sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
+
+# Ensure Apache can traverse the directory chain:
+sudo chmod o+x /home
+sudo chmod o+x /home/sinden
+sudo chmod o+x /home/sinden/Lightgun
+sudo chmod o+x /home/sinden/Lightgun/log
+
+# Web root permissions
 sudo chown -R www-data:www-data /var/www/logviewer
 sudo chmod -R 755 /var/www/logviewer
-sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log || true
-sudo chmod 644 /home/sinden/Lightgun/log/sinden.log || true
+
 
 # 4) Priority vhost as default + DirectoryIndex
 sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
@@ -446,8 +457,4 @@ echo "==== apache2ctl -S ===="
 sudo apache2ctl -S || true
 echo "======================="
 
-# 8) Quick functional test
-echo "Expecting HTML..."
-curl -s http://127.0.0.1/ | head -n 5
-
-
+403
