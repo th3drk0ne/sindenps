@@ -371,9 +371,8 @@ cd 	/var/www/logviewer
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/var/www/logviewer/index.html"
 	
-sudo a2ensite logviewer.conf
-sudo systemctl reload apache2
 sudo a2dissite 000-default.conf || true
 sudo rm -rf /var/www/html
 sudo systemctl reload apache2
-
+sudo a2ensite logviewer.conf
+sudo systemctl reload apache2
