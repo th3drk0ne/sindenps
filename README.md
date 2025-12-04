@@ -1,6 +1,8 @@
 # sindenps
 
-install by runing the following command on Raspberry OS Lite x64
+
+
+install by running the following command on Raspberry OS Lite x64
 
 
 
@@ -8,9 +10,43 @@ wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh"
 
 
 
-or with this if yo want the version seletction screen
+or with these if yo want a specific version version selection screen
 
 
 
-sudo bash <(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")
+Latest Official Sinden Driver
+
+VERSION=current sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+
+
+
+psiloc uberlag pathed Driver
+
+
+
+VERSION=psiloc sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+
+
+
+For Linux installs that do not have a sinden user please specify a password below, replace StrongP@ssw0rd! with one of your choosing
+
+
+
+Latest Official Sinden Driver
+
+
+
+VERSION=current SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+
+
+
+psiloc uberlag pathed Driver
+
+
+
+VERSION=psiloc SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+
+
+
+
 
