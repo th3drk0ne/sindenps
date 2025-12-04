@@ -8,23 +8,33 @@ https://github.com/th3drk0ne/sindenps/blob/main/sinden-base-os-install.pdf
 
 
 
+run the below command from a remote SSH session
+
 
 
 wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh" | sudo bash
 
 
 
-or with these if yo want a specific version version selection screen
 
 
 
-Latest Official Sinden Driver
+
+
+
+Or with these if you want a specific version version
+
+
+
+
+
+Latest Official Sinden driver
 
 VERSION=current sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 
 
 
-psiloc uberlag patched Driver
+psiloc uberlag patched driver
 
 
 
@@ -36,7 +46,7 @@ For Linux installs that do not have a sinden user please specify a password belo
 
 
 
-Latest Official Sinden Driver
+Latest Official Sinden driver
 
 
 
@@ -44,7 +54,7 @@ VERSION=current SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- 
 
 
 
-psiloc uberlag patched Driver
+psiloc uberlag patched driver
 
 
 
