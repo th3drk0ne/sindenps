@@ -360,53 +360,60 @@ log "Assets deployment complete."
 #-----------------------------------------------------------
 log "Install Apache Log Site"
 
-set -euo pipefail
-
-# 1) Ensure docroot & files
+# 1) Docroot and index.html (literal HTML, not escaped)
 sudo mkdir -p /var/www/logviewer
-# If you already have index.html, skip the next heredoc
 sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>Sinden Log Viewer</title>
   <style>
-    body { background:#000; color:#02b; font-family:monospace; }
-    #log { white-space: pre-wrap; overflow-y: scroll; height: 90vh; border: 1px solid #02b; padding: 10px; }
+    body { background: #000; color: #02b; font-family: monospace; margin: 0; }
+    header { padding: 10px 14px; border-bottom: 1px solid #02b; }
+    #log { white-space: pre-wrap; overflow-y: auto; height: calc(100vh - 60px); border: 0; padding: 12px 14px; }
+    a, a:visited { color: #39f; }
   </style>
 </head>
 <body>
-  <h2>Sinden Lightgun Log</h2>
-  <div id="log"></div>
+  <header>
+    <h2 style="margin:0">Sinden Lightgun Log</h2>
+  </header>
+  <div id="log" aria-live="polite">Loading…</div>
   <script>
     async function fetchLog() {
-      const response = await fetch('sinden.log', { cache: 'no-store' });
-      const text = await response.text();
-      const el = document.getElementById('log');
-      el.textContent = text;
-      el.scrollTop = el.scrollHeight;
+      try {
+        const res = await fetch('sinden.log', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const el = document.getElementById('log');
+        el.textContent = text || '(empty)';
+        el.scrollTop = el.scrollHeight;
+      } catch (e) {
+        document.getElementById('log').textContent = 'Failed to load log: ' + e.message;
+      }
     }
-    setInterval(fetchLog, 2000);
     fetchLog();
+    setInterval(fetchLog, 2000);
   </script>
 </body>
 </html>
 HTML
 
-# Link the log file (adjust the source path if different)
+# 2) Link the log file (adjust the source if needed)
 sudo ln -sf /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
 
-# Permissions
+# 3) Permissions
 sudo chown -R www-data:www-data /var/www/logviewer
 sudo chmod -R 755 /var/www/logviewer
 sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log || true
 sudo chmod 644 /home/sinden/Lightgun/log/sinden.log || true
 
-# 2) Create a high-priority vhost that acts as default for all requests on :80
+# 4) Priority vhost as default + DirectoryIndex
 sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
 <VirtualHost *:80>
-    # No ServerName on purpose -> becomes the default catch-all for port 80
     DocumentRoot /var/www/logviewer
+    DirectoryIndex index.html
 
     <Directory /var/www/logviewer>
         Options -Indexes +FollowSymLinks
@@ -414,7 +421,6 @@ sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
         Require all granted
     </Directory>
 
-    # Explicitly allow reading the log file via the symlink
     <Files "sinden.log">
         Require all granted
     </Files>
@@ -424,38 +430,24 @@ sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
 </VirtualHost>
 APACHE
 
-# 3) Make sure Apache is listening on port 80 (and not shadowed)
-if ! grep -qE '^\s*Listen\s+80\b' /etc/apache2/ports.conf; then
-  echo "Listen 80" | sudo tee -a /etc/apache2/ports.conf >/dev/null
-fi
+# 5) Silence FQDN warning (optional but recommended)
+echo 'ServerName localhost' | sudo tee /etc/apache2/conf-available/servername.conf >/dev/null
+sudo a2enconf servername >/dev/null || true
 
-# 4) Enable required module(s) and your site; disable defaults/others
-sudo a2enmod headers >/dev/null || true
-
-# Disable the distro default site if present
+# 6) Enable your site, disable distro default, reload
 sudo a2dissite 000-default.conf >/dev/null 2>&1 || true
-
-# Disable any other sites bound to :80 that might be stealing default
-for s in $(ls /etc/apache2/sites-enabled/*.conf || true); do
-  # Skip our chosen default
-  if [[ "$s" != "/etc/apache2/sites-enabled/000-logviewer.conf" ]]; then
-    # If the file defines a :80 vhost, disable it
-    if grep -qE '<VirtualHost\s+[^>]*:80[^>]*>' "$s"; then
-      sudo a2dissite "$(basename "$s")" >/dev/null || true
-    fi
-  fi
-done
-
-# Enable our default site
 sudo a2ensite 000-logviewer.conf >/dev/null
-
-# 5) Validate config and reload
+sudo a2enmod headers >/dev/null || true
 sudo apache2ctl configtest
 sudo systemctl reload apache2
 
-# 6) Show active vhost mapping for verification
+# 7) Show mapping
 echo "==== apache2ctl -S ===="
 sudo apache2ctl -S || true
 echo "======================="
+
+# 8) Quick functional test
+echo "Expecting HTML..."
+curl -s http://127.0.0.1/ | head -n 5
 
 
