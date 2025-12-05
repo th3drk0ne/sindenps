@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- High-contrast colour palette (clear active button highlight) ---
+# --- High-contrast colour palette ---
 export NEWT_COLORS='
 root=white,blue
 window=black,lightgray
@@ -17,31 +17,22 @@ actbutton=white,green
 '
 
 CONFIG_FILE=""
-PLAYER="P1"   # P1 or P2
-
-# Confirmation/write guards
-CONFIRMED_WRITE="0"   # 0 = not confirmed yet; 1 = confirmed
-BACKUP_DONE="0"       # 0 = no baseline backup yet; 1 = baseline taken
+PLAYER="P1"
+CONFIRMED_WRITE="0"
+BACKUP_DONE="0"
 BACKUP_PATH=""
+BACKUP_LIMIT="${BACKUP_LIMIT:-10}" # For listing backups
 
-# How many old backups to offer in pickers (helpers kept but not exposed in menu)
-BACKUP_LIMIT="${BACKUP_LIMIT:-5}"
-
-# --- utils ---
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
 
-# --- Confirmation controls (avoid Yes/No focus issues by default) ---
-# 1 = show menu confirmations everywhere (Up/Down + Enter). 0 = try Yes/No first.
 FORCE_MENU_CONFIRM="${FORCE_MENU_CONFIRM:-1}"
-# 1 = auto-confirm all prompts (careful!); still takes a baseline backup
 ASSUME_YES="${ASSUME_YES:-0}"
 YESNO_FLAGS='--fb --yes-button "Proceed" --no-button "Cancel"'
 
 yesno_or_menu() {
   local title="$1" msg="$2"
   if [[ "$ASSUME_YES" == "1" ]]; then return 0; fi
-
   if [[ "$FORCE_MENU_CONFIRM" == "1" ]]; then
     local choice
     choice=$(whiptail --title "$title" --menu "$msg" 14 72 2 \
@@ -51,7 +42,6 @@ yesno_or_menu() {
     [[ "$choice" == "Proceed" ]]
     return
   fi
-
   if whiptail ${YESNO_FLAGS} --title "$title" --yesno "$msg" 14 72; then
     return 0
   fi
@@ -63,91 +53,55 @@ yesno_or_menu() {
   [[ "$choice" == "Proceed" ]]
 }
 
-# --- Dependency notice (only shows once) ---
-DEPENDENCY_WARNED="${DEPENDENCY_WARNED:-0}"
 warn_missing_xmlstarlet() {
-  if [[ "$DEPENDENCY_WARNED" == "1" ]]; then return; fi
   if ! have_cmd xmlstarlet; then
     whiptail --title "xmlstarlet not found" --msgbox \
 "xmlstarlet is not installed.
 
-I'll use a safe sed fallback for XML edits.
+Using sed fallback for XML edits.
 
-Recommended to install:
-  Debian/Ubuntu/RPi:  sudo apt-get install -y xmlstarlet
-  RHEL/Fedora:        sudo dnf install -y xmlstarlet" 12 70
-    DEPENDENCY_WARNED="1"
+Install with:
+  sudo apt-get install -y xmlstarlet" 12 70
   fi
 }
 
-# Ensure confirmation + baseline backup before the FIRST edit
 ensure_confirm_and_backup() {
   if [[ "$CONFIRMED_WRITE" == "1" ]]; then return 0; fi
-
-  if [[ "$BACKUP_DONE" == "1" && -n "$BACKUP_PATH" ]]; then
-    if ! yesno_or_menu "Confirm Changes" "About to modify:
-
-${CONFIG_FILE}
-
-Existing baseline backup will be used:
-${BACKUP_PATH}
-
-Proceed?"; then
-      whiptail --msgbox "No changes were applied." 8 40
-      exit 0
-    fi
-    CONFIRMED_WRITE="1"
-    return 0
-  fi
-
   local ts backup
   ts=$(now_stamp)
   backup="${CONFIG_FILE}.bak-${ts}"
-
   if ! yesno_or_menu "Confirm Changes" "About to modify:
 
 ${CONFIG_FILE}
 
-A baseline backup will be created:
+A backup will be created:
 ${backup}
 
 Proceed?"; then
-    whiptail --msgbox "No changes were applied." 8 40
+    whiptail --msgbox "No changes applied." 8 40
     exit 0
   fi
-
   cp -p -- "${CONFIG_FILE}" "${backup}"
   BACKUP_DONE="1"
   BACKUP_PATH="${backup}"
-  whiptail --msgbox "Backup created:\n${BACKUP_PATH}\n\nChanges will now be applied." 12 70
   CONFIRMED_WRITE="1"
 }
 
-# Create a baseline backup ONLY (no edit confirmation)
-make_backup_only() {
-  if [[ "$BACKUP_DONE" == "1" && -n "$BACKUP_PATH" ]]; then return 0; fi
+create_backup_now() {
   local ts backup
   ts=$(now_stamp)
   backup="${CONFIG_FILE}.bak-${ts}"
-
-  if ! yesno_or_menu "Create Baseline Backup" "Create a baseline backup to diff/restore against?
-
-Source:
+  if ! yesno_or_menu "Create Backup Now" "Create a backup of:
 ${CONFIG_FILE}
 
-Backup:
-${backup}"; then
-    return 1
-  fi
+Backup file:
+${backup}
 
+Proceed?"; then return; fi
   cp -p -- "${CONFIG_FILE}" "${backup}"
-  BACKUP_DONE="1"
-  BACKUP_PATH="${backup}"
-  whiptail --msgbox "Baseline backup created:\n${BACKUP_PATH}" 10 70
-  return 0
+  whiptail --msgbox "Backup created:\n${backup}" 10 70
 }
 
-# --- XML get/set helpers ---
 get_config() {
   local key="$1"
   if have_cmd xmlstarlet; then
@@ -161,53 +115,24 @@ update_config() {
   local key="$1" value="$2"
   ensure_confirm_and_backup
   warn_missing_xmlstarlet
-
   if have_cmd xmlstarlet; then
-    local count
-    count=$(xmlstarlet sel -t -v "count(/configuration/appSettings/add[@key='${key}'])" "$CONFIG_FILE" 2>/dev/null || echo 0)
-    if [[ "$count" -gt 0 ]]; then
-      xmlstarlet ed -L \
-        -u "/configuration/appSettings/add[@key='${key}']/@value" -v "${value}" \
-        "$CONFIG_FILE"
-    else
-      xmlstarlet ed -L \
-        -s "/configuration/appSettings" -t elem -n "__new" -v "" \
-        -i "/configuration/appSettings/__new" -t attr -n "key"   -v "${key}" \
-        -i "/configuration/appSettings/__new" -t attr -n "value" -v "${value}" \
-        -r "/configuration/appSettings/__new" -v "add" \
-        "$CONFIG_FILE"
-    fi
+    xmlstarlet ed -L \
+      -u "/configuration/appSettings/add[@key='${key}']/@value" -v "${value}" \
+      "$CONFIG_FILE" || xmlstarlet ed -L \
+      -s "/configuration/appSettings" -t elem -n "add" -v "" \
+      -i "/configuration/appSettings/add[last()]" -t attr -n "key" -v "${key}" \
+      -i "/configuration/appSettings/add[last()]" -t attr -n "value" -v "${value}" \
+      "$CONFIG_FILE"
   else
-    [[ -f "${CONFIG_FILE}.bak" ]] || cp -p -- "${CONFIG_FILE}" "${CONFIG_FILE}.bak"
     if grep -qE '<add[[:space:]]+key="'"${key}"'"' "$CONFIG_FILE"; then
       sed -i 's|\(<add[[:space:]]\+key="'"${key}"'"[[:space:]]\+value="\)[^"]*|\1'"${value}"'|g' "$CONFIG_FILE"
     else
       sed -i 's#</appSettings>#  <add key="'"${key}"'" value="'"${value}"'"/>\n  </appSettings>#' "$CONFIG_FILE"
     fi
   fi
-
-  # Read-back verification
-  local after
-  after=$(get_config "${key}")
-  if [[ "${after}" != "${value}" ]]; then
-    whiptail --title "Write verification" --msgbox \
-"Write may not have taken effect for key:
-  ${key}
-
-Expected: ${value}
-Read back: ${after:-<empty>}
-
-Check file permissions/owner or install xmlstarlet." 14 74
-  fi
 }
 
-# Resolve key by player
-key_for() {
-  local base="$1"
-  if [[ "$PLAYER" == "P2" ]]; then echo "${base}P2"; else echo "${base}"; fi
-}
-
-# --- (Helpers retained but not exposed in menu) Recent backups / diff / restore ---
+key_for() { [[ "$PLAYER" == "P2" ]] && echo "$1P2" || echo "$1"; }
 
 list_recent_backups() {
   local dir base
@@ -216,181 +141,83 @@ list_recent_backups() {
   shopt -s nullglob
   local -a files=( "$dir/${base}.bak-"* )
   shopt -u nullglob
-  if ((${#files[@]} == 0)); then return 1; fi
-  local f ts
+  (( ${#files[@]} )) || return 1
   for f in "${files[@]}"; do
-    if ts=$(stat -c %Y -- "$f" 2>/dev/null); then
-      printf '%s\t%s\n' "$ts" "$f"
-    else
-      printf '0\t%s\n' "$f"
-    fi
-  done | LC_ALL=C sort -nr | awk -v n="${BACKUP_LIMIT:-5}" 'NR<=n {print $2}'
+    printf '%s\t%s\n' "$(stat -c %Y "$f" 2>/dev/null || echo 0)" "$f"
+  done | sort -nr | awk -v n="$BACKUP_LIMIT" 'NR<=n {print $2}'
 }
 
-choose_backup_from_lastN() {
+view_backups() {
   local -a backs
   mapfile -t backs < <(list_recent_backups) || true
-  if ((${#backs[@]} == 0)); then
-    whiptail --msgbox "No backups found for:\n$(basename -- "$CONFIG_FILE")\n\nExpected pattern:\n$(basename -- "$CONFIG_FILE").bak-*" 12 70
-    return 1
+  if (( ${#backs[@]} == 0 )); then
+    whiptail --msgbox "No backups found for:\n$(basename "$CONFIG_FILE")" 10 60
+    return
   fi
-  local -a menu
-  local i=1
-  local f bn ts
+  local tmp
+  tmp=$(mktemp)
+  printf "Available backups (newest first):\n\n" > "$tmp"
   for f in "${backs[@]}"; do
-    bn="$(basename -- "$f")"
-    ts="${bn##*.bak-}"
-    menu+=( "$i" "$bn  [${ts}]" )
+    printf "%s\n" "$f" >> "$tmp"
+  done
+  whiptail --title "View Backups" --textbox "$tmp" 20 80
+  rm -f "$tmp"
+}
+
+choose_backup() {
+  local -a backs
+  mapfile -t backs < <(list_recent_backups) || true
+  (( ${#backs[@]} )) || { whiptail --msgbox "No backups found." 8 50; return 1; }
+  local -a menu; local i=1
+  for f in "${backs[@]}"; do
+    menu+=( "$i" "$(basename "$f")" )
     ((i++))
   done
   local choice
-  if ! choice=$(whiptail --title "Choose Backup" \
-                  --menu "Select a backup to use (newest first)" 20 84 10 \
-                  "${menu[@]}" 3>&1 1>&2 2>&3); then
-    return 1
-  fi
-  local idx=$((choice-1))
-  if (( idx < 0 || idx >= ${#backs[@]} )); then
-    whiptail --msgbox "Invalid selection index (${choice})." 8 50
-    return 1
-  fi
-  printf '%s\n' "${backs[$idx]}"
-}
-
-view_diff_with_backup() {
-  local bkp="$1"
-  local tmp
-  if have_cmd mktemp; then tmp=$(mktemp); else tmp="/tmp/lightgun-config.diff.$$"; fi
-  if ! have_cmd diff; then
-    printf "The 'diff' command is not available on this system.\n" > "$tmp"
-  else
-    diff -u --label "backup:${bkp}" --label "current:${CONFIG_FILE}" \
-      "${bkp}" "${CONFIG_FILE}" > "$tmp" || true
-    if [[ ! -s "$tmp" ]]; then
-      printf "No differences.\n\nBackup:  %s\nCurrent: %s\n" "${bkp}" "${CONFIG_FILE}" > "$tmp"
-    fi
-  fi
-  whiptail --title "Diff (backup vs current)" --textbox "$tmp" 25 100
-  rm -f -- "$tmp"
-}
-
-view_diff() {
-  if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
-    make_backup_only || { whiptail --msgbox "Cannot show diff without a backup." 8 50; return; }
-  fi
-  view_diff_with_backup "${BACKUP_PATH}"
-}
-
-view_diff_choose_backup() {
-  local selected
-  selected=$(choose_backup_from_lastN) || return
-  view_diff_with_backup "${selected}"
+  choice=$(whiptail --title "Choose Backup" --menu "Select backup to restore" 20 70 10 "${menu[@]}" 3>&1 1>&2 2>&3) || return 1
+  echo "${backs[$((choice-1))]}"
 }
 
 restore_from_backup() {
-  if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
-    if ! yesno_or_menu "Restore from Backup" "No baseline backup found.
-
-Create one now from the current file to enable restore?
-
-Source:
-${CONFIG_FILE}"; then
-      whiptail --msgbox "Restore cancelled." 8 40; return
-    fi
-    make_backup_only || { whiptail --msgbox "Failed to create baseline backup.\nRestore cannot proceed." 10 60; return; }
-  fi
-  local ts safety
-  ts=$(now_stamp); safety="${CONFIG_FILE}.restore-${ts}"
-  if ! yesno_or_menu "Restore from Backup" "This will replace:
-${CONFIG_FILE}
-
-with baseline backup:
-${BACKUP_PATH}
-
-A safety snapshot will be saved as:
-${safety}
-
-Proceed?"; then
-    whiptail --msgbox "Restore cancelled." 8 40; return
-  fi
-  cp -p -- "${CONFIG_FILE}" "${safety}"
-  cp -p -- "${BACKUP_PATH}" "${CONFIG_FILE}"
-  whiptail --msgbox "Restore complete.\n\nSafety snapshot:\n${safety}\nRestored from:\n${BACKUP_PATH}" 12 72
-}
-
-restore_from_chosen_backup() {
   local selected
-  selected=$(choose_backup_from_lastN) || return
-  local ts safety
-  ts=$(now_stamp); safety="${CONFIG_FILE}.restore-${ts}"
-  if ! yesno_or_menu "Restore from Selected Backup" "This will replace:
-${CONFIG_FILE}
-
-with:
+  selected=$(choose_backup) || return
+  local safety="${CONFIG_FILE}.restore-$(now_stamp)"
+  if ! yesno_or_menu "Restore" "Replace current file with:
 ${selected}
 
-A safety snapshot will be saved as:
+Safety copy will be:
 ${safety}
 
-Proceed?"; then
-    whiptail --msgbox "Restore cancelled." 8 40
-    return
-  fi
-  cp -p -- "${CONFIG_FILE}" "${safety}"
-  cp -p -- "${selected}"     "${CONFIG_FILE}"
-  whiptail --msgbox "Restore complete.\n\nSafety snapshot:\n${safety}\nRestored from:\n${selected}" 12 72
+Proceed?"; then return; fi
+  cp -p -- "$CONFIG_FILE" "$safety"
+  cp -p -- "$selected" "$CONFIG_FILE"
+  whiptail --msgbox "Restored from:\n${selected}\nSafety copy:\n${safety}" 12 70
 }
 
-# --- Config file selector ---
 choose_config() {
   local choice
-  choice=$(whiptail --title "Select Config File" --menu "Which config file do you want to edit?" 15 70 5 \
-      "1" "/home/sinden/Lightgun/PS1/LightgunMono.exe.config" \
-      "2" "/home/sinden/Lightgun/PS2/LightgunMono.exe.config" \
-      3>&1 1>&2 2>&3) || { whiptail --msgbox "No config file selected, exiting." 8 40; exit 1; }
-
-  case "$choice" in
-    1) CONFIG_FILE="/home/sinden/Lightgun/PS1/LightgunMono.exe.config" ;;
-    2) CONFIG_FILE="/home/sinden/Lightgun/PS2/LightgunMono.exe.config" ;;
-    *) whiptail --msgbox "No config file selected, exiting." 8 40; exit 1 ;;
-  esac
-
-  if [[ ! -f "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "Config file not found:\n$CONFIG_FILE" 10 60; exit 1
-  fi
-
-  # Reset guards when switching files
-  CONFIRMED_WRITE="0"
-  BACKUP_DONE="0"
-  BACKUP_PATH=""
+  choice=$(whiptail --title "Select Config File" --menu "Which config file?" 15 70 5 \
+    "1" "/home/sinden/Lightgun/PS1/LightgunMono.exe.config" \
+    "2" "/home/sinden/Lightgun/PS2/LightgunMono.exe.config" \
+    3>&1 1>&2 2>&3) || exit 0
+  CONFIG_FILE=$([[ "$choice" == "1" ]] && echo "/home/sinden/Lightgun/PS1/LightgunMono.exe.config" || echo "/home/sinden/Lightgun/PS2/LightgunMono.exe.config")
 }
 
-# --- Player selector ---
 choose_player() {
-  local choice
-  choice=$(whiptail --title "Choose Player" --menu "Current file:\n$CONFIG_FILE" 12 50 2 \
-      "P1" "Player 1 settings" \
-      "P2" "Player 2 settings" \
-      3>&1 1>&2 2>&3) || return
-  PLAYER="$choice"
+  PLAYER=$(whiptail --title "Choose Player" --menu "Current file:\n$CONFIG_FILE" 12 50 2 \
+    "P1" "Player 1" "P2" "Player 2" 3>&1 1>&2 2>&3) || return
 }
 
-# --- Menus (Serial / Video / Calibration / Recoil) ---
 serial_menu() {
   while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
     local choice
-    choice=$(whiptail --title "Serial Port Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 18 70 8 \
-        "1" "SerialPortWrite${labelPfx}" \
-        "2" "SerialPortSecondary${labelPfx}" \
-        "3" "Back" \
-        3>&1 1>&2 2>&3) || break
+    choice=$(whiptail --title "Serial Settings ($PLAYER)" --menu "Editing: $CONFIG_FILE" 18 70 8 \
+      "1" "SerialPortWrite" "2" "SerialPortSecondary" "3" "Back" 3>&1 1>&2 2>&3) || break
     case "$choice" in
-      1) local k=$(key_for "SerialPortWrite"); local def=$(get_config "$k"); local v
-         v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      2) local k=$(key_for "SerialPortSecondary"); local def=$(get_config "$k"); local v
-         [[ "$PLAYER" == "P2" && "${def:-/dev/ttyGCON0}" == "/dev/ttyGCON0" ]] && def="/dev/ttyGCON1"
-         v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def:-/dev/ttyGCON0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      1) local k=$(key_for "SerialPortWrite"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      2) local k=$(key_for "SerialPortSecondary"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/ttyGCON0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
       3) break ;;
     esac
   done
@@ -398,41 +225,31 @@ serial_menu() {
 
 video_menu() {
   while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
     local choice
     if [[ "$PLAYER" == "P2" ]]; then
-      choice=$(whiptail --title "Video Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 10 \
-          "1" "VideoDevice${labelPfx}" \
-          "2" "CameraBrightness${labelPfx}" \
-          "3" "CameraContrast${labelPfx}" \
-          "4" "Back" \
-          3>&1 1>&2 2>&3) || break
+      choice=$(whiptail --title "Video Settings (P2)" --menu "Editing: $CONFIG_FILE" 20 70 10 \
+        "1" "VideoDeviceP2" "2" "CameraBrightnessP2" "3" "CameraContrastP2" "4" "Back" 3>&1 1>&2 2>&3) || break
       case "$choice" in
-        1) local k="VideoDeviceP2";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def:-/dev/video1}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CameraBrightnessP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (80-120):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="CameraContrastP2";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (40-60):" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        1) local k="VideoDeviceP2"; local def=$(get_config "$k")
+           local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/video1}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        2) local k="CameraBrightnessP2"; local def=$(get_config "$k")
+           local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        3) local k="CameraContrastP2"; local def=$(get_config "$k")
+           local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
         4) break ;;
       esac
     else
-      choice=$(whiptail --title "Video Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 10 \
-          "1" "VideoDevice${labelPfx}" \
-          "2" "CameraRes${labelPfx}" \
-          "3" "CameraBrightness${labelPfx}" \
-          "4" "CameraContrast${labelPfx}" \
-          "5" "Back" \
-          3>&1 1>&2 2>&3) || break
+      choice=$(whiptail --title "Video Settings (P1)" --menu "Editing: $CONFIG_FILE" 20 70 10 \
+        "1" "VideoDevice" "2" "CameraRes" "3" "CameraBrightness" "4" "CameraContrast" "5" "Back" 3>&1 1>&2 2>&3) || break
       case "$choice" in
-        1) local k="VideoDevice";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def:-/dev/video0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CameraRes";        local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (e.g. 640,480):" 10 60 "${def:-640,480}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="CameraBrightness"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (80-120):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        4) local k="CameraContrast";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (40-60):" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        1) local k="VideoDevice"; local def=$(get_config "$k")
+           local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/video0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        2) local k="CameraRes"; local def=$(get_config "$k")
+           local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-640,480}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        3) local k="CameraBrightness"; local def=$(get_config "$k")
+           local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        4) local k="CameraContrast"; local def=$(get_config "$k")
+           local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
         5) break ;;
       esac
     fi
@@ -441,86 +258,38 @@ video_menu() {
 
 calibration_menu() {
   while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
     local choice
-    if [[ "$PLAYER" == "P2" ]]; then
-      choice=$(whiptail --title "Calibration/Offsets${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 10 \
-          "1" "CalibrateX${labelPfx}" \
-          "2" "CalibrateY${labelPfx}" \
-          "3" "OffscreenReload${labelPfx}" \
-          "4" "Back" \
-          3>&1 1>&2 2>&3) || break
-      case "$choice" in
-        1) local k="CalibrateXP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CalibrateYP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="OffscreenReloadP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        4) break ;;
-      esac
-    else
-      choice=$(whiptail --title "Calibration/Offsets${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 12 \
-          "1" "CalibrateX${labelPfx}" \
-          "2" "CalibrateY${labelPfx}" \
-          "3" "OffsetX" \
-          "4" "OffsetY" \
-          "5" "OffsetXRatio" \
-          "6" "OffsetYRatio" \
-          "7" "OffscreenReload${labelPfx}" \
-          "8" "Back" \
-          3>&1 1>&2 2>&3) || break
-      case "$choice" in
-        1) local k="CalibrateX";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CalibrateY";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="OffsetX";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (int):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        4) local k="OffsetY";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (int):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        5) local k="OffsetXRatio"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (e.g. 01):" 10 60 "${def:-01}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        6) local k="OffsetYRatio"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (e.g. 01):" 10 60 "${def:-01}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        7) local k="OffscreenReload"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        8) break ;;
-      esac
-    fi
+    choice=$(whiptail --title "Calibration ($PLAYER)" --menu "Editing: $CONFIG_FILE" 20 70 10 \
+      "1" "CalibrateX" "2" "CalibrateY" "3" "OffsetX" "4" "OffsetY" "5" "Back" 3>&1 1>&2 2>&3) || break
+    case "$choice" in
+      1) local k=$(key_for "CalibrateX"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      2) local k=$(key_for "CalibrateY"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      3) local k=$(key_for "OffsetX"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      4) local k=$(key_for "OffsetY"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      5) break ;;
+    esac
   done
 }
 
 recoil_menu() {
   while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
     local choice
-    choice=$(whiptail --title "Recoil Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 22 80 14 \
-        "1"  "EnableRecoil${labelPfx}" \
-        "2"  "RecoilStrength${labelPfx}" \
-        "3"  "TriggerRecoilNormalOrRepeat${labelPfx}" \
-        "4"  "AutoRecoilStrength${labelPfx}" \
-        "5"  "AutoRecoilStartDelay${labelPfx}" \
-        "6"  "AutoRecoilDelayBetweenPulses${labelPfx}" \
-        "7"  "RecoilTrigger${labelPfx}" \
-        "8"  "RecoilTriggerOffscreen${labelPfx}" \
-        "9"  "RecoilPumpActionOnEvent${labelPfx}" \
-        "10" "RecoilPumpActionOffEvent${labelPfx}" \
-        "11" "Back" \
-        3>&1 1>&2 2>&3) || break
-    local suffix=""; [[ "$PLAYER" == "P2" ]] && suffix="P2"
+    choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $CONFIG_FILE" 22 80 14 \
+      "1" "EnableRecoil" "2" "RecoilStrength" "3" "TriggerRecoilNormalOrRepeat" "4" "AutoRecoilStrength" "5" "Back" 3>&1 1>&2 2>&3) || break
     case "$choice" in
-      1)  k="EnableRecoil${suffix}";                 def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      2)  k="RecoilStrength${suffix}";               def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0-100):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      3)  k="TriggerRecoilNormalOrRepeat${suffix}";  def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0 single / 1 auto):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      4)  k="AutoRecoilStrength${suffix}";           def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0-100):" 10 60 "${def:-40}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      5)  k="AutoRecoilStartDelay${suffix}";         def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (ms):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      6)  k="AutoRecoilDelayBetweenPulses${suffix}"; def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (ms):" 10 60 "${def:-13}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      7)  k="RecoilTrigger${suffix}";                def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      8)  k="RecoilTriggerOffscreen${suffix}";       def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      9)  k="RecoilPumpActionOnEvent${suffix}";      def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      10) k="RecoilPumpActionOffEvent${suffix}";     def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      11) break ;;
+      1) local k=$(key_for "EnableRecoil"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      2) local k=$(key_for "RecoilStrength"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      3) local k=$(key_for "TriggerRecoilNormalOrRepeat"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      4) local k=$(key_for "AutoRecoilStrength"); local def=$(get_config "$k")
+         local v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-40}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      5) break ;;
     esac
   done
 }
@@ -529,30 +298,31 @@ recoil_menu() {
 choose_config
 
 while true; do
-  choice=$(whiptail --title "Lightgun Config Editor" --menu "File: $CONFIG_FILE\nPlayer: $PLAYER" 22 78 14 \
-      "1"  "Switch Player (P1/P2)" \
-      "2"  "Serial Port Settings" \
-      "3"  "Video Settings" \
-      "4"  "Calibration / Offsets" \
-      "5"  "Recoil Settings" \
-      "6"  "Switch Config File" \
-      "7"  "Exit" \
-      3>&1 1>&2 2>&3) || break
+  choice=$(whiptail --title "Lightgun Config Editor" --menu "File: $CONFIG_FILE\nPlayer: $PLAYER" 24 84 18 \
+    "1" "Switch Player (P1/P2)" \
+    "2" "Serial Port Settings" \
+    "3" "Video Settings" \
+    "4" "Calibration Settings" \
+    "5" "Recoil Settings" \
+    "6" "Create Backup Now" \
+    "7" "View Backups" \
+    "8" "Restore from backup (choose)" \
+    "9" "Switch Config File" \
+    "10" "Exit" \
+    3>&1 1>&2 2>&3) || break
 
   case "$choice" in
     1) choose_player ;;
-    2) serial_menu   ;;
-    3) video_menu    ;;
+    2) serial_menu ;;
+    3) video_menu ;;
     4) calibration_menu ;;
-    5) recoil_menu   ;;
-    6) choose_config ;;
-    7) break ;;
+    5) recoil_menu ;;
+    6) create_backup_now ;;
+    7) view_backups ;;
+    8) restore_from_backup ;;
+    9) choose_config ;;
+    10) break ;;
   esac
 done
 
-# Session summary
-if [[ "$BACKUP_DONE" == "1" ]]; then
-  whiptail --msgbox "Configuration session complete.\n\nBaseline backup:\n${BACKUP_PATH}" 12 70
-else
-  whiptail --msgbox "No changes were applied to:\n${CONFIG_FILE}" 10 70
-fi
+whiptail --msgbox "Session
