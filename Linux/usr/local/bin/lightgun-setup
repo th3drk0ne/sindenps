@@ -224,7 +224,7 @@ view_backups() {
   if (( ${#backs[@]} == 0 )); then
     whiptail --msgbox "No backups found for:\n$(basename "$CONFIG_FILE")" 10 60
     return
-  }
+  fi
   local tmp
   tmp=$(mktemp)
   printf "Available backups (newest first):\n\n" > "$tmp"
