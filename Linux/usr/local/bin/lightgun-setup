@@ -225,7 +225,8 @@ view_backups() {
     whiptail --msgbox "No backups found for:\n$(basename "$CONFIG_FILE")" 10 60
     return
   fi
-  local tmp; tmp=$(mktemp)
+  local tmp
+  tmp=$(mktemp)
   printf "Available backups (newest first):\n\n" > "$tmp"
   for f in "${backs[@]}"; do
     printf "%s\n" "$f" >> "$tmp"
@@ -240,7 +241,8 @@ choose_backup() {
   (( ${#backs[@]} )) || { whiptail --msgbox "No backups found." 8 50; return 1; }
   local -a menu; local i=1
   for f in "${backs[@]}"; do
-    menu+=( "$i" "$(basename "$f")" ); ((i++))
+    menu+=( "$i" "$(basename "$f")" )
+    ((i++))
   done
   local choice
   choice=$(whiptail --title "Choose Backup" --menu "Select backup to restore" 20 70 10 "${menu[@]}" 3>&1 1>&2 2>&3) || return 1
@@ -248,7 +250,8 @@ choose_backup() {
 }
 
 restore_from_backup() {
-  local selected; selected=$(choose_backup) || return
+  local selected
+  selected=$(choose_backup) || return
   local safety="${CONFIG_FILE}.restore-$(now_stamp)"
   if ! yesno_or_menu "Restore" "Replace current file with:
 ${selected}
@@ -291,13 +294,16 @@ choose_config() {
 
 ensure_config_access() {
   if [[ -z "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "No config file selected." 8 40; exit 1
+    whiptail --msgbox "No config file selected." 8 40
+    exit 1
   fi
   if [[ ! -f "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "Config file not found:\n$(short_path "$CONFIG_FILE")" 10 70; exit 1
+    whiptail --msgbox "Config file not found:\n$(short_path "$CONFIG_FILE")" 10 70
+    exit 1
   fi
   if [[ ! -w "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70; exit 1
+    whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70
+    exit 1
   fi
 }
 
@@ -308,6 +314,7 @@ choose_player() {
     "Player 1" "" \
     "Player 2" "" \
     3>&1 1>&2 2>&3) || return
+
   case "$choice" in
     "Player 1") PLAYER="P1" ;;
     "Player 2") PLAYER="P2" ;;
@@ -379,7 +386,6 @@ save_custom_recoil_profile() {
 # --- Recoil Profiles (presets + save custom) ---
 recoil_profiles_menu() {
   local choice
-  # Bigger dialog to ensure visibility
   choice=$(whiptail --title "Recoil Profiles ($PLAYER)" --menu "Pick a preset or action" 22 84 10 \
     "Apply: Arcade"       "Strong single-shot arcade recoil" \
     "Apply: MachineGun"   "Automatic fire; faster pulses" \
@@ -424,7 +430,6 @@ recoil_profiles_menu() {
 # --- Recoil Settings (granular keys + link to profiles) ---
 recoil_menu() {
   while true; do
-    # Bigger dialog + fewer items-per-page to ensure the first item ("Recoil Profile Presets") is visible
     local choice
     choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 28 100 14 \
       "1"  "Recoil Profile Presets" \
@@ -533,7 +538,6 @@ choose_config
 ensure_config_access
 
 while true; do
-  local choice
   choice=$(whiptail --title "Lightgun Config Editor" \
     --menu "File: $(short_path "$CONFIG_FILE")\nPlayer: $PLAYER" 24 84 12 \
     "1"  "Switch Player (Player 1/Player 2)" \
@@ -567,7 +571,7 @@ done
 whiptail --msgbox "Session complete.\n\nBackups kept (for listing): ${BACKUP_LIMIT}\nLast backup: ${BACKUP_PATH:-none}" 12 70
 
 # Optional pruning on exit (disabled by default)
-PRUNE_ON_EXIT=1
+# PRUNE_ON_EXIT=1
 if [[ "${PRUNE_ON_EXIT:-0}" == "1" ]]; then
   prune_backups
 fi
