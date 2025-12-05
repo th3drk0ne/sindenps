@@ -1,5 +1,8 @@
 #!/bin/bash
 
+NEWT_COLORS='root=white,blue border=white,blue window=white,blue title=yellow,blue button=black,cyan'
+export NEWT_COLORS
+
 CONFIG_FILE=""
 
 # --- Config file selector ---
