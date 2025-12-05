@@ -478,10 +478,10 @@ sudo systemctl restart lightgun-monitor.service
 
 # 8) install configuration editor
 
-cd 	${USER_HOME}
-  wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/lightgun-setup"
-  chmod +x ${USER_HOME}/lightgun-setup
+cd 	/usr/local/bin
+ sudo wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux//usr/local/bin/lightgun-setup"
+ chmod +x /usr/local/bin/lightgun-setup
 
 log "configuration tool installed"
 
