@@ -25,9 +25,15 @@ BACKUP_DONE="0"
 BACKUP_PATH=""
 
 # --- Backup retention and pruning behavior ---
-BACKUP_LIMIT="${BACKUP_LIMIT:-10}"           # Keep latest N backups
-PRUNE_ON_EXIT="${PRUNE_ON_EXIT:-1}"          # 1=auto prune on exit, 0=skip
-PRUNE_AFTER_BACKUP="${PRUNE_AFTER_BACKUP:-1}"# 1=prune immediately after backup creation
+
+# Keep latest N backups
+BACKUP_LIMIT="${BACKUP_LIMIT:-10}"
+
+# Auto prune on exit (1=enabled, 0=disabled)
+PRUNE_ON_EXIT="${PRUNE_ON_EXIT:-1}"
+
+# Prune immediately after each backup (1=enabled, 0=disabled)
+PRUNE_AFTER_BACKUP="${PRUNE_AFTER_BACKUP:-1}"
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
