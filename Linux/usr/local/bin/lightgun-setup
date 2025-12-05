@@ -21,7 +21,7 @@ PLAYER="P1"
 CONFIRMED_WRITE="0"
 BACKUP_DONE="0"
 BACKUP_PATH=""
-BACKUP_LIMIT="${BACKUP_LIMIT:-10}" # For listing backups
+BACKUP_LIMIT="${BACKUP_LIMIT:-5}" # For listing backups
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
@@ -217,7 +217,7 @@ list_recent_backups() {
   local -a files=( "$dir/${base}.bak-"* )
   shopt -u nullglob
   (( ${#files[@]} )) || return 1
-  for f in "${files[@]}"; do
+  for f in "${files[@]}"]]; do
     printf '%s\t%s\n' "$(stat -c %Y "$f" 2>/dev/null || echo 0)" "$f"
   done | sort -nr | awk -v n="$BACKUP_LIMIT" 'NR<=n {print $2}'
 }
@@ -803,4 +803,4 @@ done
 whiptail --msgbox "Session complete.\n\nBackups kept (for listing): ${BACKUP_LIMIT}\nLast backup: ${BACKUP_PATH:-none}" 12 70
 
 # Uncomment if you want to prune older backups automatically:
-# prune_backups
+prune_backups
