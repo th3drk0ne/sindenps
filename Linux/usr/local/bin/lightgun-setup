@@ -23,7 +23,11 @@ PLAYER="P1"
 CONFIRMED_WRITE="0"
 BACKUP_DONE="0"
 BACKUP_PATH=""
-BACKUP_LIMIT="${BACKUP_LIMIT:-5}" # For listing backups
+
+# --- Backup retention and pruning behavior ---
+BACKUP_LIMIT="${BACKUP_LIMIT:-10}"        # Keep latest N backups in the per-config backup dir
+PRUNE_ON_EXIT="${PRUNE_ON_EXIT:-1}"       # 1=auto prune on exit, 0=skip
+PRUNE_AFTER_BACKUP="${PRUNE_AFTER_BACKUP:-1}" # 1=prune immediately after backup creation
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
@@ -121,6 +125,11 @@ Proceed?"; then
   BACKUP_DONE="1"
   BACKUP_PATH="${backup}"
   CONFIRMED_WRITE="1"
+
+  # Optional immediate prune after creating a backup
+  if [[ "${PRUNE_AFTER_BACKUP}" == "1" ]]; then
+    prune_backups || true
+  fi
 }
 
 create_backup_now() {
@@ -140,6 +149,11 @@ Proceed?"; then return; fi
   BACKUP_DONE="1"
   BACKUP_PATH="${backup}"
   whiptail --msgbox "Backup created:\n${rel}" 10 70
+
+  # Optional immediate prune after manual backup
+  if [[ "${PRUNE_AFTER_BACKUP}" == "1" ]]; then
+    prune_backups || true
+  fi
 }
 
 # --- Helper to display a shorter path in menus
@@ -366,9 +380,7 @@ choose_player() {
 # --- Recoil Profiles storage (XDG-friendly) ---
 PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/lightgun-config-editor/profiles"
 
-ensure_profile_dir() {
-  mkdir -p -- "$PROFILE_DIR"
-}
+ensure_profile_dir() { mkdir -p -- "$PROFILE_DIR"; }
 
 sanitize_profile_name() {
   printf '%s' "$1" \
@@ -527,6 +539,7 @@ recoil_profiles_menu() {
 recoil_menu() {
   while true; do
     local choice
+    # Larger dialog to ensure "Recoil Profile Presets" is visible
     choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 28 100 14 \
       "1"  "Recoil Profile Presets" \
       "2"  "IAgreeRecoilTermsInLicense (0/1)" \
@@ -669,8 +682,7 @@ Backups kept (for listing): ${BACKUP_LIMIT}
 Last backup: $( [[ -n "${BACKUP_PATH}" ]] && rel_to_root "${BACKUP_PATH}" || echo "none" )
 " 12 70
 
-# Optional pruning on exit (disabled by default)
-PRUNE_ON_EXIT=1
-if [[ "${PRUNE_ON_EXIT:-0}" == "1" ]]; then
-  prune_backups
+# Auto prune on exit (if enabled)
+if [[ "${PRUNE_ON_EXIT}" == "1" ]]; then
+  prune_backups || true
 fi
