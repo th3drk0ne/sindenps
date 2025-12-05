@@ -25,12 +25,37 @@ BACKUP_DONE="0"
 BACKUP_PATH=""
 
 # --- Backup retention and pruning behavior ---
-BACKUP_LIMIT="${BACKUP_LIMIT:-10}"        # Keep latest N backups in the per-config backup dir
-PRUNE_ON_EXIT="${PRUNE_ON_EXIT:-1}"       # 1=auto prune on exit, 0=skip
-PRUNE_AFTER_BACKUP="${PRUNE_AFTER_BACKUP:-1}" # 1=prune immediately after backup creation
+BACKUP_LIMIT="${BACKUP_LIMIT:-10}"           # Keep latest N backups
+PRUNE_ON_EXIT="${PRUNE_ON_EXIT:-1}"          # 1=auto prune on exit, 0=skip
+PRUNE_AFTER_BACKUP="${PRUNE_AFTER_BACKUP:-1}"# 1=prune immediately after backup creation
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
+
+check_bash_version() {
+  local major=${BASH_VERSINFO[0]:-0}
+  if (( major < 4 )); then
+    echo "ERROR: Bash 4+ required (associative arrays/mapfile). Current: ${BASH_VERSION}" >&2
+    exit 1
+  fi
+}
+
+check_requirements() {
+  if ! have_cmd whiptail; then
+    echo "ERROR: 'whiptail' is required. Install: sudo apt-get install -y whiptail" >&2
+    exit 1
+  fi
+  # If xmlstarlet missing and perl missing, getter fallback may fail
+  if ! have_cmd xmlstarlet && ! have_cmd perl; then
+    whiptail --title "Dependency notice" --msgbox \
+"xmlstarlet is missing and Perl is not installed.
+
+Getter fallback may fail. Install one of:
+  sudo apt-get install -y xmlstarlet
+or
+  sudo apt-get install -y perl" 12 70
+  fi
+}
 
 FORCE_MENU_CONFIRM="${FORCE_MENU_CONFIRM:-1}"
 ASSUME_YES="${ASSUME_YES:-0}"
@@ -64,7 +89,7 @@ warn_missing_xmlstarlet() {
     whiptail --title "xmlstarlet not found" --msgbox \
 "xmlstarlet is not installed.
 
-Using sed fallback for XML edits.
+Using sed/perl fallback for XML edits.
 
 Install with:
   sudo apt-get install -y xmlstarlet" 12 70
@@ -105,7 +130,6 @@ rel_to_root() {
 
 ensure_confirm_and_backup() {
   if [[ "$CONFIRMED_WRITE" == "1" ]]; then return 0; fi
-  # Ensure paths are set
   [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
 
   local ts base backup rel
@@ -129,14 +153,12 @@ Proceed?"; then
   BACKUP_PATH="${backup}"
   CONFIRMED_WRITE="1"
 
-  # Optional immediate prune after creating a backup
   if [[ "${PRUNE_AFTER_BACKUP}" == "1" ]]; then
     prune_backups || true
   fi
 }
 
 create_backup_now() {
-  # Ensure paths are set
   [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
 
   local ts base backup rel
@@ -156,7 +178,6 @@ Proceed?"; then return; fi
   BACKUP_PATH="${backup}"
   whiptail --msgbox "Backup created:\n${rel}" 10 70
 
-  # Optional immediate prune after manual backup
   if [[ "${PRUNE_AFTER_BACKUP}" == "1" ]]; then
     prune_backups || true
   fi
@@ -207,6 +228,11 @@ update_config() {
       "$CONFIG_FILE"
   else
     local esc_val; esc_val="$(sed_escape "$value")"
+    # Optional guard against malformed XML (no closing tag)
+    if ! grep -q '</appSettings>' "$CONFIG_FILE"; then
+      whiptail --msgbox "Config appears malformed (no </appSettings> tag). Skipping write." 10 70
+      return 1
+    fi
     if grep -qE '<add\b[^>]*\bkey="'"${key}"'"' "$CONFIG_FILE"; then
       sed -i -E \
         -e 's|(<add[^>]*\bkey="'"${key}"'"[^>]*\bvalue=")[^"]*|\1'"${esc_val}"'|g' \
@@ -262,19 +288,17 @@ pick_from_list() {
 }
 
 detect_video_devices() { compgen -G "/dev/video*" | sort -V; }
-detect_tty_devices() { compgen -G "/dev/tty*" | sort -V; }
+detect_tty_devices()  { compgen -G "/dev/tty*"   | sort -V; }
 
 # --- Backup utilities (robust across sessions & legacy locations) ---
 
 list_recent_backups() {
-  # Ensure paths are set
   [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
 
   local cfg_dir base
   cfg_dir="$(dirname -- "$CONFIG_FILE")"
   base="$(basename -- "$CONFIG_FILE")"
 
-  # Gather candidates from both new and legacy locations, with strict and loose patterns
   shopt -s nullglob
   local -a candidates=(
     "$BACKUP_DIR/${base}.bak-"*
@@ -297,7 +321,6 @@ list_recent_backups() {
 
   (( ${#files[@]} )) || return 1
 
-  # Sort by mtime (desc) and output only paths
   for f in "${files[@]}"; do
     printf '%s\t%s\n' "$(stat -c %Y "$f" 2>/dev/null || echo 0)" "$f"
   done | sort -nr | awk '{print $2}'
@@ -310,8 +333,7 @@ view_backups() {
     whiptail --msgbox "No backups found for:\n$(rel_to_root "$CONFIG_FILE")" 10 60
     return
   fi
-  local tmp
-  tmp=$(mktemp)
+  local tmp; tmp=$(mktemp)
   printf "Available backups (newest first):\n\n" > "$tmp"
   for f in "${backs[@]}"; do
     printf "%s\n" "$(rel_to_root "$f")" >> "$tmp"
@@ -326,8 +348,7 @@ choose_backup() {
   (( ${#backs[@]} )) || { whiptail --msgbox "No backups found." 8 50; return 1; }
   local -a menu; local i=1
   for f in "${backs[@]}"; do
-    menu+=( "$i" "$(rel_to_root "$f")" )
-    ((i++))
+    menu+=( "$i" "$(rel_to_root "$f")" ); ((i++))
   done
   local choice
   choice=$(whiptail --title "Choose Backup" --menu "Select backup to restore" 20 70 10 "${menu[@]}" 3>&1 1>&2 2>&3) || return 1
@@ -351,16 +372,18 @@ Proceed?"; then return; fi
 }
 
 prune_backups() {
-  # Ensure paths are set
   [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
-
   local -a backs
   mapfile -t backs < <(list_recent_backups) || return 0
   local keep="${BACKUP_LIMIT}"
   if ((${#backs[@]} <= keep)); then return 0; fi
+  local pruned=0
   for ((i=keep; i<${#backs[@]}; i++)); do
-    rm -f -- "${backs[$i]}"
+    rm -f -- "${backs[$i]}" && ((pruned++))
   done
+  if (( pruned > 0 )); then
+    whiptail --msgbox "Pruned ${pruned} old backup(s).\nKept latest ${keep} in:\n$(rel_to_root "$BACKUP_DIR")" 10 70
+  fi
 }
 
 # --- Config selection & validation ---
@@ -394,7 +417,7 @@ ensure_config_access() {
     whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70
     exit 1
   fi
-  # Compute paths (ROOT_DIR, BACKUP_DIR) now that CONFIG_FILE is known
+  # Ensure paths (ROOT_DIR, BACKUP_DIR) now that CONFIG_FILE is known
   set_paths_from_config
 }
 
@@ -570,11 +593,136 @@ recoil_profiles_menu() {
   esac
 }
 
+# --- Menus: Serial, Video, Calibration ---
+
+serial_menu() {
+  while true; do
+    local choice
+    choice=$(whiptail --title "Serial Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 18 70 8 \
+      "1" "SerialPortWrite" \
+      "2" "SerialPortSecondary" \
+      "3" "Back" \
+      3>&1 1>&2 2>&3) || break
+    case "$choice" in
+      1)
+        local k; k=$(key_for "SerialPortWrite")
+        local def; def=$(get_config "$k")
+        local v
+        v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+        if is_bool "$v"; then
+          apply_kv_with_popup "$k" "$v" "${def:-0}"
+        else
+          whiptail --msgbox "Invalid value. Enter 0 or 1." 8 40
+        fi
+        ;;
+      2)
+        local k; k=$(key_for "SerialPortSecondary")
+        local def; def=$(get_config "$k")
+        local ttys; mapfile -t ttys < <(detect_tty_devices)
+        local pick
+        if pick=$(pick_from_list "Serial Ports" "Select a /dev/tty*" "${ttys[@]}"); then
+          apply_kv_with_popup "$k" "$pick" "${def:-/dev/ttyGCON0}"
+        else
+          local v
+          v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/ttyGCON0}" 3>&1 1>&2 2>&3) || continue
+          apply_kv_with_popup "$k" "$v" "${def:-/dev/ttyGCON0}"
+        fi
+        ;;
+      3) break ;;
+    esac
+  done
+}
+
+video_menu() {
+  while true; do
+    local choice
+    choice=$(whiptail --title "Video Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 20 70 10 \
+      "1" "$(key_for "VideoDevice")" \
+      "2" "$(key_for "CameraRes")" \
+      "3" "$(key_for "CameraBrightness")" \
+      "4" "$(key_for "CameraContrast")" \
+      "5" "Back" \
+      3>&1 1>&2 2>&3) || break
+    case "$choice" in
+      1)
+        local k; k=$(key_for "VideoDevice")
+        local def; def=$(get_config "$k")
+        local devs; mapfile -t devs < <(detect_video_devices)
+        local pick
+        if pick=$(pick_from_list "Video Devices" "Select a /dev/video*" "${devs[@]}"); then
+          apply_kv_with_popup "$k" "$pick" "${def:-/dev/video0}"
+        else
+          local v
+          v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/video0}" 3>&1 1>&2 2>&3) || continue
+          apply_kv_with_popup "$k" "$v" "${def:-/dev/video0}"
+        fi
+        ;;
+      2)
+        local k; k=$(key_for "CameraRes")
+        local def; def=$(get_config "$k")
+        local v
+        v=$(whiptail --inputbox "Enter $k (e.g. 640,480):" 10 60 "${def:-640,480}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def:-640,480}"
+        ;;
+      3)
+        local k; k=$(key_for "CameraBrightness")
+        local def; def=$(get_config "$k")
+        local v
+        v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def:-100}"
+        ;;
+      4)
+        local k; k=$(key_for "CameraContrast")
+        local def; def=$(get_config "$k")
+        local v
+        v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def:-50}"
+        ;;
+      5) break ;;
+    esac
+  done
+}
+
+calibration_menu() {
+  while true; do
+    local choice
+    choice=$(whiptail --title "Calibration ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 20 70 10 \
+      "1" "CalibrateX" \
+      "2" "CalibrateY" \
+      "3" "OffsetX" \
+      "4" "OffsetY" \
+      "5" "Back" \
+      3>&1 1>&2 2>&3) || break
+    case "$choice" in
+      1)
+        local k; k=$(key_for "CalibrateX"); local def; def=$(get_config "$k")
+        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def}"
+        ;;
+      2)
+        local k; k=$(key_for "CalibrateY"); local def; def=$(get_config "$k")
+        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def}"
+        ;;
+      3)
+        local k; k=$(key_for "OffsetX"); local def; def=$(get_config "$k")
+        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def:-0}"
+        ;;
+      4)
+        local k; k=$(key_for "OffsetY"); local def; def=$(get_config "$k")
+        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def:-0}"
+        ;;
+      5) break ;;
+    esac
+  done
+}
+
 # --- Recoil Settings (granular keys + link to profiles) ---
 recoil_menu() {
   while true; do
     local choice
-    # Larger dialog to ensure "Recoil Profile Presets" is visible
     choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 28 100 14 \
       "1"  "Recoil Profile Presets" \
       "2"  "IAgreeRecoilTermsInLicense (0/1)" \
@@ -677,6 +825,8 @@ recoil_menu() {
 }
 
 # --- Main ---
+check_bash_version
+check_requirements
 choose_config
 ensure_config_access
 
@@ -700,13 +850,13 @@ while true; do
     1) choose_player ;;
     2) serial_menu ;;
     3) video_menu ;;
-    4) calibration_menu ;;
+    4) calibration_menu ;;          # ensure underscore function call
     5) recoil_menu ;;
     6) recoil_profiles_menu ;;
     7) create_backup_now ;;
     8) view_backups ;;
     9) restore_from_backup ;;
-    10) choose_config; ensure_config_access ;;  # sets ROOT_DIR & BACKUP_DIR for new file
+    10) choose_config; ensure_config_access; CONFIRMED_WRITE="0" ;;  # reset confirm gate for new file
     11) break ;;
   esac
 done
