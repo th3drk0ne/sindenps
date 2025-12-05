@@ -570,6 +570,7 @@ done
 
 whiptail --msgbox "Session complete.\n\nBackups kept (for listing): ${BACKUP_LIMIT}\nLast backup: ${BACKUP_PATH:-none}" 12 70
 
+
 # Optional pruning on exit (disabled by default)
 # PRUNE_ON_EXIT=1
 if [[ "${PRUNE_ON_EXIT:-0}" == "1" ]]; then
