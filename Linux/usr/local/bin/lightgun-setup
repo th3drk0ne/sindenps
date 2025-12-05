@@ -497,4 +497,5 @@ done
 whiptail --msgbox "Session complete.\n\nBackups kept (for listing): ${BACKUP_LIMIT}\nLast backup: ${BACKUP_PATH:-none}" 12 70
 
 # Uncomment if you want to prune older backups automatically:
-# prune_backups
+prune_backups
+
