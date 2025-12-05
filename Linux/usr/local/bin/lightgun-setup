@@ -319,7 +319,7 @@ ensure_config_access() {
   fi
 }
 
-# --- UPDATED: Player selection shows "Player 1" / "Player 2" (maps internally to P1/P2) ---
+# --- Player selection shows "Player 1" / "Player 2" (maps internally to P1/P2) ---
 choose_player() {
   local choice
   choice=$(whiptail --title "Choose Player" --menu "Current file:\n$(short_path "$CONFIG_FILE")" 12 50 2 \
@@ -450,123 +450,6 @@ save_custom_recoil_profile() {
   whiptail --msgbox "Saved profile:\n$(basename "$path")\n\nLocation:\n$path" 12 70
 }
 
-# --- Menus ---
-
-serial_menu() {
-  while true; do
-    local choice
-    choice=$(whiptail --title "Serial Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 18 70 8 \
-      "1" "SerialPortWrite" "2" "SerialPortSecondary" "3" "Back" 3>&1 1>&2 2>&3) || break
-    case "$choice" in
-      1)
-        local k; k=$(key_for "SerialPortWrite")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        if is_bool "$v"; then
-          apply_kv_with_popup "$k" "$v" "${def:-0}"
-        else
-          whiptail --msgbox "Invalid value. Enter 0 or 1." 8 40
-        fi
-        ;;
-      2)
-        local k; k=$(key_for "SerialPortSecondary")
-        local def; def=$(get_config "$k")
-        local ttys; mapfile -t ttys < <(detect_tty_devices)
-        local pick
-        if pick=$(pick_from_list "Serial Ports" "Select a /dev/tty*" "${ttys[@]}"); then
-          apply_kv_with_popup "$k" "$pick" "${def:-/dev/ttyGCON0}"
-        else
-          local v
-          v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/ttyGCON0}" 3>&1 1>&2 2>&3) || continue
-          apply_kv_with_popup "$k" "$v" "${def:-/dev/ttyGCON0}"
-        fi
-        ;;
-      3) break ;;
-    esac
-  done
-}
-
-video_menu() {
-  while true; do
-    local choice
-    choice=$(whiptail --title "Video Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 20 70 10 \
-      "1" "$(key_for "VideoDevice")" \
-      "2" "$(key_for "CameraRes")" \
-      "3" "$(key_for "CameraBrightness")" \
-      "4" "$(key_for "CameraContrast")" \
-      "5" "Back" 3>&1 1>&2 2>&3) || break
-    case "$choice" in
-      1)
-        local k; k=$(key_for "VideoDevice")
-        local def; def=$(get_config "$k")
-        local devs; mapfile -t devs < <(detect_video_devices)
-        local pick
-        if pick=$(pick_from_list "Video Devices" "Select a /dev/video*" "${devs[@]}"); then
-          apply_kv_with_popup "$k" "$pick" "${def:-/dev/video0}"
-        else
-          local v
-          v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/video0}" 3>&1 1>&2 2>&3) || continue
-          apply_kv_with_popup "$k" "$v" "${def:-/dev/video0}"
-        fi
-        ;;
-      2)
-        local k; k=$(key_for "CameraRes")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k (e.g. 640,480):" 10 60 "${def:-640,480}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-640,480}"
-        ;;
-      3)
-        local k; k=$(key_for "CameraBrightness")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-100}"
-        ;;
-      4)
-        local k; k=$(key_for "CameraContrast")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-50}"
-        ;;
-      5) break ;;
-    esac
-  done
-}
-
-calibration_menu() {
-  while true; do
-    local choice
-    choice=$(whiptail --title "Calibration ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 20 70 10 \
-      "1" "CalibrateX" "2" "CalibrateY" "3" "OffsetX" "4" "OffsetY" "5" "Back" 3>&1 1>&2 2>&3) || break
-    case "$choice" in
-      1)
-        local k; k=$(key_for "CalibrateX"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def}"
-        ;;
-      2)
-        local k; k=$(key_for "CalibrateY"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def}"
-        ;;
-      3)
-        local k; k=$(key_for "OffsetX"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-0}"
-        ;;
-      4)
-        local k; k=$(key_for "OffsetY"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-0}"
-        ;;
-      5) break ;;
-    esac
-  done
-}
-
 # --- Recoil Profiles menu (presets + save custom) ---
 recoil_profiles_menu() {
   local choice
@@ -675,6 +558,7 @@ recoil_profiles_menu() {
   esac
 }
 
+# --- Recoil Settings (granular keys + link to profiles) ---
 recoil_menu() {
   while true; do
     local choice
@@ -787,16 +671,17 @@ ensure_config_access
 while true; do
   choice=$(whiptail --title "Lightgun Config Editor" \
     --menu "File: $(short_path "$CONFIG_FILE")\nPlayer: $PLAYER" 24 84 18 \
-    "1" "Switch Player (P1/P2)" \
+    "1" "Switch Player (Player 1/Player 2)" \
     "2" "Serial Port Settings" \
     "3" "Video Settings" \
     "4" "Calibration Settings" \
     "5" "Recoil Settings" \
-    "6" "Create Backup Now" \
-    "7" "View Backups" \
-    "8" "Restore from backup (choose)" \
-    "9" "Switch Config File" \
-    "10" "Exit" \
+    "6" "Recoil Profiles (Presets & Save)" \
+    "7" "Create Backup Now" \
+    "8" "View Backups" \
+    "9" "Restore from backup (choose)" \
+    "10" "Switch Config File" \
+    "11" "Exit" \
     3>&1 1>&2 2>&3) || break
 
   case "$choice" in
@@ -805,15 +690,19 @@ while true; do
     3) video_menu ;;
     4) calibration_menu ;;
     5) recoil_menu ;;
-    6) create_backup_now ;;
-    7) view_backups ;;
-    8) restore_from_backup ;;
-    9) choose_config; ensure_config_access ;;
-    10) break ;;
+    6) recoil_profiles_menu ;;
+    7) create_backup_now ;;
+    8) view_backups ;;
+    9) restore_from_backup ;;
+    10) choose_config; ensure_config_access ;;
+    11) break ;;
   esac
 done
 
 whiptail --msgbox "Session complete.\n\nBackups kept (for listing): ${BACKUP_LIMIT}\nLast backup: ${BACKUP_PATH:-none}" 12 70
 
-# Uncomment if you want to prune older backups automatically:
-prune_backups
+# Optional pruning on exit (disabled by default)
+PRUNE_ON_EXIT=1
+if [[ "${PRUNE_ON_EXIT:-0}" == "1" ]]; then
+  prune_backups
+fi
