@@ -2,19 +2,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- raspi-config colour palette ---
-export NEWT_COLORS='
-root=white,blue
-window=black,lightgray
-border=black,lightgray
-shadow=black,blue
-title=white,blue
-textbox=black,lightgray
-listbox=black,lightgray
-actlistbox=white,blue
-button=black,lightgray
-actbutton=white,blue
-'
 
 CONFIG_FILE=""
 PLAYER="P1"   # P1 or P2
