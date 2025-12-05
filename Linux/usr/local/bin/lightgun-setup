@@ -179,6 +179,13 @@ update_config_if_nonempty() {
 is_bool() { [[ "$1" =~ ^[01]$ ]]; }    # Accepts 0 or 1
 is_uint() { [[ "$1" =~ ^[0-9]+$ ]]; }   # Non-negative integer
 
+# --- Save-ok popup wrapper (called after inputbox) ---
+apply_kv_with_popup() {
+  local key="$1" value="$2" default="${3:-}"
+  whiptail --msgbox "Press OK to save the change:\n\n${key} = ${value}" 10 60
+  update_config_if_nonempty "$key" "$value" "$default"
+}
+
 # --- Helpers for P2 and devices ---
 
 key_for() { [[ "$PLAYER" == "P2" ]] && echo "$1P2" || echo "$1"; }
@@ -217,7 +224,7 @@ list_recent_backups() {
   local -a files=( "$dir/${base}.bak-"* )
   shopt -u nullglob
   (( ${#files[@]} )) || return 1
-  for f in "${files[@]}"]]; do
+  for f in "${files[@]}"; do
     printf '%s\t%s\n' "$(stat -c %Y "$f" 2>/dev/null || echo 0)" "$f"
   done | sort -nr | awk -v n="$BACKUP_LIMIT" 'NR<=n {print $2}'
 }
@@ -312,7 +319,7 @@ ensure_config_access() {
   fi
 }
 
-# --- UPDATED: Player selection shows "Player 1" / "Player 2" labels ---
+# --- Player selection shows "Player 1" / "Player 2" labels ---
 choose_player() {
   PLAYER=$(whiptail --title "Choose Player" --menu "Current file:\n$(short_path "$CONFIG_FILE")" 12 50 2 \
     "P1" "Player 1" \
@@ -329,7 +336,6 @@ ensure_profile_dir() {
 
 # Sanitize profile file names: lower, spaces -> _, allow [a-z0-9._-]
 sanitize_profile_name() {
-  # Use extended regex for portability
   printf '%s' "$1" \
     | tr '[:upper:]' '[:lower:]' \
     | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
@@ -451,7 +457,7 @@ serial_menu() {
         local v
         v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
         if is_bool "$v"; then
-          update_config_if_nonempty "$k" "$v" "${def:-0}"
+          apply_kv_with_popup "$k" "$v" "${def:-0}"
         else
           whiptail --msgbox "Invalid value. Enter 0 or 1." 8 40
         fi
@@ -462,11 +468,11 @@ serial_menu() {
         local ttys; mapfile -t ttys < <(detect_tty_devices)
         local pick
         if pick=$(pick_from_list "Serial Ports" "Select a /dev/tty*" "${ttys[@]}"); then
-          update_config_if_nonempty "$k" "$pick" "${def:-/dev/ttyGCON0}"
+          apply_kv_with_popup "$k" "$pick" "${def:-/dev/ttyGCON0}"
         else
           local v
           v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/ttyGCON0}" 3>&1 1>&2 2>&3) || continue
-          update_config_if_nonempty "$k" "$v" "${def:-/dev/ttyGCON0}"
+          apply_kv_with_popup "$k" "$v" "${def:-/dev/ttyGCON0}"
         fi
         ;;
       3) break ;;
@@ -490,11 +496,11 @@ video_menu() {
         local devs; mapfile -t devs < <(detect_video_devices)
         local pick
         if pick=$(pick_from_list "Video Devices" "Select a /dev/video*" "${devs[@]}"); then
-          update_config_if_nonempty "$k" "$pick" "${def:-/dev/video0}"
+          apply_kv_with_popup "$k" "$pick" "${def:-/dev/video0}"
         else
           local v
           v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/video0}" 3>&1 1>&2 2>&3) || continue
-          update_config_if_nonempty "$k" "$v" "${def:-/dev/video0}"
+          apply_kv_with_popup "$k" "$v" "${def:-/dev/video0}"
         fi
         ;;
       2)
@@ -502,21 +508,21 @@ video_menu() {
         local def; def=$(get_config "$k")
         local v
         v=$(whiptail --inputbox "Enter $k (e.g. 640,480):" 10 60 "${def:-640,480}" 3>&1 1>&2 2>&3) || continue
-        update_config_if_nonempty "$k" "$v" "${def:-640,480}"
+        apply_kv_with_popup "$k" "$v" "${def:-640,480}"
         ;;
       3)
         local k; k=$(key_for "CameraBrightness")
         local def; def=$(get_config "$k")
         local v
         v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) || continue
-        update_config_if_nonempty "$k" "$v" "${def:-100}"
+        apply_kv_with_popup "$k" "$v" "${def:-100}"
         ;;
       4)
         local k; k=$(key_for "CameraContrast")
         local def; def=$(get_config "$k")
         local v
         v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) || continue
-        update_config_if_nonempty "$k" "$v" "${def:-50}"
+        apply_kv_with_popup "$k" "$v" "${def:-50}"
         ;;
       5) break ;;
     esac
@@ -532,22 +538,22 @@ calibration_menu() {
       1)
         local k; k=$(key_for "CalibrateX"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        update_config_if_nonempty "$k" "$v" "${def}"
+        apply_kv_with_popup "$k" "$v" "${def}"
         ;;
       2)
         local k; k=$(key_for "CalibrateY"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        update_config_if_nonempty "$k" "$v" "${def}"
+        apply_kv_with_popup "$k" "$v" "${def}"
         ;;
       3)
         local k; k=$(key_for "OffsetX"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        update_config_if_nonempty "$k" "$v" "${def:-0}"
+        apply_kv_with_popup "$k" "$v" "${def:-0}"
         ;;
       4)
         local k; k=$(key_for "OffsetY"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        update_config_if_nonempty "$k" "$v" "${def:-0}"
+        apply_kv_with_popup "$k" "$v" "${def:-0}"
         ;;
       5) break ;;
     esac
@@ -690,77 +696,77 @@ recoil_menu() {
       2)
         local k; k=$(key_for "IAgreeRecoilTermsInLicense"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       3)
         local k; k=$(key_for "EnableRecoil"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       4)
         local k; k=$(key_for "RecoilStrength"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0-100):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) || continue
-        is_uint "$v" && update_config_if_nonempty "$k" "$v" "${def:-100}" || whiptail --msgbox "Enter a non-negative integer." 8 40
+        is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-100}" || whiptail --msgbox "Enter a non-negative integer." 8 40
         ;;
       5)
         local k; k=$(key_for "TriggerRecoilNormalOrRepeat"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       6)
         local k; k=$(key_for "AutoRecoilStrength"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0-100):" 10 60 "${def:-40}" 3>&1 1>&2 2>&3) || continue
-        is_uint "$v" && update_config_if_nonempty "$k" "$v" "${def:-40}" || whiptail --msgbox "Enter a non-negative integer." 8 40
+        is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-40}" || whiptail --msgbox "Enter a non-negative integer." 8 40
         ;;
       7)
         local k; k=$(key_for "AutoRecoilStartDelay"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (milliseconds):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_uint "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter a non-negative integer." 8 40
+        is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter a non-negative integer." 8 40
         ;;
       8)
         local k; k=$(key_for "AutoRecoilDelayBetweenPulses"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (milliseconds):" 10 60 "${def:-13}" 3>&1 1>&2 2>&3) || continue
-        is_uint "$v" && update_config_if_nonempty "$k" "$v" "${def:-13}" || whiptail --msgbox "Enter a non-negative integer." 8 40
+        is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-13}" || whiptail --msgbox "Enter a non-negative integer." 8 40
         ;;
       9)
         local k; k=$(key_for "RecoilTrigger"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       10)
         local k; k=$(key_for "RecoilTriggerOffscreen"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       11)
         local k; k=$(key_for "RecoilPumpActionOnEvent"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       12)
         local k; k=$(key_for "RecoilPumpActionOffEvent"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       13)
         local k; k=$(key_for "RecoilFrontLeft"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       14)
         local k; k=$(key_for "RecoilFrontRight"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       15)
         local k; k=$(key_for "RecoilBackLeft"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       16)
         local k; k=$(key_for "RecoilBackRight"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        is_bool "$v" && update_config_if_nonempty "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
+        is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32
         ;;
       17) break ;;
     esac
