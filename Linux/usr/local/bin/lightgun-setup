@@ -319,12 +319,18 @@ ensure_config_access() {
   fi
 }
 
-# --- Player selection shows "Player 1" / "Player 2" labels ---
+# --- UPDATED: Player selection shows "Player 1" / "Player 2" (maps internally to P1/P2) ---
 choose_player() {
-  PLAYER=$(whiptail --title "Choose Player" --menu "Current file:\n$(short_path "$CONFIG_FILE")" 12 50 2 \
-    "P1" "Player 1" \
-    "P2" "Player 2" \
+  local choice
+  choice=$(whiptail --title "Choose Player" --menu "Current file:\n$(short_path "$CONFIG_FILE")" 12 50 2 \
+    "Player 1" "" \
+    "Player 2" "" \
     3>&1 1>&2 2>&3) || return
+
+  case "$choice" in
+    "Player 1") PLAYER="P1" ;;
+    "Player 2") PLAYER="P2" ;;
+  esac
 }
 
 # --- Recoil Profiles storage (XDG-friendly) ---
@@ -336,6 +342,7 @@ ensure_profile_dir() {
 
 # Sanitize profile file names: lower, spaces -> _, allow [a-z0-9._-]
 sanitize_profile_name() {
+  # Use extended regex for portability
   printf '%s' "$1" \
     | tr '[:upper:]' '[:lower:]' \
     | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
