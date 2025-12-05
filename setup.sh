@@ -450,3 +450,118 @@ calibration_menu() {
           "2" "CalibrateY${labelPfx}" \
           "3" "OffscreenReload${labelPfx}" \
           "4" "Back" \
+          3>&1 1>&2 2>&3) || break
+      case "$choice" in
+        1) local k="CalibrateXP2"; local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        2) local k="CalibrateYP2"; local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        3) local k="OffscreenReloadP2"; local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        4) break ;;
+      esac
+    else
+      choice=$(whiptail --title "Calibration/Offsets${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 12 \
+          "1" "CalibrateX${labelPfx}" \
+          "2" "CalibrateY${labelPfx}" \
+          "3" "OffsetX" \
+          "4" "OffsetY" \
+          "5" "OffsetXRatio" \
+          "6" "OffsetYRatio" \
+          "7" "OffscreenReload${labelPfx}" \
+          "8" "Back" \
+          3>&1 1>&2 2>&3) || break
+      case "$choice" in
+        1) local k="CalibrateX";   local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        2) local k="CalibrateY";   local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        3) local k="OffsetX";      local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k} (int):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        4) local k="OffsetY";      local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k} (int):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        5) local k="OffsetXRatio"; local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k} (e.g. 01):" 10 60 "${def:-01}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        6) local k="OffsetYRatio"; local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k} (e.g. 01):" 10 60 "${def:-01}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        7) local k="OffscreenReload"; local def=$(get_config "$k"); local v
+           v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+        8) break ;;
+      esac
+    fi
+  done
+}
+
+recoil_menu() {
+  while true; do
+    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
+    local choice
+    choice=$(whiptail --title "Recoil Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 22 80 14 \
+        "1"  "EnableRecoil${labelPfx}" \
+        "2"  "RecoilStrength${labelPfx}" \
+        "3"  "TriggerRecoilNormalOrRepeat${labelPfx}" \
+        "4"  "AutoRecoilStrength${labelPfx}" \
+        "5"  "AutoRecoilStartDelay${labelPfx}" \
+        "6"  "AutoRecoilDelayBetweenPulses${labelPfx}" \
+        "7"  "RecoilTrigger${labelPfx}" \
+        "8"  "RecoilTriggerOffscreen${labelPfx}" \
+        "9"  "RecoilPumpActionOnEvent${labelPfx}" \
+        "10" "RecoilPumpActionOffEvent${labelPfx}" \
+        "11" "Back" \
+        3>&1 1>&2 2>&3) || break
+    local suffix=""; [[ "$PLAYER" == "P2" ]] && suffix="P2"
+    case "$choice" in
+      1)  k="EnableRecoil${suffix}";                 def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      2)  k="RecoilStrength${suffix}";               def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0-100):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      3)  k="TriggerRecoilNormalOrRepeat${suffix}";  def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0 single / 1 auto):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      4)  k="AutoRecoilStrength${suffix}";           def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0-100):" 10 60 "${def:-40}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      5)  k="AutoRecoilStartDelay${suffix}";         def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (ms):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      6)  k="AutoRecoilDelayBetweenPulses${suffix}"; def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (ms):" 10 60 "${def:-13}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      7)  k="RecoilTrigger${suffix}";                def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      8)  k="RecoilTriggerOffscreen${suffix}";       def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      9)  k="RecoilPumpActionOnEvent${suffix}";      def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      10) k="RecoilPumpActionOffEvent${suffix}";     def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
+      11) break ;;
+    esac
+  done
+}
+
+# --- Main ---
+choose_config
+
+while true; do
+  choice=$(whiptail --title "Lightgun Config Editor" --menu "File: $CONFIG_FILE\nPlayer: $PLAYER" 24 84 18 \
+      "1"  "Switch Player (P1/P2)" \
+      "2"  "Serial Port Settings" \
+      "3"  "Video Settings" \
+      "4"  "Calibration / Offsets" \
+      "5"  "Recoil Settings" \
+      "6"  "View diff (baseline vs current)" \
+      "7"  "View diff against previous backup (choose)" \
+      "8"  "Restore from baseline backup" \
+      "9"  "Restore from previous backup (choose last ${BACKUP_LIMIT})" \
+      "10" "Switch Config File" \
+      "11" "Exit" \
+      3>&1 1>&2 2>&3) || break
+
+  case "$choice" in
+    1)  choose_player ;;
+    2)  serial_menu ;;
+    3)  video_menu  ;;
+    4)  calibration_menu ;;
+    5)  recoil_menu ;;
+    6)  view_diff ;;
+    7)  view_diff_choose_backup ;;
+    8)  restore_from_backup ;;
+    9)  restore_from_chosen_backup ;;
+    10) choose_config ;;
+    11) break ;;
+  esac
+done
+
+# Session summary
+if [[ "$BACKUP_DONE" == "1" ]]; then
+  whiptail --msgbox "Configuration session complete.\n\nBaseline backup:\n${BACKUP_PATH}" 12 70
+else
+  whiptail --msgbox "No changes were applied to:\n${CONFIG_FILE}" 10 70
+fi
