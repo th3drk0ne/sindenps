@@ -1,567 +1,489 @@
 
-#!/usr/bin/env bash
+#!/bin/bash
+#
+# Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
+# Downloads different PS1/PS2 assets based on VERSION ("current" or "psiloc")
+# Tested on Debian/Ubuntu/Raspberry Pi OS variants using /boot/firmware layout
+#
+
 set -euo pipefail
 
-# --- High-contrast colour palette (clear active button highlight) ---
-export NEWT_COLORS='
-root=white,blue
-window=black,lightgray
-border=black,lightgray
-shadow=black,blue
-title=yellow,blue
-textbox=black,lightgray
-listbox=black,lightgray
-actlistbox=white,blue
-button=black,cyan
-actbutton=white,green
-'
-
-CONFIG_FILE=""
-PLAYER="P1"   # P1 or P2
-
-# Confirmation/write guards
-CONFIRMED_WRITE="0"   # 0 = not confirmed yet; 1 = confirmed
-BACKUP_DONE="0"       # 0 = no baseline backup yet; 1 = baseline taken
-BACKUP_PATH=""
-
-# How many old backups to offer
-BACKUP_LIMIT="${BACKUP_LIMIT:-5}"
-
-# --- utils ---
-have_cmd() { command -v "$1" >/dev/null 2>&1; }
-now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
-
-# --- Confirmation controls (avoid Yes/No focus issues by default) ---
-FORCE_MENU_CONFIRM="${FORCE_MENU_CONFIRM:-1}"
-ASSUME_YES="${ASSUME_YES:-0}"
-YESNO_FLAGS='--fb --yes-button "Proceed" --no-button "Cancel"'
-
-yesno_or_menu() {
-  local title="$1" msg="$2"
-  if [[ "$ASSUME_YES" == "1" ]]; then return 0; fi
-
-  if [[ "$FORCE_MENU_CONFIRM" == "1" ]]; then
-    local choice
-    choice=$(whiptail --title "$title" --menu "$msg" 14 72 2 \
-             "Proceed" "Apply/continue" \
-             "Cancel"  "Abort/no changes" \
-             3>&1 1>&2 2>&3) || return 1
-    [[ "$choice" == "Proceed" ]]
-    return
-  fi
-
-  if whiptail ${YESNO_FLAGS} --title "$title" --yesno "$msg" 14 72; then
-    return 0
-  fi
-  local choice
-  choice=$(whiptail --title "$title" --menu "$msg" 14 72 2 \
-           "Proceed" "Apply/continue" \
-           "Cancel"  "Abort/no changes" \
-           3>&1 1>&2 2>&3) || return 1
-  [[ "$choice" == "Proceed" ]]
-}
-
-# --- Dependency notice (only shows once) ---
-DEPENDENCY_WARNED="${DEPENDENCY_WARNED:-0}"
-warn_missing_xmlstarlet() {
-  if [[ "$DEPENDENCY_WARNED" == "1" ]]; then return; fi
-  if ! have_cmd xmlstarlet; then
-    whiptail --title "xmlstarlet not found" --msgbox \
-"xmlstarlet is not installed.
-
-I'll use a safe sed fallback for XML edits.
-
-Recommended to install:
-  Debian/Ubuntu/RPi:  sudo apt-get install -y xmlstarlet
-  RHEL/Fedora:        sudo dnf install -y xmlstarlet" 12 70
-    DEPENDENCY_WARNED="1"
-  fi
-}
-
-# Ensure confirmation + baseline backup before the FIRST edit
-ensure_confirm_and_backup() {
-  if [[ "$CONFIRMED_WRITE" == "1" ]]; then return 0; fi
-
-  if [[ "$BACKUP_DONE" == "1" && -n "$BACKUP_PATH" ]]; then
-    if ! yesno_or_menu "Confirm Changes" "About to modify:
-
-${CONFIG_FILE}
-
-Existing baseline backup will be used:
-${BACKUP_PATH}
-
-Proceed?"; then
-      whiptail --msgbox "No changes were applied." 8 40
-      exit 0
-    fi
-    CONFIRMED_WRITE="1"
-    return 0
-  fi
-
-  local ts backup
-  ts=$(now_stamp)
-  backup="${CONFIG_FILE}.bak-${ts}"
-
-  if ! yesno_or_menu "Confirm Changes" "About to modify:
-
-${CONFIG_FILE}
-
-A baseline backup will be created:
-${backup}
-
-Proceed?"; then
-    whiptail --msgbox "No changes were applied." 8 40
-    exit 0
-  fi
-
-  cp -p -- "${CONFIG_FILE}" "${backup}"
-  BACKUP_DONE="1"
-  BACKUP_PATH="${backup}"
-  whiptail --msgbox "Backup created:\n${BACKUP_PATH}\n\nChanges will now be applied." 12 70
-  CONFIRMED_WRITE="1"
-}
-
-# Create a baseline backup ONLY (no edit confirmation)
-make_backup_only() {
-  if [[ "$BACKUP_DONE" == "1" && -n "$BACKUP_PATH" ]]; then return 0; fi
-  local ts backup
-  ts=$(now_stamp)
-  backup="${CONFIG_FILE}.bak-${ts}"
-
-  if ! yesno_or_menu "Create Baseline Backup" "Create a baseline backup to diff/restore against?
-
-Source:
-${CONFIG_FILE}
-
-Backup:
-${backup}"; then
-    return 1
-  fi
-
-  cp -p -- "${CONFIG_FILE}" "${backup}"
-  BACKUP_DONE="1"
-  BACKUP_PATH="${backup}"
-  whiptail --msgbox "Baseline backup created:\n${BACKUP_PATH}" 10 70
-  return 0
-}
-
-# --- XML get/set helpers ---
-get_config() {
-  local key="$1"
-  if have_cmd xmlstarlet; then
-    xmlstarlet sel -t -v "/configuration/appSettings/add[@key='${key}']/@value" -n "$CONFIG_FILE" 2>/dev/null || true
-  else
-    grep -Po '(?<=<add[[:space:]]+key="'"${key}"'"[[:space:]]+value=")[^"]*' "$CONFIG_FILE" | head -n1 || true
-  fi
-}
-
-update_config() {
-  local key="$1" value="$2"
-  ensure_confirm_and_backup
-  warn_missing_xmlstarlet
-
-  if have_cmd xmlstarlet; then
-    local count
-    count=$(xmlstarlet sel -t -v "count(/configuration/appSettings/add[@key='${key}'])" "$CONFIG_FILE" 2>/dev/null || echo 0)
-    if [[ "$count" -gt 0 ]]; then
-      xmlstarlet ed -L \
-        -u "/configuration/appSettings/add[@key='${key}']/@value" -v "${value}" \
-        "$CONFIG_FILE"
-    else
-      xmlstarlet ed -L \
-        -s "/configuration/appSettings" -t elem -n "__new" -v "" \
-        -i "/configuration/appSettings/__new" -t attr -n "key"   -v "${key}" \
-        -i "/configuration/appSettings/__new" -t attr -n "value" -v "${value}" \
-        -r "/configuration/appSettings/__new" -v "add" \
-        "$CONFIG_FILE"
-    fi
-  else
-    [[ -f "${CONFIG_FILE}.bak" ]] || cp -p -- "${CONFIG_FILE}" "${CONFIG_FILE}.bak"
-    if grep -qE '<add[[:space:]]+key="'"${key}"'"' "$CONFIG_FILE"; then
-      sed -i 's|\(<add[[:space:]]\+key="'"${key}"'"[[:space:]]\+value="\)[^"]*|\1'"${value}"'|g' "$CONFIG_FILE"
-    else
-      sed -i 's#</appSettings>#  <add key="'"${key}"'" value="'"${value}"'"/>\n  </appSettings>#' "$CONFIG_FILE"
-    fi
-  fi
-
-  # Read-back verification
-  local after
-  after=$(get_config "${key}")
-  if [[ "${after}" != "${value}" ]]; then
-    whiptail --title "Write verification" --msgbox \
-"Write may not have taken effect for key:
-  ${key}
-
-Expected: ${value}
-Read back: ${after:-<empty>}
-
-Check file permissions/owner or install xmlstarlet." 14 74
-  fi
-}
-
-# Resolve key by player
-key_for() {
-  local base="$1"
-  if [[ "$PLAYER" == "P2" ]]; then echo "${base}P2"; else echo "${base}"; fi
-}
-
-# --- Recent backups (last N) ---
-list_recent_backups() {
-  # Emits up to $BACKUP_LIMIT paths, newest first (one per line). Returns 1 if none.
-  local pattern
-  pattern="$(basename "$CONFIG_FILE").bak-*"
-  local dir
-  dir="$(dirname "$CONFIG_FILE")"
-
-  # Use ls -t for simplicity; suppress errors if none
-  local out
-  out=$(ls -1t -- "${dir}/${pattern}" 2>/dev/null | head -n "${BACKUP_LIMIT}" || true)
-  if [[ -z "${out}" ]]; then return 1; fi
-  printf "%s\n" "${out}"
-}
-
-choose_backup_from_lastN() {
-  # Presents a menu of last N backups, returns chosen path via echo; non-zero on cancel
-  local list
-  list=$(list_recent_backups) || { whiptail --msgbox "No backups found (pattern: $(basename "$CONFIG_FILE").bak-*)" 10 70; return 1; }
-
-  # Build whiptail menu entries
-  local -a opts paths
-  local i=1
-  while IFS= read -r f; do
-    paths+=("$f")
-    # Show only filename + mtime for readability
-    local bn ts
-    bn="$(basename "$f")"
-    # Derive ts from filename tail (after .bak-)
-    ts="${bn##*.bak-}"
-    opts+=("$i" "$bn  [${ts}]")
-    ((i++))
-  done <<< "$list"
-
-  local choice
-  choice=$(whiptail --title "Choose Backup" --menu "Select a backup to use (newest first)" 20 80 10 \
-            "${opts[@]}" 3>&1 1>&2 2>&3) || return 1
-
-  local idx=$((choice-1))
-  echo "${paths[$idx]}"
-}
-
-# --- Diff helpers ---
-view_diff_with_backup() {
-  local bkp="$1"
-  local tmp
-  if have_cmd mktemp; then tmp=$(mktemp); else tmp="/tmp/lightgun-config.diff.$$"; fi
-
-  if ! have_cmd diff; then
-    printf "The 'diff' command is not available on this system.\n" > "$tmp"
-  else
-    diff -u --label "backup:${bkp}" --label "current:${CONFIG_FILE}" \
-      "${bkp}" "${CONFIG_FILE}" > "$tmp" || true
-    if [[ ! -s "$tmp" ]]; then
-      printf "No differences.\n\nBackup:  %s\nCurrent: %s\n" "${bkp}" "${CONFIG_FILE}" > "$tmp"
-    fi
-  fi
-  whiptail --title "Diff (backup vs current)" --textbox "$tmp" 25 100
-  rm -f -- "$tmp"
-}
-
-# --- Standard View diff (baseline vs current) ---
-view_diff() {
-  if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
-    make_backup_only || { whiptail --msgbox "Cannot show diff without a backup." 8 50; return; }
-  fi
-  view_diff_with_backup "${BACKUP_PATH}"
-}
-
-# --- View diff against one of the recent backups ---
-view_diff_choose_backup() {
-  local selected
-  selected=$(choose_backup_from_lastN) || return
-  view_diff_with_backup "${selected}"
-}
-
-# --- Restore from baseline backup (previous behavior) ---
-restore_from_backup() {
-  if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
-    if ! yesno_or_menu "Restore from Backup" "No baseline backup found.
-
-Create one now from the current file to enable restore?
-
-Source:
-${CONFIG_FILE}"; then
-      whiptail --msgbox "Restore cancelled." 8 40; return
-    fi
-    make_backup_only || { whiptail --msgbox "Failed to create baseline backup.\nRestore cannot proceed." 10 60; return; }
-  fi
-
-  local ts safety
-  ts=$(now_stamp); safety="${CONFIG_FILE}.restore-${ts}"
-
-  if ! yesno_or_menu "Restore from Backup" "This will replace:
-${CONFIG_FILE}
-
-with baseline backup:
-${BACKUP_PATH}
-
-A safety snapshot will be saved as:
-${safety}
-
-Proceed?"; then
-    whiptail --msgbox "Restore cancelled." 8 40; return
-  fi
-
-  cp -p -- "${CONFIG_FILE}" "${safety}"
-  cp -p -- "${BACKUP_PATH}" "${CONFIG_FILE}"
-  whiptail --msgbox "Restore complete.\n\nSafety snapshot:\n${safety}\nRestored from:\n${BACKUP_PATH}" 12 72
-}
-
-# --- Restore from one of the recent backups (choose) ---
-restore_from_chosen_backup() {
-  local selected
-  selected=$(choose_backup_from_lastN) || return
-
-  local ts safety
-  ts=$(now_stamp); safety="${CONFIG_FILE}.restore-${ts}"
-
-  if ! yesno_or_menu "Restore from Selected Backup" "This will replace:
-${CONFIG_FILE}
-
-with:
-${selected}
-
-A safety snapshot will be saved as:
-${safety}
-
-Proceed?"; then
-    whiptail --msgbox "Restore cancelled." 8 40; return
-  fi
-
-  cp -p -- "${CONFIG_FILE}" "${safety}"
-  cp -p -- "${selected}" "${CONFIG_FILE}"
-  whiptail --msgbox "Restore complete.\n\nSafety snapshot:\n${safety}\nRestored from:\n${selected}" 12 72
-}
-
-# --- Config file selector ---
-choose_config() {
-  local choice
-  choice=$(whiptail --title "Select Config File" --menu "Which config file do you want to edit?" 15 70 5 \
-      "1" "/home/sinden/Lightgun/PS1/LightgunMono.exe.config" \
-      "2" "/home/sinden/Lightgun/PS2/LightgunMono.exe.config" \
-      3>&1 1>&2 2>&3) || { whiptail --msgbox "No config file selected, exiting." 8 40; exit 1; }
-
-  case "$choice" in
-    1) CONFIG_FILE="/home/sinden/Lightgun/PS1/LightgunMono.exe.config" ;;
-    2) CONFIG_FILE="/home/sinden/Lightgun/PS2/LightgunMono.exe.config" ;;
-    *) whiptail --msgbox "No config file selected, exiting." 8 40; exit 1 ;;
-  esac
-
-  if [[ ! -f "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "Config file not found:\n$CONFIG_FILE" 10 60; exit 1
-  fi
-
-  # Reset guards when switching files
-  CONFIRMED_WRITE="0"
-  BACKUP_DONE="0"
-  BACKUP_PATH=""
-}
-
-# --- Player selector ---
-choose_player() {
-  local choice
-  choice=$(whiptail --title "Choose Player" --menu "Current file:\n$CONFIG_FILE" 12 50 2 \
-      "P1" "Player 1 settings" \
-      "P2" "Player 2 settings" \
-      3>&1 1>&2 2>&3) || return
-  PLAYER="$choice"
-}
-
-# --- Menus (Serial / Video / Calibration / Recoil) ---
-serial_menu() {
-  while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
-    local choice
-    choice=$(whiptail --title "Serial Port Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 18 70 8 \
-        "1" "SerialPortWrite${labelPfx}" \
-        "2" "SerialPortSecondary${labelPfx}" \
-        "3" "Back" \
-        3>&1 1>&2 2>&3) || break
-    case "$choice" in
-      1) local k=$(key_for "SerialPortWrite"); local def=$(get_config "$k"); local v
-         v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      2) local k=$(key_for "SerialPortSecondary"); local def=$(get_config "$k"); local v
-         [[ "$PLAYER" == "P2" && "${def:-/dev/ttyGCON0}" == "/dev/ttyGCON0" ]] && def="/dev/ttyGCON1"
-         v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def:-/dev/ttyGCON0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      3) break ;;
-    esac
-  done
-}
-
-video_menu() {
-  while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
-    local choice
-    if [[ "$PLAYER" == "P2" ]]; then
-      choice=$(whiptail --title "Video Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 10 \
-          "1" "VideoDevice${labelPfx}" \
-          "2" "CameraBrightness${labelPfx}" \
-          "3" "CameraContrast${labelPfx}" \
-          "4" "Back" \
-          3>&1 1>&2 2>&3) || break
-      case "$choice" in
-        1) local k="VideoDeviceP2";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def:-/dev/video1}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CameraBrightnessP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (80-120):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="CameraContrastP2";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (40-60):" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        4) break ;;
-      esac
-    else
-      choice=$(whiptail --title "Video Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 10 \
-          "1" "VideoDevice${labelPfx}" \
-          "2" "CameraRes${labelPfx}" \
-          "3" "CameraBrightness${labelPfx}" \
-          "4" "CameraContrast${labelPfx}" \
-          "5" "Back" \
-          3>&1 1>&2 2>&3) || break
-      case "$choice" in
-        1) local k="VideoDevice";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def:-/dev/video0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CameraRes";        local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (e.g. 640,480):" 10 60 "${def:-640,480}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="CameraBrightness"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (80-120):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        4) local k="CameraContrast";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (40-60):" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        5) break ;;
-      esac
-    fi
-  done
-}
-
-calibration_menu() {
-  while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
-    local choice
-    if [[ "$PLAYER" == "P2" ]]; then
-      choice=$(whiptail --title "Calibration/Offsets${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 10 \
-          "1" "CalibrateX${labelPfx}" \
-          "2" "CalibrateY${labelPfx}" \
-          "3" "OffscreenReload${labelPfx}" \
-          "4" "Back" \
-          3>&1 1>&2 2>&3) || break
-      case "$choice" in
-        1) local k="CalibrateXP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CalibrateYP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="OffscreenReloadP2"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        4) break ;;
-      esac
-    else
-      choice=$(whiptail --title "Calibration/Offsets${labelPfx}" --menu "Editing: $CONFIG_FILE" 20 70 12 \
-          "1" "CalibrateX${labelPfx}" \
-          "2" "CalibrateY${labelPfx}" \
-          "3" "OffsetX" \
-          "4" "OffsetY" \
-          "5" "OffsetXRatio" \
-          "6" "OffsetYRatio" \
-          "7" "OffscreenReload${labelPfx}" \
-          "8" "Back" \
-          3>&1 1>&2 2>&3) || break
-      case "$choice" in
-        1) local k="CalibrateX";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        2) local k="CalibrateY";   local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k}:" 10 60 "${def}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        3) local k="OffsetX";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (int):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        4) local k="OffsetY";      local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (int):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        5) local k="OffsetXRatio"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (e.g. 01):" 10 60 "${def:-01}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        6) local k="OffsetYRatio"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (e.g. 01):" 10 60 "${def:-01}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        7) local k="OffscreenReload"; local def=$(get_config "$k"); local v
-           v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-        8) break ;;
-      esac
-    fi
-  done
-}
-
-recoil_menu() {
-  while true; do
-    local labelPfx; [[ "$PLAYER" == "P2" ]] && labelPfx=" (P2)" || labelPfx=" (P1)"
-    local choice
-    choice=$(whiptail --title "Recoil Settings${labelPfx}" --menu "Editing: $CONFIG_FILE" 22 80 14 \
-        "1"  "EnableRecoil${labelPfx}" \
-        "2"  "RecoilStrength${labelPfx}" \
-        "3"  "TriggerRecoilNormalOrRepeat${labelPfx}" \
-        "4"  "AutoRecoilStrength${labelPfx}" \
-        "5"  "AutoRecoilStartDelay${labelPfx}" \
-        "6"  "AutoRecoilDelayBetweenPulses${labelPfx}" \
-        "7"  "RecoilTrigger${labelPfx}" \
-        "8"  "RecoilTriggerOffscreen${labelPfx}" \
-        "9"  "RecoilPumpActionOnEvent${labelPfx}" \
-        "10" "RecoilPumpActionOffEvent${labelPfx}" \
-        "11" "Back" \
-        3>&1 1>&2 2>&3) || break
-    local suffix=""; [[ "$PLAYER" == "P2" ]] && suffix="P2"
-    case "$choice" in
-      1)  k="EnableRecoil${suffix}";                 def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      2)  k="RecoilStrength${suffix}";               def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0-100):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      3)  k="TriggerRecoilNormalOrRepeat${suffix}";  def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0 single / 1 auto):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      4)  k="AutoRecoilStrength${suffix}";           def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0-100):" 10 60 "${def:-40}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      5)  k="AutoRecoilStartDelay${suffix}";         def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (ms):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      6)  k="AutoRecoilDelayBetweenPulses${suffix}"; def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (ms):" 10 60 "${def:-13}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      7)  k="RecoilTrigger${suffix}";                def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      8)  k="RecoilTriggerOffscreen${suffix}";       def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      9)  k="RecoilPumpActionOnEvent${suffix}";      def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      10) k="RecoilPumpActionOffEvent${suffix}";     def=$(get_config "$k"); v=$(whiptail --inputbox "Enter ${k} (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) && update_config "$k" "$v" ;;
-      11) break ;;
-    esac
-  done
-}
-
-# --- Main ---
-choose_config
-
-while true; do
-  choice=$(whiptail --title "Lightgun Config Editor" --menu "File: $CONFIG_FILE\nPlayer: $PLAYER" 24 84 18 \
-      "1"  "Switch Player (P1/P2)" \
-      "2"  "Serial Port Settings" \
-      "3"  "Video Settings" \
-      "4"  "Calibration / Offsets" \
-      "5"  "Recoil Settings" \
-      "6"  "View diff (baseline vs current)" \
-      "7"  "View diff against previous backup (choose)" \
-      "8"  "Restore from baseline backup" \
-      "9"  "Restore from previous backup (choose last ${BACKUP_LIMIT})" \
-      "10" "Switch Config File" \
-      "11" "Exit" \
-      3>&1 1>&2 2>&3) || break
-
-  case "$choice" in
-    1)  choose_player ;;
-    2)  serial_menu ;;
-    3)  video_menu  ;;
-    4)  calibration_menu ;;
-    5)  recoil_menu ;;
-    6)  view_diff ;;
-    7)  view_diff_choose_backup ;;
-    8)  restore_from_backup ;;
-    9)  restore_from_chosen_backup ;;
-    10) choose_config ;;
-    11) break ;;
-  esac
-done
-
-# Session summary
-if [[ "$BACKUP_DONE" == "1" ]]; then
-  whiptail --msgbox "Configuration session complete.\n\nBaseline backup:\n${BACKUP_PATH}" 12 70
-else
-  whiptail --msgbox "No changes were applied to:\n${CONFIG_FILE}" 10 70
+log()  { echo "[INFO] $*"; }
+warn() { echo "[WARN] $*" >&2; }
+err()  { echo "[ERROR] $*" >&2; }
+
+#-----------------------------------------------------------
+# Step 1) Check if root
+#-----------------------------------------------------------
+if [[ $EUID -ne 0 ]]; then
+  err "Please execute script as root."
+  exit 1
 fi
+log "Running as root."
+
+#-----------------------------------------------------------
+# Step 0) Version selection menu (sets VERSION + VERSION_TAG)
+# - Non-interactive: set VERSION env var before running (current/psiloc/new/old/latest/legacy)
+# - Interactive: prompts user if VERSION is not preset
+#-----------------------------------------------------------
+normalize_version() {
+  local v="${1,,}"       # lowercase
+  case "$v" in
+    current|latest|new|2|n) echo "current" ;;
+    psiloc|old|legacy|uberlag|1|o) echo "psiloc" ;;
+    *) echo "" ;;
+  esac
+}
+
+if [[ -z "${VERSION:-}" ]]; then
+  log "Select Sinden setup version:"
+  echo "  [1] Latest version"
+  echo "  [2] Psiloc version"
+  while true; do
+    read -r -p "Enter choice (1/2) [default: 2]: " choice
+    choice="${choice:-2}"
+    case "$choice" in
+      1) VERSION="current"; break ;;
+      2) VERSION="psiloc";  break ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
+    esac
+  done
+else
+  VERSION="$(normalize_version "$VERSION")"
+  if [[ -z "$VERSION" ]]; then
+    warn "Unrecognized VERSION environment value. Falling back to interactive selection."
+    unset VERSION
+    echo "  [1] Latest version"
+    echo "  [2] Psiloc version"
+    while true; do
+      read -r -p "Enter choice (1/2) [default: 2]: " choice
+      choice="${choice:-2}"
+      case "$choice" in
+        1) VERSION="current"; break ;;
+        2) VERSION="psiloc";  break ;;
+        *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
+      esac
+    done
+  fi
+fi
+
+# Optional tag for branching (e.g., URLs/flags)
+if [[ "$VERSION" == "current" ]]; then
+  VERSION_TAG="v2"
+else
+  VERSION_TAG="v1"
+fi
+log "Version selected: ${VERSION} (${VERSION_TAG})"
+
+#-----------------------------------------------------------
+# Step 2) Update config.txt (UART5 enable + overlay)
+#-----------------------------------------------------------
+BOOT_DIR="/boot/firmware"
+CONFIG_FILE="${BOOT_DIR}/config.txt"
+
+if [[ ! -d "$BOOT_DIR" ]]; then
+  BOOT_DIR="/boot"
+  CONFIG_FILE="${BOOT_DIR}/config.txt"
+fi
+
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  err "Cannot find ${CONFIG_FILE}. Aborting."
+  #exit 1
+  else
+   
+log "Updating ${CONFIG_FILE} (backup will be created)."
+cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
+
+if ! grep -qE '^enable_uart=5\b' "$CONFIG_FILE"; then
+  echo "enable_uart=5" >> "$CONFIG_FILE"
+  log "Added enable_uart=5."
+else
+  log "enable_uart=5 already present."
+fi
+
+if ! grep -qE '^dtoverlay=uart5\b' "$CONFIG_FILE"; then
+  echo "dtoverlay=uart5" >> "$CONFIG_FILE"
+  log "Added dtoverlay=uart5."
+else
+  log "dtoverlay=uart5 already present."
+fi
+  
+fi
+
+
+#-----------------------------------------------------------
+# Step 3) Ensure 'sinden' user exists
+#-----------------------------------------------------------
+if ! id -u sinden &>/dev/null; then
+  log "Creating user 'sinden' with password."
+  useradd -m -s /bin/bash sinden
+  
+  read -s -p "Enter password for sinden: " PASSWORD
+  echo
+  echo "sinden:${PASSWORD}" | chpasswd
+else
+  log "User 'sinden' already exists."
+fi
+
+
+# Optionally add device-access groups (uncomment if needed)
+# usermod -aG video,plugdev,dialout sinden
+
+#-----------------------------------------------------------
+# Step 3a) Add 'sinden' to sudoers (validated)
+#-----------------------------------------------------------
+SUDOERS_D="/etc/sudoers.d"
+SINDEN_SUDO_FILE="${SUDOERS_D}/sinden"
+
+log "Configuring sudoers entry for 'sinden'."
+mkdir -p "$SUDOERS_D"
+
+SUDO_LINE='sinden ALL=(ALL) NOPASSWD:ALL'   # change to 'ALL' to require password
+
+TMP_FILE="$(mktemp)"
+echo "$SUDO_LINE" > "$TMP_FILE"
+chmod 0440 "$TMP_FILE"
+
+if visudo -cf "$TMP_FILE"; then
+  if [[ -f "$SINDEN_SUDO_FILE" ]] && cmp -s "$TMP_FILE" "$SINDEN_SUDO_FILE"; then
+    log "Sudoers entry already present and up to date."
+    rm -f "$TMP_FILE"
+  else
+    log "Installing validated sudoers entry at ${SINDEN_SUDO_FILE}."
+    mv "$TMP_FILE" "$SINDEN_SUDO_FILE"
+    chown root:root "$SINDEN_SUDO_FILE"
+    chmod 0440 "$SINDEN_SUDO_FILE"
+  fi
+else
+  rm -f "$TMP_FILE"
+  err "visudo validation failed; NOT installing sudoers change."
+  exit 1
+fi
+
+#-----------------------------------------------------------
+# Step 4) Install systemd services
+#-----------------------------------------------------------
+SYSTEMD_DIR="/etc/systemd/system"
+log "Configuring systemd services in ${SYSTEMD_DIR}."
+
+svc1="lightgun.service"
+svc2="lightgun-monitor.service"
+
+# Service 1: Sinden LightGun Service
+if [[ -e "${SYSTEMD_DIR}/${svc1}" ]]; then
+  log "${svc1} already configured."
+else
+  log "Creating ${svc1}."
+  cat > "${SYSTEMD_DIR}/${svc1}" <<'EOF'
+[Unit]
+Description=Sinden LightGun Service
+After=network.target
+
+[Service]
+User=sinden
+WorkingDirectory=/home/sinden
+ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
+Restart=always
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+fi
+
+# Service 2: Lightgun USB Device Monitor
+if [[ -e "${SYSTEMD_DIR}/${svc2}" ]]; then
+  log "${svc2} already configured."
+else
+  log "Creating ${svc2}."
+  cat > "${SYSTEMD_DIR}/${svc2}" <<'EOF'
+[Unit]
+Description=Lightgun USB Device Monitor
+After=network.target
+
+[Service]
+ExecStart=/opt/sinden/lightgun-monitor.sh
+Restart=always
+RestartSec=5
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+fi
+
+log "Reloading systemd daemon."
+systemctl daemon-reload
+
+log "Enabling services."
+systemctl enable "${svc1}" "${svc2}"
+
+log "Starting services."
+systemctl start "${svc1}" || warn "Failed to start ${svc1}. Check logs: journalctl -u ${svc1}"
+systemctl start "${svc2}" || warn "Failed to start ${svc2}. Check logs: journalctl -u ${svc2}"
+
+systemctl is-active "${svc1}" &>/dev/null && log "${svc1} is active." || warn "${svc1} is not active."
+systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "${svc2} is not active."
+
+#-----------------------------------------------------------
+# Step 5) Install prerequisites
+#-----------------------------------------------------------
+log "Installing prerequisites via apt."
+sudo add-apt-repository universe
+sudo apt-get update -y
+sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev apache2 xmlstarlet
+log "Prerequisites installed."
+
+#-----------------------------------------------------------
+# Step 6) Create folders, download VERSION-based assets
+#-----------------------------------------------------------
+log "Preparing /opt/sinden and user directories; downloading VERSION-based PS1/PS2 assets."
+
+install -d -o root -g root /opt
+install -d -o sinden -g sinden /opt/sinden
+
+# Download service scripts
+(
+  cd /opt/sinden
+  log "Downloading lightgun scripts to /opt/sinden."
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun.sh" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun-monitor.sh"
+
+  chmod +x lightgun.sh lightgun-monitor.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh
+)
+
+USER_HOME="/home/sinden"
+LIGHTGUN_DIR="${USER_HOME}/Lightgun"
+install -d -o sinden -g sinden "${LIGHTGUN_DIR}"
+
+# Helper: download a set of URLs into a destination, fix perms and exe bit
+download_assets() {
+  local dest="$1"; shift
+  install -d -o sinden -g sinden "$dest"
+  (
+    cd "$dest"
+    if [[ $# -gt 0 ]]; then
+      log "Downloading $(($#)) assets into ${dest}."
+      wget --quiet --show-progress --https-only --timestamping "$@"
+    else
+      warn "No asset URLs provided for ${dest}."
+    fi
+    if [[ -f "LightgunMono.exe" ]]; then
+      chmod +x LightgunMono.exe
+    fi
+    chown -R sinden:sinden "$dest"
+  )
+}
+
+# --- Define asset sets based on VERSION ---
+declare -a PS1_URLS PS2_URLS
+
+if [[ "$VERSION" == "current" ]]; then
+  # CURRENT (Latest) asset set
+  PS1_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/test.bmp"
+  )
+  PS2_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/test.bmp"
+  )
+else
+  # PSILOC (Legacy) asset set — UPDATED with your URLs
+  PS1_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/test.bmp"
+  )
+  PS2_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/test.bmp"
+  )
+fi
+
+# Create PS1/PS2 and download according to version
+install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
+download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
+
+cd 	${LIGHTGUN_DIR}/log
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
+
+log "Assets deployment complete."
+
+#-----------------------------------------------------------
+# Step 8) apache logging site
+#-----------------------------------------------------------
+log "Install Apache Log Site"
+
+# 1) Docroot and index.html (literal HTML, not escaped)
+sudo mkdir -p /var/www/logviewer
+sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sinden Log Viewer</title>
+  <style>
+    body { background: #000; color: #fff; font-family: monospace; margin: 0; }
+    header { padding: 10px 14px; border-bottom: 1px solid #fff; }
+    #log { white-space: pre-wrap; overflow-y: auto; height: calc(100vh - 60px); border: 0; padding: 12px 14px; }
+    a, a:visited { color: #39f; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2 style="margin:0">Sinden Lightgun Log</h2>
+  </header>
+  <div id="log" aria-live="polite">Loading…</div>
+  <script>
+    async function fetchLog() {
+      try {
+        const res = await fetch('sinden.log', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const el = document.getElementById('log');
+        el.textContent = text || '(empty)';
+        el.scrollTop = el.scrollHeight;
+      } catch (e) {
+        document.getElementById('log').textContent = 'Failed to load log: ' + e.message;
+      }
+    }
+    fetchLog();
+    setInterval(fetchLog, 2000);
+  </script>
+</body>
+</html>
+HTML
+
+# 2) Link the log file (adjust the source if needed)
+sudo ln -sf /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
+
+# 3) Permissions
+
+# File permissions (readable to Apache)
+sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
+sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
+
+# Ensure Apache can traverse the directory chain:
+sudo chmod o+x /home
+sudo chmod o+x /home/sinden
+sudo chmod o+x /home/sinden/Lightgun
+sudo chmod o+x /home/sinden/Lightgun/log
+
+# Web root permissions
+sudo chown -R www-data:www-data /var/www/logviewer
+sudo chmod -R 755 /var/www/logviewer
+
+
+# 4) Priority vhost as default + DirectoryIndex
+sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
+<VirtualHost *:80>
+    DocumentRoot /var/www/logviewer
+    DirectoryIndex index.html
+
+    <Directory /var/www/logviewer>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    <Files "sinden.log">
+        Require all granted
+    </Files>
+
+    ErrorLog ${APACHE_LOG_DIR}/logviewer_error.log
+    CustomLog ${APACHE_LOG_DIR}/logviewer_access.log combined
+</VirtualHost>
+APACHE
+
+sudo tee /etc/apache2/sites-available/000-logviewer-ssl.conf >/dev/null <<'APACHE'
+<VirtualHost *:443>
+    DocumentRoot /var/www/logviewer
+    DirectoryIndex index.html
+
+    <Directory /var/www/logviewer>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    <Files "sinden.log">
+        Require all granted
+    </Files>
+
+    ErrorLog ${APACHE_LOG_DIR}/logviewer_error.log
+    CustomLog ${APACHE_LOG_DIR}/logviewer_access.log combined
+</VirtualHost>
+APACHE
+
+# 5) Silence FQDN warning (optional but recommended)
+echo 'ServerName localhost' | sudo tee /etc/apache2/conf-available/servername.conf >/dev/null
+sudo a2enconf servername >/dev/null || true
+
+# 6) Enable your site, disable distro default, reload
+sudo a2dissite 000-default.conf >/dev/null 2>&1 || true
+sudo a2ensite 000-logviewer.conf >/dev/null
+sudo a2enmod headers >/dev/null || true
+sudo apache2ctl configtest
+sudo systemctl reload apache2
+
+# 7) restart services
+sudo systemctl restart lightgun.service
+sudo systemctl restart lightgun-monitor.service
+
+# 8) install configuration editor
+
+cd 	/usr/local/bin
+ sudo wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux//usr/local/bin/lightgun-setup"
+ chmod +x /usr/local/bin/lightgun-setup
+
+log "configuration tool installed"
+
+
