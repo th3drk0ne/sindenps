@@ -472,8 +472,17 @@ sudo a2enmod headers >/dev/null || true
 sudo apache2ctl configtest
 sudo systemctl reload apache2
 
-# 7) Show mapping
-echo "==== apache2ctl -S ===="
-sudo apache2ctl -S || true
-echo "======================="
+# 7) restart services
+sudo systemctl restart lightgun.service
+sudo systemctl restart lightgun-monitor.service
+
+# 8) install configuration editor
+
+cd 	${USER_HOME}
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/lightgun-setup"
+  chmod +x ${USER_HOME}/lightgun-setup
+
+log "configuration tool installed"
+
 
