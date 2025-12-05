@@ -3,6 +3,20 @@
 set -euo pipefail
 
 
+export NEWT_COLORS='
+root=white,blue
+window=black,lightgray
+border=black,lightgray
+shadow=black,blue
+title=white,blue
+textbox=black,lightgray
+listbox=black,lightgray
+actlistbox=white,blue
+button=black,gray
+actbutton=white,red
+'
+
+
 CONFIG_FILE=""
 PLAYER="P1"   # P1 or P2
 
@@ -118,36 +132,51 @@ get_config() {
   fi
 }
 
+
 update_config() {
-  local key="$1" value="$2"
+  local key=$1
+  local value=$2
+
+  # Confirm + create baseline backup once
   ensure_confirm_and_backup
 
   if have_cmd xmlstarlet; then
+    # How many matching keys exist?
     local count
     count=$(xmlstarlet sel -t -v "count(/configuration/appSettings/add[@key='${key}'])" "$CONFIG_FILE" 2>/dev/null || echo 0)
-    if [[ "${count}" == "0" ]]; then
-      xmlstarlet ed -L \
-        -s "/configuration/appSettings" -t elem -n "add" -v "" \
-        -i "/configuration/appSettings/add[not(@key) and not(@value)][last()]" -t attr -n "key" -v "${key}" \
-        -i "/configuration/appSettings/add[@key='${key}'][not(@value)][last()]" -t attr -n "value" -v "${value}" \
-        "$CONFIG_FILE"
-    else
+
+    if [[ "$count" -gt 0 ]]; then
+      # Update existing value(s)
       xmlstarlet ed -L \
         -u "/configuration/appSettings/add[@key='${key}']/@value" -v "${value}" \
         "$CONFIG_FILE"
+    else
+      # Create a new <add key="..." value="..."/> safely
+      xmlstarlet ed -L \
+        -s "/configuration/appSettings" -t elem -n "__new" -v "" \
+        -i "/configuration/appSettings/__new" -t attr -n "key"   -v "${key}" \
+        -i "/configuration/appSettings/__new" -t attr -n "value" -v "${value}" \
+        -r "/configuration/appSettings/__new" -v "add" \
+        "$CONFIG_FILE"
     fi
   else
-    # sed fallback; also keep a simple .bak mirror if none exists yet
-    if [[ ! -f "${CONFIG_FILE}.bak" ]]; then
-      cp -p -- "${CONFIG_FILE}" "${CONFIG_FILE}.bak"
-    fi
+    # sed fallback (we already took a timestamped backup in ensure_confirm_and_backup)
     if grep -q "<add[[:space:]]\+key=\"${key}\"" "$CONFIG_FILE"; then
       sed -i "s|\(<add[[:space:]]\+key=\"${key}\"[[:space:]]\+value=\"\)[^\"]*\"|\1${value}\"|" "$CONFIG_FILE"
     else
+      # Insert just before </appSettings> (works even if key is new)
       sed -i "s#</appSettings>#  <add key=\"${key}\" value=\"${value}\"/>\n  </appSettings>#g" "$CONFIG_FILE"
     fi
   fi
+
+  # Optional: verify immediately and notify if write failed
+  local after
+  after=$(get_config "${key}")
+  if [[ "${after}" != "${value}" ]]; then
+    whiptail --msgbox "Write may have failed for key '${key}'.\nExpected: ${value}\nRead back: ${after:-<empty>}" 12 70
+  fi
 }
+
 
 # Resolve base key name by player context
 key_for() {
