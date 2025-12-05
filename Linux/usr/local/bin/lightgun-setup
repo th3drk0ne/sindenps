@@ -18,6 +18,7 @@ actbutton=white,green
 
 CONFIG_FILE=""
 ROOT_DIR=""            # Root folder for relative-path displays (parent of PS1/PS2)
+BACKUP_DIR=""          # Backup folder (dirname(CONFIG_FILE)/backup)
 PLAYER="P1"
 CONFIRMED_WRITE="0"
 BACKUP_DONE="0"
@@ -68,31 +69,28 @@ Install with:
 
 # --- Path helpers ---
 
-# Compute ROOT_DIR as the parent of the folder containing CONFIG_FILE (PS1/PS2)
-set_root_dir_from_config() {
-  # Example: /home/sinden/Lightgun/PS1/LightgunMono.exe.config -> /home/sinden/Lightgun
+# Compute ROOT_DIR as parent of PS1/PS2; set BACKUP_DIR to dirname(CONFIG_FILE)/backup
+set_paths_from_config() {
   local cfg_dir cfg_parent
   cfg_dir="$(dirname -- "$CONFIG_FILE")"
   cfg_parent="$(dirname -- "$cfg_dir")"
   ROOT_DIR="$cfg_parent"
+  BACKUP_DIR="${cfg_dir}/backup"
+  mkdir -p -- "$BACKUP_DIR"
 }
 
-# Return $1 relative to $ROOT_DIR; if not possible, echo the basename
+# Return $1 relative to $ROOT_DIR; fallback to basename
 rel_to_root() {
   local p="$1"
   if [[ -z "$ROOT_DIR" || -z "$p" ]]; then
-    printf '%s\n' "$(basename -- "$p")"
-    return
+    printf '%s\n' "$(basename -- "$p")"; return
   fi
-  # Prefer realpath --relative-to if available
   if have_cmd realpath; then
     local rel
     if rel=$(realpath --relative-to="$ROOT_DIR" -- "$p" 2>/dev/null); then
-      printf '%s\n' "$rel"
-      return
+      printf '%s\n' "$rel"; return
     fi
   fi
-  # Fallback: strip ROOT_DIR prefix if it matches
   case "$p" in
     "$ROOT_DIR"/*) printf '%s\n' "${p#"$ROOT_DIR/"}" ;;
     *) printf '%s\n' "$(basename -- "$p")" ;;
@@ -103,9 +101,10 @@ rel_to_root() {
 
 ensure_confirm_and_backup() {
   if [[ "$CONFIRMED_WRITE" == "1" ]]; then return 0; fi
-  local ts backup rel
+  local ts base backup rel
   ts=$(now_stamp)
-  backup="${CONFIG_FILE}.bak-${ts}"
+  base="$(basename -- "$CONFIG_FILE")"
+  backup="${BACKUP_DIR}/${base}.bak-${ts}"
   rel="$(rel_to_root "$backup")"
   if ! yesno_or_menu "Confirm Changes" "About to modify:
 
@@ -125,9 +124,10 @@ Proceed?"; then
 }
 
 create_backup_now() {
-  local ts backup rel
+  local ts base backup rel
   ts=$(now_stamp)
-  backup="${CONFIG_FILE}.bak-${ts}"
+  base="$(basename -- "$CONFIG_FILE")"
+  backup="${BACKUP_DIR}/${base}.bak-${ts}"
   rel="$(rel_to_root "$backup")"
   if ! yesno_or_menu "Create Backup Now" "Create a backup of:
 $(rel_to_root "$CONFIG_FILE")
@@ -154,10 +154,8 @@ short_path() {
 
 # --- Robust getters/setters and fallback XML handling ---
 
-# Escape special chars for sed, including delimiter.
 sed_escape() { printf '%s' "$1" | sed 's/[&|\\]/\\&/g'; }
 
-# Fallback get: supports attribute order (key before/after value)
 get_config_sed_fallback() {
   local key="$1"
   perl -0777 -ne '
@@ -190,7 +188,6 @@ update_config() {
   else
     local esc_val; esc_val="$(sed_escape "$value")"
     if grep -qE '<add\b[^>]*\bkey="'"${key}"'"' "$CONFIG_FILE"; then
-      # Replace value regardless of attribute order
       sed -i -E \
         -e 's|(<add[^>]*\bkey="'"${key}"'"[^>]*\bvalue=")[^"]*|\1'"${esc_val}"'|g' \
         -e 's|(<add[^>]*\bvalue=")[^"]*"([^>]*\bkey="'"${key}"'")|\1'"${esc_val}"'"\2|g' \
@@ -201,7 +198,6 @@ update_config() {
   fi
 }
 
-# Guard: refuse to write empty values; fallback to a default (optional)
 update_config_if_nonempty() {
   local key="$1" value="$2" default="${3:-}"
   if [[ -z "$value" ]]; then
@@ -215,11 +211,11 @@ update_config_if_nonempty() {
   update_config "$key" "$value"
 }
 
-# --- Simple validators used in recoil menu ---
-is_bool() { [[ "$1" =~ ^[01]$ ]]; }    # Accepts 0 or 1
+# --- Simple validators ---
+is_bool() { [[ "$1" =~ ^[01]$ ]]; }
 is_uint() { [[ "$1" =~ ^[0-9]+$ ]]; }   # Non-negative integer
 
-# --- Save-ok popup wrapper (called after inputbox) ---
+# --- Save-ok popup wrapper ---
 apply_kv_with_popup() {
   local key="$1" value="$2" default="${3:-}"
   whiptail --msgbox "Press OK to save the change:\n\n${key} = ${value}" 10 60
@@ -227,7 +223,6 @@ apply_kv_with_popup() {
 }
 
 # --- Helpers for P2 and devices ---
-
 key_for() { [[ "$PLAYER" == "P2" ]] && echo "$1P2" || echo "$1"; }
 
 pick_from_list() {
@@ -246,22 +241,15 @@ pick_from_list() {
   echo "${items[$((choice-1))]}"
 }
 
-detect_video_devices() {
-  compgen -G "/dev/video*" | sort -V
-}
-
-detect_tty_devices() {
-  compgen -G "/dev/tty*" | sort -V
-}
+detect_video_devices() { compgen -G "/dev/video*" | sort -V; }
+detect_tty_devices() { compgen -G "/dev/tty*" | sort -V; }
 
 # --- Backup utilities ---
-
 list_recent_backups() {
-  local dir base
-  dir="$(dirname -- "$CONFIG_FILE")"
+  local base
   base="$(basename -- "$CONFIG_FILE")"
   shopt -s nullglob
-  local -a files=( "$dir/${base}.bak-"* )
+  local -a files=( "$BACKUP_DIR/${base}.bak-"* )
   shopt -u nullglob
   (( ${#files[@]} )) || return 1
   for f in "${files[@]}"; do
@@ -273,14 +261,14 @@ view_backups() {
   local -a backs
   mapfile -t backs < <(list_recent_backups) || true
   if (( ${#backs[@]} == 0 )); then
-    whiptail --msgbox "No backups found for:\n$(basename "$CONFIG_FILE")" 10 60
+    whiptail --msgbox "No backups found for:\n$(rel_to_root "$CONFIG_FILE")" 10 60
     return
   fi
   local tmp
   tmp=$(mktemp)
   printf "Available backups (newest first):\n\n" > "$tmp"
   for f in "${backs[@]}"; do
-    printf "%s\n" "$f" >> "$tmp"
+    printf "%s\n" "$(rel_to_root "$f")" >> "$tmp"
   done
   whiptail --title "View Backups" --textbox "$tmp" 20 80
   rm -f "$tmp"
@@ -292,7 +280,7 @@ choose_backup() {
   (( ${#backs[@]} )) || { whiptail --msgbox "No backups found." 8 50; return 1; }
   local -a menu; local i=1
   for f in "${backs[@]}"; do
-    menu+=( "$i" "$(basename "$f")" )
+    menu+=( "$i" "$(rel_to_root "$f")" )
     ((i++))
   done
   local choice
@@ -357,9 +345,8 @@ ensure_config_access() {
     whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70
     exit 1
   fi
-
-  # IMPORTANT: set ROOT_DIR now that CONFIG_FILE is known
-  set_root_dir_from_config
+  # Compute paths (ROOT_DIR, BACKUP_DIR) now that CONFIG_FILE is known
+  set_paths_from_config
 }
 
 # --- Player selection shows "Player 1" / "Player 2" (maps internally to P1/P2) ---
@@ -383,14 +370,12 @@ ensure_profile_dir() {
   mkdir -p -- "$PROFILE_DIR"
 }
 
-# Sanitize profile file names: lower, spaces -> _, allow [a-z0-9._-]
 sanitize_profile_name() {
   printf '%s' "$1" \
     | tr '[:upper:]' '[:lower:]' \
     | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
 }
 
-# Build a summary to display before saving/applying a profile
 recoil_profile_summary() {
   local -a lines=("$@")
   printf "Profile will set these values for %s:\n\n" "$PLAYER"
@@ -399,13 +384,11 @@ recoil_profile_summary() {
   done
 }
 
-# Convenience setter that respects current PLAYER
 set_kv() {
   local k; k=$(key_for "$1")
   update_config "$k" "$2"
 }
 
-# Recoil keys included in custom profiles (unsuffixed)
 recoil_profile_keys=(
   "IAgreeRecoilTermsInLicense"
   "EnableRecoil"
@@ -424,7 +407,6 @@ recoil_profile_keys=(
   "AutoRecoilDelayBetweenPulses"
 )
 
-# Collect current values for PLAYER and return as alternating key/value array (NUL-separated for safe transport)
 collect_current_recoil_kv() {
   local -a out=()
   local k val actual
@@ -436,7 +418,6 @@ collect_current_recoil_kv() {
   printf '%s\0' "${out[@]}"
 }
 
-# Save current recoil settings to a named profile file
 save_custom_recoil_profile() {
   ensure_profile_dir
 
@@ -451,7 +432,6 @@ save_custom_recoil_profile() {
 
   local path="${PROFILE_DIR}/${name}.profile"
 
-  # Prepare summary
   local -a kv
   IFS=$'\0' read -r -d '' -a kv < <(collect_current_recoil_kv && printf '\0') || true
 
@@ -470,7 +450,6 @@ save_custom_recoil_profile() {
   fi
   rm -f "$tmp"
 
-  # Overwrite guard
   if [[ -f "$path" ]]; then
     if ! yesno_or_menu "Overwrite Profile?" "Profile exists:\n$(basename "$path")\n\nOverwrite?"; then
       whiptail --msgbox "Save cancelled." 8 30
@@ -478,7 +457,6 @@ save_custom_recoil_profile() {
     fi
   fi
 
-  # Write key=value pairs (unsuffixed keys so the profile is player-agnostic)
   {
     printf "# Lightgun recoil profile\n"
     printf "# Name: %s\n" "$name"
@@ -549,7 +527,6 @@ recoil_profiles_menu() {
 recoil_menu() {
   while true; do
     local choice
-    # Larger dialog to ensure "Recoil Profile Presets" is visible
     choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 28 100 14 \
       "1"  "Recoil Profile Presets" \
       "2"  "IAgreeRecoilTermsInLicense (0/1)" \
@@ -681,7 +658,7 @@ while true; do
     7) create_backup_now ;;
     8) view_backups ;;
     9) restore_from_backup ;;
-    10) choose_config; ensure_config_access ;;  # re-compute ROOT_DIR inside ensure_config_access
+    10) choose_config; ensure_config_access ;;  # sets ROOT_DIR & BACKUP_DIR for new file
     11) break ;;
   esac
 done
