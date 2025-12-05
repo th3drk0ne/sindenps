@@ -265,6 +265,7 @@ install -d -o sinden -g sinden "${LIGHTGUN_DIR}"
 download_assets() {
   local dest="$1"; shift
   install -d -o sinden -g sinden "$dest"
+  install -d -o sinden -g sinden "${dest}\backup"
   (
     cd "$dest"
     if [[ $# -gt 0 ]]; then
