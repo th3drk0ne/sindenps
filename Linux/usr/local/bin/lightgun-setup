@@ -105,6 +105,9 @@ rel_to_root() {
 
 ensure_confirm_and_backup() {
   if [[ "$CONFIRMED_WRITE" == "1" ]]; then return 0; fi
+  # Ensure paths are set
+  [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
+
   local ts base backup rel
   ts=$(now_stamp)
   base="$(basename -- "$CONFIG_FILE")"
@@ -133,6 +136,9 @@ Proceed?"; then
 }
 
 create_backup_now() {
+  # Ensure paths are set
+  [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
+
   local ts base backup rel
   ts=$(now_stamp)
   base="$(basename -- "$CONFIG_FILE")"
@@ -258,17 +264,43 @@ pick_from_list() {
 detect_video_devices() { compgen -G "/dev/video*" | sort -V; }
 detect_tty_devices() { compgen -G "/dev/tty*" | sort -V; }
 
-# --- Backup utilities ---
+# --- Backup utilities (robust across sessions & legacy locations) ---
+
 list_recent_backups() {
-  local base
+  # Ensure paths are set
+  [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
+
+  local cfg_dir base
+  cfg_dir="$(dirname -- "$CONFIG_FILE")"
   base="$(basename -- "$CONFIG_FILE")"
+
+  # Gather candidates from both new and legacy locations, with strict and loose patterns
   shopt -s nullglob
-  local -a files=( "$BACKUP_DIR/${base}.bak-"* )
+  local -a candidates=(
+    "$BACKUP_DIR/${base}.bak-"*
+    "$BACKUP_DIR/"*.bak-*
+    "$cfg_dir/${base}.bak-"*
+    "$cfg_dir/"*.bak-*
+  )
   shopt -u nullglob
+
+  # De-duplicate and filter existing files only
+  local -A seen=()
+  local -a files=()
+  for f in "${candidates[@]}"; do
+    [[ -f "$f" ]] || continue
+    if [[ -z "${seen[$f]:-}" ]]; then
+      seen["$f"]=1
+      files+=("$f")
+    fi
+  done
+
   (( ${#files[@]} )) || return 1
+
+  # Sort by mtime (desc) and output only paths
   for f in "${files[@]}"; do
     printf '%s\t%s\n' "$(stat -c %Y "$f" 2>/dev/null || echo 0)" "$f"
-  done | sort -nr | awk -v n="$BACKUP_LIMIT" 'NR<=n {print $2}'
+  done | sort -nr | awk '{print $2}'
 }
 
 view_backups() {
@@ -319,6 +351,9 @@ Proceed?"; then return; fi
 }
 
 prune_backups() {
+  # Ensure paths are set
+  [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
+
   local -a backs
   mapfile -t backs < <(list_recent_backups) || return 0
   local keep="${BACKUP_LIMIT}"
