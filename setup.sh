@@ -265,7 +265,6 @@ install -d -o sinden -g sinden "${LIGHTGUN_DIR}"
 download_assets() {
   local dest="$1"; shift
   install -d -o sinden -g sinden "$dest"
-  install -d -o sinden -g sinden "$dest\backup"
   (
     cd "$dest"
     if [[ $# -gt 0 ]]; then
@@ -350,6 +349,9 @@ fi
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
 download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
 download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
+install -d -o sinden -g sinden "${LIGHTGUN_DIR}/PS1/backup"
+install -d -o sinden -g sinden "${LIGHTGUN_DIR}/PS2/backup"
+
 
 cd 	${LIGHTGUN_DIR}/log
   wget --quiet --show-progress --https-only --timestamping \
