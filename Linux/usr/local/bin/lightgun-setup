@@ -17,6 +17,7 @@ actbutton=white,green
 '
 
 CONFIG_FILE=""
+ROOT_DIR=""            # Root folder for relative-path displays (parent of PS1/PS2)
 PLAYER="P1"
 CONFIRMED_WRITE="0"
 BACKUP_DONE="0"
@@ -65,17 +66,53 @@ Install with:
   fi
 }
 
+# --- Path helpers ---
+
+# Compute ROOT_DIR as the parent of the folder containing CONFIG_FILE (PS1/PS2)
+set_root_dir_from_config() {
+  # Example: /home/sinden/Lightgun/PS1/LightgunMono.exe.config -> /home/sinden/Lightgun
+  local cfg_dir cfg_parent
+  cfg_dir="$(dirname -- "$CONFIG_FILE")"
+  cfg_parent="$(dirname -- "$cfg_dir")"
+  ROOT_DIR="$cfg_parent"
+}
+
+# Return $1 relative to $ROOT_DIR; if not possible, echo the basename
+rel_to_root() {
+  local p="$1"
+  if [[ -z "$ROOT_DIR" || -z "$p" ]]; then
+    printf '%s\n' "$(basename -- "$p")"
+    return
+  fi
+  # Prefer realpath --relative-to if available
+  if have_cmd realpath; then
+    local rel
+    if rel=$(realpath --relative-to="$ROOT_DIR" -- "$p" 2>/dev/null); then
+      printf '%s\n' "$rel"
+      return
+    fi
+  fi
+  # Fallback: strip ROOT_DIR prefix if it matches
+  case "$p" in
+    "$ROOT_DIR"/*) printf '%s\n' "${p#"$ROOT_DIR/"}" ;;
+    *) printf '%s\n' "$(basename -- "$p")" ;;
+  esac
+}
+
+# --- Backup / confirm gate ---
+
 ensure_confirm_and_backup() {
   if [[ "$CONFIRMED_WRITE" == "1" ]]; then return 0; fi
-  local ts backup
+  local ts backup rel
   ts=$(now_stamp)
   backup="${CONFIG_FILE}.bak-${ts}"
+  rel="$(rel_to_root "$backup")"
   if ! yesno_or_menu "Confirm Changes" "About to modify:
 
-${CONFIG_FILE}
+$(rel_to_root "$CONFIG_FILE")
 
-A backup will be created:
-${backup}
+A backup will be created (relative to root):
+${rel}
 
 Proceed?"; then
     whiptail --msgbox "No changes applied." 8 40
@@ -88,18 +125,21 @@ Proceed?"; then
 }
 
 create_backup_now() {
-  local ts backup
+  local ts backup rel
   ts=$(now_stamp)
   backup="${CONFIG_FILE}.bak-${ts}"
+  rel="$(rel_to_root "$backup")"
   if ! yesno_or_menu "Create Backup Now" "Create a backup of:
-${CONFIG_FILE}
+$(rel_to_root "$CONFIG_FILE")
 
-Backup file:
-${backup}
+Backup file (relative to root):
+${rel}
 
 Proceed?"; then return; fi
   cp -p -- "${CONFIG_FILE}" "${backup}"
-  whiptail --msgbox "Backup created:\n${backup}" 10 70
+  BACKUP_DONE="1"
+  BACKUP_PATH="${backup}"
+  whiptail --msgbox "Backup created:\n${rel}" 10 70
 }
 
 # --- Helper to display a shorter path in menus
@@ -187,6 +227,7 @@ apply_kv_with_popup() {
 }
 
 # --- Helpers for P2 and devices ---
+
 key_for() { [[ "$PLAYER" == "P2" ]] && echo "$1P2" || echo "$1"; }
 
 pick_from_list() {
@@ -205,10 +246,16 @@ pick_from_list() {
   echo "${items[$((choice-1))]}"
 }
 
-detect_video_devices() { compgen -G "/dev/video*" | sort -V; }
-detect_tty_devices() { compgen -G "/dev/tty*" | sort -V; }
+detect_video_devices() {
+  compgen -G "/dev/video*" | sort -V
+}
+
+detect_tty_devices() {
+  compgen -G "/dev/tty*" | sort -V
+}
 
 # --- Backup utilities ---
+
 list_recent_backups() {
   local dir base
   dir="$(dirname -- "$CONFIG_FILE")"
@@ -258,15 +305,15 @@ restore_from_backup() {
   selected=$(choose_backup) || return
   local safety="${CONFIG_FILE}.restore-$(now_stamp)"
   if ! yesno_or_menu "Restore" "Replace current file with:
-${selected}
+$(rel_to_root "$selected")
 
 Safety copy will be:
-${safety}
+$(rel_to_root "$safety")
 
 Proceed?"; then return; fi
   cp -p -- "$CONFIG_FILE" "$safety"
   cp -p -- "$selected" "$CONFIG_FILE"
-  whiptail --msgbox "Restored from:\n${selected}\nSafety copy:\n${safety}" 12 70
+  whiptail --msgbox "Restored from:\n$(rel_to_root "$selected")\nSafety copy:\n$(rel_to_root "$safety")" 12 70
 }
 
 prune_backups() {
@@ -280,6 +327,7 @@ prune_backups() {
 }
 
 # --- Config selection & validation ---
+
 choose_config() {
   local ps1="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
   local ps2="/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
@@ -309,6 +357,9 @@ ensure_config_access() {
     whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70
     exit 1
   fi
+
+  # IMPORTANT: set ROOT_DIR now that CONFIG_FILE is known
+  set_root_dir_from_config
 }
 
 # --- Player selection shows "Player 1" / "Player 2" (maps internally to P1/P2) ---
@@ -439,132 +490,6 @@ save_custom_recoil_profile() {
   } > "$path"
 
   whiptail --msgbox "Saved profile:\n$(basename "$path")\n\nLocation:\n$path" 12 70
-}
-
-# --- Menus ---
-
-serial_menu() {
-  while true; do
-    local choice
-    choice=$(whiptail --title "Serial Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 18 70 8 \
-      "1" "SerialPortWrite" \
-      "2" "SerialPortSecondary" \
-      "3" "Back" \
-      3>&1 1>&2 2>&3) || break
-    case "$choice" in
-      1)
-        local k; k=$(key_for "SerialPortWrite")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        if is_bool "$v"; then
-          apply_kv_with_popup "$k" "$v" "${def:-0}"
-        else
-          whiptail --msgbox "Invalid value. Enter 0 or 1." 8 40
-        fi
-        ;;
-      2)
-        local k; k=$(key_for "SerialPortSecondary")
-        local def; def=$(get_config "$k")
-        local ttys; mapfile -t ttys < <(detect_tty_devices)
-        local pick
-        if pick=$(pick_from_list "Serial Ports" "Select a /dev/tty*" "${ttys[@]}"); then
-          apply_kv_with_popup "$k" "$pick" "${def:-/dev/ttyGCON0}"
-        else
-          local v
-          v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/ttyGCON0}" 3>&1 1>&2 2>&3) || continue
-          apply_kv_with_popup "$k" "$v" "${def:-/dev/ttyGCON0}"
-        fi
-        ;;
-      3) break ;;
-    esac
-  done
-}
-
-video_menu() {
-  while true; do
-    local choice
-    choice=$(whiptail --title "Video Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 20 70 10 \
-      "1" "$(key_for "VideoDevice")" \
-      "2" "$(key_for "CameraRes")" \
-      "3" "$(key_for "CameraBrightness")" \
-      "4" "$(key_for "CameraContrast")" \
-      "5" "Back" \
-      3>&1 1>&2 2>&3) || break
-    case "$choice" in
-      1)
-        local k; k=$(key_for "VideoDevice")
-        local def; def=$(get_config "$k")
-        local devs; mapfile -t devs < <(detect_video_devices)
-        local pick
-        if pick=$(pick_from_list "Video Devices" "Select a /dev/video*" "${devs[@]}"); then
-          apply_kv_with_popup "$k" "$pick" "${def:-/dev/video0}"
-        else
-          local v
-          v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-/dev/video0}" 3>&1 1>&2 2>&3) || continue
-          apply_kv_with_popup "$k" "$v" "${def:-/dev/video0}"
-        fi
-        ;;
-      2)
-        local k; k=$(key_for "CameraRes")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k (e.g. 640,480):" 10 60 "${def:-640,480}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-640,480}"
-        ;;
-      3)
-        local k; k=$(key_for "CameraBrightness")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-100}"
-        ;;
-      4)
-        local k; k=$(key_for "CameraContrast")
-        local def; def=$(get_config "$k")
-        local v
-        v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-50}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-50}"
-        ;;
-      5) break ;;
-    esac
-  done
-}
-
-calibration_menu() {
-  while true; do
-    local choice
-    choice=$(whiptail --title "Calibration ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 20 70 10 \
-      "1" "CalibrateX" \
-      "2" "CalibrateY" \
-      "3" "OffsetX" \
-      "4" "OffsetY" \
-      "5" "Back" \
-      3>&1 1>&2 2>&3) || break
-    case "$choice" in
-      1)
-        local k; k=$(key_for "CalibrateX"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def}"
-        ;;
-      2)
-        local k; k=$(key_for "CalibrateY"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def}"
-        ;;
-      3)
-        local k; k=$(key_for "OffsetX"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-0}"
-        ;;
-      4)
-        local k; k=$(key_for "OffsetY"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def:-0}"
-        ;;
-      5) break ;;
-    esac
-  done
 }
 
 # --- Recoil Profiles (presets + save custom) ---
@@ -748,7 +673,7 @@ while true; do
 
   case "$choice" in
     1) choose_player ;;
-    2) serial_menu ;;                 # <-- FIX: underscore; ensures function call
+    2) serial_menu ;;
     3) video_menu ;;
     4) calibration_menu ;;
     5) recoil_menu ;;
@@ -756,12 +681,16 @@ while true; do
     7) create_backup_now ;;
     8) view_backups ;;
     9) restore_from_backup ;;
-    10) choose_config; ensure_config_access ;;
+    10) choose_config; ensure_config_access ;;  # re-compute ROOT_DIR inside ensure_config_access
     11) break ;;
   esac
 done
 
-whiptail --msgbox "Session complete.\n\nBackups kept (for listing): ${BACKUP_LIMIT}\nLast backup: ${BACKUP_PATH:-none}" 12 70
+whiptail --msgbox "Session complete.
+
+Backups kept (for listing): ${BACKUP_LIMIT}
+Last backup: $( [[ -n "${BACKUP_PATH}" ]] && rel_to_root "${BACKUP_PATH}" || echo "none" )
+" 12 70
 
 # Optional pruning on exit (disabled by default)
 PRUNE_ON_EXIT=1
