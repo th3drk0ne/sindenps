@@ -28,18 +28,42 @@ BACKUP_PATH=""
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
 
+# --- Yes/No wrapper: button or menu (avoids Tab issues) ---
+YESNO_FLAGS='--fb --yes-button "Proceed" --no-button "Cancel"'
+yesno_or_menu() {
+  # $1=title, $2=message; returns 0 for proceed, 1 for cancel
+  local title="$1" msg="$2"
+
+  if whiptail ${YESNO_FLAGS} --title "$title" --yesno "$msg" 14 72; then
+    return 0
+  fi
+
+  # Fallback menu: Up/Down works everywhere
+  local choice
+  choice=$(whiptail --title "$title" --menu "$msg" 14 72 2 \
+           "Proceed" "Apply/continue" \
+           "Cancel"  "Abort/no changes" \
+           3>&1 1>&2 2>&3) || return 1
+
+  [[ "$choice" == "Proceed" ]]
+}
+
 # Ensure confirmation + baseline backup before the FIRST edit
 ensure_confirm_and_backup() {
   if [[ "$CONFIRMED_WRITE" == "1" ]]; then
     return 0
   fi
 
-  # If baseline backup already exists, reuse it
+  # Reuse existing baseline if present
   if [[ "$BACKUP_DONE" == "1" && -n "$BACKUP_PATH" ]]; then
-    whiptail --title "Confirm Changes" \
-      --yesno "About to modify:\n\n${CONFIG_FILE}\n\nExisting backup will be used:\n${BACKUP_PATH}\n\nProceed?" 14 70
-    local rc=$?
-    if [[ $rc -ne 0 ]]; then
+    if ! yesno_or_menu "Confirm Changes" "About to modify:
+
+${CONFIG_FILE}
+
+Existing baseline backup will be used:
+${BACKUP_PATH}
+
+Proceed?"; then
       whiptail --msgbox "No changes were applied." 8 40
       exit 0
     fi
@@ -47,15 +71,19 @@ ensure_confirm_and_backup() {
     return 0
   fi
 
-  # No baseline backup yet -> create one and proceed
+  # No baseline: propose a new one
   local ts backup
   ts=$(now_stamp)
   backup="${CONFIG_FILE}.bak-${ts}"
 
-  whiptail --title "Confirm Changes" \
-    --yesno "About to modify:\n\n${CONFIG_FILE}\n\nA backup will be created:\n${backup}\n\nProceed?" 14 70
-  local rc=$?
-  if [[ $rc -ne 0 ]]; then
+  if ! yesno_or_menu "Confirm Changes" "About to modify:
+
+${CONFIG_FILE}
+
+A baseline backup will be created:
+${backup}
+
+Proceed?"; then
     whiptail --msgbox "No changes were applied." 8 40
     exit 0
   fi
@@ -76,10 +104,13 @@ make_backup_only() {
   ts=$(now_stamp)
   backup="${CONFIG_FILE}.bak-${ts}"
 
-  whiptail --title "Create Baseline Backup" \
-    --yesno "Create a baseline backup to diff/restore against?\n\nSource:\n${CONFIG_FILE}\nBackup:\n${backup}" 12 70
-  local rc=$?
-  if [[ $rc -ne 0 ]]; then
+  if ! yesno_or_menu "Create Baseline Backup" "Create a baseline backup to diff/restore against?
+
+Source:
+${CONFIG_FILE}
+
+Backup:
+${backup}"; then
     return 1
   fi
 
@@ -143,7 +174,7 @@ key_for() {
 
 # --- View diff (backup vs current) ---
 view_diff() {
-  # Ensure we have a baseline backup; if not, offer to create one
+  # Ensure baseline backup exists (or offer to create one)
   if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
     make_backup_only || {
       whiptail --msgbox "Cannot show diff without a backup." 8 50
@@ -177,10 +208,12 @@ view_diff() {
 restore_from_backup() {
   # Need a baseline backup to restore from
   if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
-    whiptail --title "Restore from Backup" \
-      --yesno "No baseline backup found.\n\nCreate one now from the current file to enable restore?\n\nSource:\n${CONFIG_FILE}" 12 70
-    local rc=$?
-    if [[ $rc -ne 0 ]]; then
+    if ! yesno_or_menu "Restore from Backup" "No baseline backup found.
+
+Create one now from the current file to enable restore?
+
+Source:
+${CONFIG_FILE}"; then
       whiptail --msgbox "Restore cancelled." 8 40
       return
     fi
@@ -194,10 +227,16 @@ restore_from_backup() {
   ts=$(now_stamp)
   safety="${CONFIG_FILE}.restore-${ts}"
 
-  whiptail --title "Restore from Backup" \
-    --yesno "This will replace:\n${CONFIG_FILE}\n\nwith baseline backup:\n${BACKUP_PATH}\n\nA safety snapshot will be saved as:\n${safety}\n\nProceed?" 16 72
-  local rc=$?
-  if [[ $rc -ne 0 ]]; then
+  if ! yesno_or_menu "Restore from Backup" "This will replace:
+${CONFIG_FILE}
+
+with baseline backup:
+${BACKUP_PATH}
+
+A safety snapshot will be saved as:
+${safety}
+
+Proceed?"; then
     whiptail --msgbox "Restore cancelled." 8 40
     return
   fi
