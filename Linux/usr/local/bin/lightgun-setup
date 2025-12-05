@@ -24,7 +24,7 @@ CONFIRMED_WRITE="0"   # 0 = not confirmed yet; 1 = confirmed
 BACKUP_DONE="0"       # 0 = no baseline backup yet; 1 = baseline taken
 BACKUP_PATH=""
 
-# How many old backups to offer
+# How many old backups to offer in pickers (helpers kept but not exposed in menu)
 BACKUP_LIMIT="${BACKUP_LIMIT:-5}"
 
 # --- utils ---
@@ -32,7 +32,9 @@ have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
 
 # --- Confirmation controls (avoid Yes/No focus issues by default) ---
+# 1 = show menu confirmations everywhere (Up/Down + Enter). 0 = try Yes/No first.
 FORCE_MENU_CONFIRM="${FORCE_MENU_CONFIRM:-1}"
+# 1 = auto-confirm all prompts (careful!); still takes a baseline backup
 ASSUME_YES="${ASSUME_YES:-0}"
 YESNO_FLAGS='--fb --yes-button "Proceed" --no-button "Cancel"'
 
@@ -205,54 +207,60 @@ key_for() {
   if [[ "$PLAYER" == "P2" ]]; then echo "${base}P2"; else echo "${base}"; fi
 }
 
-# --- Recent backups (last N) ---
-list_recent_backups() {
-  # Emits up to $BACKUP_LIMIT paths, newest first (one per line). Returns 1 if none.
-  local pattern
-  pattern="$(basename "$CONFIG_FILE").bak-*"
-  local dir
-  dir="$(dirname "$CONFIG_FILE")"
+# --- (Helpers retained but not exposed in menu) Recent backups / diff / restore ---
 
-  # Use ls -t for simplicity; suppress errors if none
-  local out
-  out=$(ls -1t -- "${dir}/${pattern}" 2>/dev/null | head -n "${BACKUP_LIMIT}" || true)
-  if [[ -z "${out}" ]]; then return 1; fi
-  printf "%s\n" "${out}"
+list_recent_backups() {
+  local dir base
+  dir="$(dirname -- "$CONFIG_FILE")"
+  base="$(basename -- "$CONFIG_FILE")"
+  shopt -s nullglob
+  local -a files=( "$dir/${base}.bak-"* )
+  shopt -u nullglob
+  if ((${#files[@]} == 0)); then return 1; fi
+  local f ts
+  for f in "${files[@]}"; do
+    if ts=$(stat -c %Y -- "$f" 2>/dev/null); then
+      printf '%s\t%s\n' "$ts" "$f"
+    else
+      printf '0\t%s\n' "$f"
+    fi
+  done | LC_ALL=C sort -nr | awk -v n="${BACKUP_LIMIT:-5}" 'NR<=n {print $2}'
 }
 
 choose_backup_from_lastN() {
-  # Presents a menu of last N backups, returns chosen path via echo; non-zero on cancel
-  local list
-  list=$(list_recent_backups) || { whiptail --msgbox "No backups found (pattern: $(basename "$CONFIG_FILE").bak-*)" 10 70; return 1; }
-
-  # Build whiptail menu entries
-  local -a opts paths
+  local -a backs
+  mapfile -t backs < <(list_recent_backups) || true
+  if ((${#backs[@]} == 0)); then
+    whiptail --msgbox "No backups found for:\n$(basename -- "$CONFIG_FILE")\n\nExpected pattern:\n$(basename -- "$CONFIG_FILE").bak-*" 12 70
+    return 1
+  fi
+  local -a menu
   local i=1
-  while IFS= read -r f; do
-    paths+=("$f")
-    # Show only filename + mtime for readability
-    local bn ts
-    bn="$(basename "$f")"
-    # Derive ts from filename tail (after .bak-)
+  local f bn ts
+  for f in "${backs[@]}"; do
+    bn="$(basename -- "$f")"
     ts="${bn##*.bak-}"
-    opts+=("$i" "$bn  [${ts}]")
+    menu+=( "$i" "$bn  [${ts}]" )
     ((i++))
-  done <<< "$list"
-
+  done
   local choice
-  choice=$(whiptail --title "Choose Backup" --menu "Select a backup to use (newest first)" 20 80 10 \
-            "${opts[@]}" 3>&1 1>&2 2>&3) || return 1
-
+  if ! choice=$(whiptail --title "Choose Backup" \
+                  --menu "Select a backup to use (newest first)" 20 84 10 \
+                  "${menu[@]}" 3>&1 1>&2 2>&3); then
+    return 1
+  fi
   local idx=$((choice-1))
-  echo "${paths[$idx]}"
+  if (( idx < 0 || idx >= ${#backs[@]} )); then
+    whiptail --msgbox "Invalid selection index (${choice})." 8 50
+    return 1
+  fi
+  printf '%s\n' "${backs[$idx]}"
 }
 
-# --- Diff helpers ---
 view_diff_with_backup() {
   local bkp="$1"
   local tmp
   if have_cmd mktemp; then tmp=$(mktemp); else tmp="/tmp/lightgun-config.diff.$$"; fi
-
   if ! have_cmd diff; then
     printf "The 'diff' command is not available on this system.\n" > "$tmp"
   else
@@ -266,7 +274,6 @@ view_diff_with_backup() {
   rm -f -- "$tmp"
 }
 
-# --- Standard View diff (baseline vs current) ---
 view_diff() {
   if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
     make_backup_only || { whiptail --msgbox "Cannot show diff without a backup." 8 50; return; }
@@ -274,14 +281,12 @@ view_diff() {
   view_diff_with_backup "${BACKUP_PATH}"
 }
 
-# --- View diff against one of the recent backups ---
 view_diff_choose_backup() {
   local selected
   selected=$(choose_backup_from_lastN) || return
   view_diff_with_backup "${selected}"
 }
 
-# --- Restore from baseline backup (previous behavior) ---
 restore_from_backup() {
   if [[ "$BACKUP_DONE" != "1" || -z "$BACKUP_PATH" ]]; then
     if ! yesno_or_menu "Restore from Backup" "No baseline backup found.
@@ -294,10 +299,8 @@ ${CONFIG_FILE}"; then
     fi
     make_backup_only || { whiptail --msgbox "Failed to create baseline backup.\nRestore cannot proceed." 10 60; return; }
   fi
-
   local ts safety
   ts=$(now_stamp); safety="${CONFIG_FILE}.restore-${ts}"
-
   if ! yesno_or_menu "Restore from Backup" "This will replace:
 ${CONFIG_FILE}
 
@@ -310,20 +313,16 @@ ${safety}
 Proceed?"; then
     whiptail --msgbox "Restore cancelled." 8 40; return
   fi
-
   cp -p -- "${CONFIG_FILE}" "${safety}"
   cp -p -- "${BACKUP_PATH}" "${CONFIG_FILE}"
   whiptail --msgbox "Restore complete.\n\nSafety snapshot:\n${safety}\nRestored from:\n${BACKUP_PATH}" 12 72
 }
 
-# --- Restore from one of the recent backups (choose) ---
 restore_from_chosen_backup() {
   local selected
   selected=$(choose_backup_from_lastN) || return
-
   local ts safety
   ts=$(now_stamp); safety="${CONFIG_FILE}.restore-${ts}"
-
   if ! yesno_or_menu "Restore from Selected Backup" "This will replace:
 ${CONFIG_FILE}
 
@@ -334,11 +333,11 @@ A safety snapshot will be saved as:
 ${safety}
 
 Proceed?"; then
-    whiptail --msgbox "Restore cancelled." 8 40; return
+    whiptail --msgbox "Restore cancelled." 8 40
+    return
   fi
-
   cp -p -- "${CONFIG_FILE}" "${safety}"
-  cp -p -- "${selected}" "${CONFIG_FILE}"
+  cp -p -- "${selected}"     "${CONFIG_FILE}"
   whiptail --msgbox "Restore complete.\n\nSafety snapshot:\n${safety}\nRestored from:\n${selected}" 12 72
 }
 
@@ -530,32 +529,24 @@ recoil_menu() {
 choose_config
 
 while true; do
-  choice=$(whiptail --title "Lightgun Config Editor" --menu "File: $CONFIG_FILE\nPlayer: $PLAYER" 24 84 18 \
+  choice=$(whiptail --title "Lightgun Config Editor" --menu "File: $CONFIG_FILE\nPlayer: $PLAYER" 22 78 14 \
       "1"  "Switch Player (P1/P2)" \
       "2"  "Serial Port Settings" \
       "3"  "Video Settings" \
       "4"  "Calibration / Offsets" \
       "5"  "Recoil Settings" \
-      "6"  "View diff (baseline vs current)" \
-      "7"  "View diff against previous backup (choose)" \
-      "8"  "Restore from baseline backup" \
-      "9"  "Restore from previous backup (choose last ${BACKUP_LIMIT})" \
-      "10" "Switch Config File" \
-      "11" "Exit" \
+      "6"  "Switch Config File" \
+      "7"  "Exit" \
       3>&1 1>&2 2>&3) || break
 
   case "$choice" in
-    1)  choose_player ;;
-    2)  serial_menu ;;
-    3)  video_menu  ;;
-    4)  calibration_menu ;;
-    5)  recoil_menu ;;
-    6)  view_diff ;;
-    7)  view_diff_choose_backup ;;
-    8)  restore_from_backup ;;
-    9)  restore_from_chosen_backup ;;
-    10) choose_config ;;
-    11) break ;;
+    1) choose_player ;;
+    2) serial_menu   ;;
+    3) video_menu    ;;
+    4) calibration_menu ;;
+    5) recoil_menu   ;;
+    6) choose_config ;;
+    7) break ;;
   esac
 done
 
