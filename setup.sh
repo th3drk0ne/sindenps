@@ -232,8 +232,9 @@ systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "$
 # Step 5) Install prerequisites
 #-----------------------------------------------------------
 log "Installing prerequisites via apt."
-apt-get update -y
-apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev apache2
+sudo add-apt-repository universe
+sudo apt-get update -y
+sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev apache2 xmlstarlet
 log "Prerequisites installed."
 
 #-----------------------------------------------------------
