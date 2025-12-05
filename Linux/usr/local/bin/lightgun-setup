@@ -114,10 +114,8 @@ short_path() {
 
 # --- Robust getters/setters and fallback XML handling ---
 
-# Escape special chars for sed, including delimiter.
 sed_escape() { printf '%s' "$1" | sed 's/[&|\\]/\\&/g'; }
 
-# Fallback get: supports attribute order (key before/after value)
 get_config_sed_fallback() {
   local key="$1"
   perl -0777 -ne '
@@ -150,7 +148,6 @@ update_config() {
   else
     local esc_val; esc_val="$(sed_escape "$value")"
     if grep -qE '<add\b[^>]*\bkey="'"${key}"'"' "$CONFIG_FILE"; then
-      # Replace value regardless of attribute order
       sed -i -E \
         -e 's|(<add[^>]*\bkey="'"${key}"'"[^>]*\bvalue=")[^"]*|\1'"${esc_val}"'|g' \
         -e 's|(<add[^>]*\bvalue=")[^"]*"([^>]*\bkey="'"${key}"'")|\1'"${esc_val}"'"\2|g' \
@@ -161,7 +158,6 @@ update_config() {
   fi
 }
 
-# Guard: refuse to write empty values; fallback to a default (optional)
 update_config_if_nonempty() {
   local key="$1" value="$2" default="${3:-}"
   if [[ -z "$value" ]]; then
@@ -175,9 +171,9 @@ update_config_if_nonempty() {
   update_config "$key" "$value"
 }
 
-# --- Simple validators used in recoil menu ---
-is_bool() { [[ "$1" =~ ^[01]$ ]]; }    # Accepts 0 or 1
-is_uint() { [[ "$1" =~ ^[0-9]+$ ]]; }   # Non-negative integer
+# --- Simple validators ---
+is_bool() { [[ "$1" =~ ^[01]$ ]]; }
+is_uint() { [[ "$1" =~ ^[0-9]+$ ]]; }
 
 # --- Save-ok popup wrapper (called after inputbox) ---
 apply_kv_with_popup() {
@@ -187,7 +183,6 @@ apply_kv_with_popup() {
 }
 
 # --- Helpers for P2 and devices ---
-
 key_for() { [[ "$PLAYER" == "P2" ]] && echo "$1P2" || echo "$1"; }
 
 pick_from_list() {
@@ -206,16 +201,10 @@ pick_from_list() {
   echo "${items[$((choice-1))]}"
 }
 
-detect_video_devices() {
-  compgen -G "/dev/video*" | sort -V
-}
-
-detect_tty_devices() {
-  compgen -G "/dev/tty*" | sort -V
-}
+detect_video_devices() { compgen -G "/dev/video*" | sort -V; }
+detect_tty_devices() { compgen -G "/dev/tty*" | sort -V; }
 
 # --- Backup utilities ---
-
 list_recent_backups() {
   local dir base
   dir="$(dirname -- "$CONFIG_FILE")"
@@ -236,8 +225,7 @@ view_backups() {
     whiptail --msgbox "No backups found for:\n$(basename "$CONFIG_FILE")" 10 60
     return
   fi
-  local tmp
-  tmp=$(mktemp)
+  local tmp; tmp=$(mktemp)
   printf "Available backups (newest first):\n\n" > "$tmp"
   for f in "${backs[@]}"; do
     printf "%s\n" "$f" >> "$tmp"
@@ -252,8 +240,7 @@ choose_backup() {
   (( ${#backs[@]} )) || { whiptail --msgbox "No backups found." 8 50; return 1; }
   local -a menu; local i=1
   for f in "${backs[@]}"; do
-    menu+=( "$i" "$(basename "$f")" )
-    ((i++))
+    menu+=( "$i" "$(basename "$f")" ); ((i++))
   done
   local choice
   choice=$(whiptail --title "Choose Backup" --menu "Select backup to restore" 20 70 10 "${menu[@]}" 3>&1 1>&2 2>&3) || return 1
@@ -261,8 +248,7 @@ choose_backup() {
 }
 
 restore_from_backup() {
-  local selected
-  selected=$(choose_backup) || return
+  local selected; selected=$(choose_backup) || return
   local safety="${CONFIG_FILE}.restore-$(now_stamp)"
   if ! yesno_or_menu "Restore" "Replace current file with:
 ${selected}
@@ -287,7 +273,6 @@ prune_backups() {
 }
 
 # --- Config selection & validation ---
-
 choose_config() {
   local ps1="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
   local ps2="/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
@@ -306,16 +291,13 @@ choose_config() {
 
 ensure_config_access() {
   if [[ -z "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "No config file selected." 8 40
-    exit 1
+    whiptail --msgbox "No config file selected." 8 40; exit 1
   fi
   if [[ ! -f "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "Config file not found:\n$(short_path "$CONFIG_FILE")" 10 70
-    exit 1
+    whiptail --msgbox "Config file not found:\n$(short_path "$CONFIG_FILE")" 10 70; exit 1
   fi
   if [[ ! -w "$CONFIG_FILE" ]]; then
-    whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70
-    exit 1
+    whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70; exit 1
   fi
 }
 
@@ -326,134 +308,79 @@ choose_player() {
     "Player 1" "" \
     "Player 2" "" \
     3>&1 1>&2 2>&3) || return
-
   case "$choice" in
     "Player 1") PLAYER="P1" ;;
     "Player 2") PLAYER="P2" ;;
   esac
 }
 
-# --- Recoil Profiles storage (XDG-friendly) ---
+# --- Profiles storage ---
 PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/lightgun-config-editor/profiles"
-
-ensure_profile_dir() {
-  mkdir -p -- "$PROFILE_DIR"
-}
-
-# Sanitize profile file names: lower, spaces -> _, allow [a-z0-9._-]
+ensure_profile_dir() { mkdir -p -- "$PROFILE_DIR"; }
 sanitize_profile_name() {
-  # Use extended regex for portability
-  printf '%s' "$1" \
-    | tr '[:upper:]' '[:lower:]' \
-    | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
 }
-
-# Build a summary to display before saving/applying a profile
 recoil_profile_summary() {
   local -a lines=("$@")
   printf "Profile will set these values for %s:\n\n" "$PLAYER"
-  for ((i=0; i<${#lines[@]}; i+=2)); do
-    printf "%-30s = %s\n" "${lines[i]}" "${lines[i+1]}"
-  done
+  for ((i=0; i<${#lines[@]}; i+=2)); do printf "%-30s = %s\n" "${lines[i]}" "${lines[i+1]}"; done
 }
+set_kv() { local k; k=$(key_for "$1"); update_config "$k" "$2"; }
 
-# Convenience setter that respects current PLAYER
-set_kv() {
-  local k; k=$(key_for "$1")
-  update_config "$k" "$2"
-}
-
-# Recoil keys included in custom profiles (unsuffixed)
 recoil_profile_keys=(
-  "IAgreeRecoilTermsInLicense"
-  "EnableRecoil"
-  "RecoilTrigger"
-  "RecoilTriggerOffscreen"
-  "RecoilPumpActionOnEvent"
-  "RecoilPumpActionOffEvent"
-  "RecoilFrontLeft"
-  "RecoilFrontRight"
-  "RecoilBackLeft"
-  "RecoilBackRight"
-  "RecoilStrength"
-  "TriggerRecoilNormalOrRepeat"
-  "AutoRecoilStrength"
-  "AutoRecoilStartDelay"
-  "AutoRecoilDelayBetweenPulses"
+  "IAgreeRecoilTermsInLicense" "EnableRecoil"
+  "RecoilTrigger" "RecoilTriggerOffscreen"
+  "RecoilPumpActionOnEvent" "RecoilPumpActionOffEvent"
+  "RecoilFrontLeft" "RecoilFrontRight" "RecoilBackLeft" "RecoilBackRight"
+  "RecoilStrength" "TriggerRecoilNormalOrRepeat"
+  "AutoRecoilStrength" "AutoRecoilStartDelay" "AutoRecoilDelayBetweenPulses"
 )
 
-# Collect current values for PLAYER and return as alternating key/value array (NUL-separated for safe transport)
 collect_current_recoil_kv() {
-  local -a out=()
-  local k val actual
+  local -a out=(); local k val actual
   for k in "${recoil_profile_keys[@]}"; do
-    actual=$(key_for "$k")
-    val=$(get_config "$actual")
-    out+=("$k" "$val")
+    actual=$(key_for "$k"); val=$(get_config "$actual"); out+=("$k" "$val")
   done
   printf '%s\0' "${out[@]}"
 }
 
-# Save current recoil settings to a named profile file
 save_custom_recoil_profile() {
   ensure_profile_dir
-
-  local name
-  name=$(whiptail --inputbox "Enter a name for this profile (e.g. arcade_heavy):" 10 70 "" 3>&1 1>&2 2>&3) || return
+  local name; name=$(whiptail --inputbox "Enter a name for this profile (e.g. arcade_heavy):" 10 70 "" 3>&1 1>&2 2>&3) || return
   name=$(sanitize_profile_name "$name")
-
-  if [[ -z "$name" ]]; then
-    whiptail --msgbox "Profile name cannot be empty." 8 40
-    return
-  fi
-
+  if [[ -z "$name" ]]; then whiptail --msgbox "Profile name cannot be empty." 8 40; return; fi
   local path="${PROFILE_DIR}/${name}.profile"
 
-  # Prepare summary
-  local -a kv
-  IFS=$'\0' read -r -d '' -a kv < <(collect_current_recoil_kv && printf '\0') || true
-
+  local -a kv; IFS=$'\0' read -r -d '' -a kv < <(collect_current_recoil_kv && printf '\0') || true
   local tmp; tmp=$(mktemp)
   {
     printf "Saving current recoil settings for %s as profile:\n\n" "$PLAYER"
-    for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]}"
-    done
+    for ((i=0; i<${#kv[@]}; i+=2)); do printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]}"; done
     printf "\nFile:\n%s\n" "$path"
   } > "$tmp"
 
-  if ! yesno_or_menu "Save Custom Profile" "$(cat "$tmp")"; then
-    rm -f "$tmp"
-    return
-  fi
+  if ! yesno_or_menu "Save Custom Profile" "$(cat "$tmp")"; then rm -f "$tmp"; return; fi
   rm -f "$tmp"
 
-  # Overwrite guard
   if [[ -f "$path" ]]; then
     if ! yesno_or_menu "Overwrite Profile?" "Profile exists:\n$(basename "$path")\n\nOverwrite?"; then
-      whiptail --msgbox "Save cancelled." 8 30
-      return
+      whiptail --msgbox "Save cancelled." 8 30; return
     fi
   fi
 
-  # Write key=value pairs (unsuffixed keys so the profile is player-agnostic)
   {
-    printf "# Lightgun recoil profile\n"
-    printf "# Name: %s\n" "$name"
-    printf "# Saved: %s\n" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    printf "# Player at save time: %s\n" "$PLAYER"
-    for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%s=%s\n" "${kv[i]}" "${kv[i+1]}"
-    done
+    printf "# Lightgun recoil profile\n# Name: %s\n# Saved: %s\n# Player at save time: %s\n" "$name" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$PLAYER"
+    for ((i=0; i<${#kv[@]}; i+=2)); do printf "%s=%s\n" "${kv[i]}" "${kv[i+1]}"; done
   } > "$path"
 
   whiptail --msgbox "Saved profile:\n$(basename "$path")\n\nLocation:\n$path" 12 70
 }
 
-# --- Recoil Profiles menu (presets + save custom) ---
+# --- Recoil Profiles (presets + save custom) ---
 recoil_profiles_menu() {
   local choice
-  choice=$(whiptail --title "Recoil Profiles ($PLAYER)" --menu "Pick a preset or action" 22 76 12 \
+  # Bigger dialog to ensure visibility
+  choice=$(whiptail --title "Recoil Profiles ($PLAYER)" --menu "Pick a preset or action" 22 84 10 \
     "Apply: Arcade"       "Strong single-shot arcade recoil" \
     "Apply: MachineGun"   "Automatic fire; faster pulses" \
     "Apply: Soft"         "Gentler single-shot recoil" \
@@ -463,96 +390,32 @@ recoil_profiles_menu() {
     3>&1 1>&2 2>&3) || return
 
   case "$choice" in
-    "Save Custom Profile")
-      save_custom_recoil_profile
-      ;;
+    "Save Custom Profile") save_custom_recoil_profile ;;
     "Apply: Arcade"|"Apply: MachineGun"|"Apply: Soft"|"Apply: MixedMode"|"Apply: NoRecoil")
-      local preset="${choice#Apply: }"
-      preset="${preset// /}" # remove spaces
-
+      local preset="${choice#Apply: }"; preset="${preset// /}"
       local -a kv=()
       case "$preset" in
-        "Arcade")
-          kv=(
-            "IAgreeRecoilTermsInLicense" "1"
-            "EnableRecoil"               "1"
-            "RecoilTrigger"              "1"
-            "RecoilTriggerOffscreen"     "0"
-            "RecoilPumpActionOnEvent"    "0"
-            "RecoilPumpActionOffEvent"   "0"
-            "RecoilFrontLeft"            "0"
-            "RecoilFrontRight"           "0"
-            "RecoilBackLeft"             "0"
-            "RecoilBackRight"            "0"
-            "TriggerRecoilNormalOrRepeat" "0"
-            "RecoilStrength"              "80"
-            "AutoRecoilStrength"          "40"
-            "AutoRecoilStartDelay"        "0"
-            "AutoRecoilDelayBetweenPulses" "13"
-          )
-          ;;
-        "MachineGun")
-          kv=(
-            "IAgreeRecoilTermsInLicense" "1"
-            "EnableRecoil"               "1"
-            "RecoilTrigger"              "1"
-            "RecoilTriggerOffscreen"     "0"
-            "TriggerRecoilNormalOrRepeat" "1"
-            "RecoilStrength"              "60"
-            "AutoRecoilStrength"          "60"
-            "AutoRecoilStartDelay"        "0"
-            "AutoRecoilDelayBetweenPulses" "8"
-          )
-          ;;
-        "Soft")
-          kv=(
-            "IAgreeRecoilTermsInLicense" "1"
-            "EnableRecoil"               "1"
-            "RecoilTrigger"              "1"
-            "TriggerRecoilNormalOrRepeat" "0"
-            "RecoilStrength"              "30"
-            "AutoRecoilStrength"          "25"
-            "AutoRecoilStartDelay"        "0"
-            "AutoRecoilDelayBetweenPulses" "15"
-          )
-          ;;
-        "MixedMode")
-          kv=(
-            "IAgreeRecoilTermsInLicense" "1"
-            "EnableRecoil"               "1"
-            "RecoilTrigger"              "1"
-            "TriggerRecoilNormalOrRepeat" "1"
-            "RecoilStrength"              "70"
-            "AutoRecoilStrength"          "50"
-            "AutoRecoilStartDelay"        "5"
-            "AutoRecoilDelayBetweenPulses" "10"
-          )
-          ;;
-        "NoRecoil")
-          kv=(
-            "IAgreeRecoilTermsInLicense" "1"
-            "EnableRecoil"               "0"
-            "RecoilTrigger"              "0"
-            "TriggerRecoilNormalOrRepeat" "0"
-            "RecoilStrength"              "0"
-            "AutoRecoilStrength"          "0"
-            "AutoRecoilStartDelay"        "0"
-            "AutoRecoilDelayBetweenPulses" "13"
-          )
-          ;;
+        "Arcade") kv=( "IAgreeRecoilTermsInLicense" "1" "EnableRecoil" "1" "RecoilTrigger" "1" "RecoilTriggerOffscreen" "0"
+                       "RecoilPumpActionOnEvent" "0" "RecoilPumpActionOffEvent" "0" "RecoilFrontLeft" "0" "RecoilFrontRight" "0"
+                       "RecoilBackLeft" "0" "RecoilBackRight" "0" "TriggerRecoilNormalOrRepeat" "0"
+                       "RecoilStrength" "80" "AutoRecoilStrength" "40" "AutoRecoilStartDelay" "0" "AutoRecoilDelayBetweenPulses" "13" );;
+        "MachineGun") kv=( "IAgreeRecoilTermsInLicense" "1" "EnableRecoil" "1" "RecoilTrigger" "1" "RecoilTriggerOffscreen" "0"
+                           "TriggerRecoilNormalOrRepeat" "1" "RecoilStrength" "60" "AutoRecoilStrength" "60"
+                           "AutoRecoilStartDelay" "0" "AutoRecoilDelayBetweenPulses" "8" );;
+        "Soft") kv=( "IAgreeRecoilTermsInLicense" "1" "EnableRecoil" "1" "RecoilTrigger" "1" "TriggerRecoilNormalOrRepeat" "0"
+                     "RecoilStrength" "30" "AutoRecoilStrength" "25" "AutoRecoilStartDelay" "0" "AutoRecoilDelayBetweenPulses" "15" );;
+        "MixedMode") kv=( "IAgreeRecoilTermsInLicense" "1" "EnableRecoil" "1" "RecoilTrigger" "1" "TriggerRecoilNormalOrRepeat" "1"
+                          "RecoilStrength" "70" "AutoRecoilStrength" "50" "AutoRecoilStartDelay" "5" "AutoRecoilDelayBetweenPulses" "10" );;
+        "NoRecoil") kv=( "IAgreeRecoilTermsInLicense" "1" "EnableRecoil" "0" "RecoilTrigger" "0" "TriggerRecoilNormalOrRepeat" "0"
+                         "RecoilStrength" "0" "AutoRecoilStrength" "0" "AutoRecoilStartDelay" "0" "AutoRecoilDelayBetweenPulses" "13" );;
       esac
 
       local tmp; tmp=$(mktemp)
       recoil_profile_summary "${kv[@]}" > "$tmp"
-      if ! yesno_or_menu "Apply '${preset}' profile" "$(cat "$tmp")"; then
-        rm -f "$tmp"
-        return
-      fi
+      if ! yesno_or_menu "Apply '${preset}' profile" "$(cat "$tmp")"; then rm -f "$tmp"; return; fi
       rm -f "$tmp"
 
-      for ((i=0; i<${#kv[@]}; i+=2)); do
-        set_kv "${kv[i]}" "${kv[i+1]}"
-      done
+      for ((i=0; i<${#kv[@]}; i+=2)); do set_kv "${kv[i]}" "${kv[i+1]}"; done
       whiptail --msgbox "Profile '${preset}' applied to ${PLAYER}." 8 50
       ;;
   esac
@@ -561,8 +424,9 @@ recoil_profiles_menu() {
 # --- Recoil Settings (granular keys + link to profiles) ---
 recoil_menu() {
   while true; do
+    # Bigger dialog + fewer items-per-page to ensure the first item ("Recoil Profile Presets") is visible
     local choice
-    choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 24 84 20 \
+    choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 28 100 14 \
       "1"  "Recoil Profile Presets" \
       "2"  "IAgreeRecoilTermsInLicense (0/1)" \
       "3"  "EnableRecoil (0/1)" \
@@ -583,7 +447,7 @@ recoil_menu() {
       3>&1 1>&2 2>&3) || break
 
     case "$choice" in
-      1)  recoil_profiles_menu ;;
+      1) recoil_profiles_menu ;;
       2)
         local k; k=$(key_for "IAgreeRecoilTermsInLicense"); local def; def=$(get_config "$k")
         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) || continue
@@ -669,17 +533,18 @@ choose_config
 ensure_config_access
 
 while true; do
+  local choice
   choice=$(whiptail --title "Lightgun Config Editor" \
-    --menu "File: $(short_path "$CONFIG_FILE")\nPlayer: $PLAYER" 24 84 18 \
-    "1" "Switch Player (Player 1/Player 2)" \
-    "2" "Serial Port Settings" \
-    "3" "Video Settings" \
-    "4" "Calibration Settings" \
-    "5" "Recoil Settings" \
-    "6" "Recoil Profiles (Presets & Save)" \
-    "7" "Create Backup Now" \
-    "8" "View Backups" \
-    "9" "Restore from backup (choose)" \
+    --menu "File: $(short_path "$CONFIG_FILE")\nPlayer: $PLAYER" 24 84 12 \
+    "1"  "Switch Player (Player 1/Player 2)" \
+    "2"  "Serial Port Settings" \
+    "3"  "Video Settings" \
+    "4"  "Calibration Settings" \
+    "5"  "Recoil Settings" \
+    "6"  "Recoil Profiles (Presets & Save)" \
+    "7"  "Create Backup Now" \
+    "8"  "View Backups" \
+    "9"  "Restore from backup (choose)" \
     "10" "Switch Config File" \
     "11" "Exit" \
     3>&1 1>&2 2>&3) || break
