@@ -555,7 +555,6 @@ recoil_profiles_menu() {
     "Apply: Soft"         "Gentler single-shot recoil" \
     "Apply: MixedMode"    "Single tap = single-shot, hold = auto" \
     "Apply: NoRecoil"     "Disable recoil entirely" \
-    "Save Custom Profile" "Save current settings as a reusable profile" \
     3>&1 1>&2 2>&3) || return
   case "$choice" in
     "Save Custom Profile")
