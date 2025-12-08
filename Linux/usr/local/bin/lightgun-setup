@@ -20,8 +20,8 @@ actbutton=white,green
 '
 
 CONFIG_FILE=""
-ROOT_DIR=""
-BACKUP_DIR=""
+ROOT_DIR=""            # Root folder for relative-path displays (parent of PS1/PS2)
+BACKUP_DIR=""          # Backup folder (dirname(CONFIG_FILE)/backup)
 PLAYER="P1"
 CONFIRMED_WRITE="0"
 BACKUP_DONE="0"
@@ -405,335 +405,7 @@ choose_player() {
   esac
 }
 
-# --- Profiles storage ---
-PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/lightgun-config-editor/profiles"
-ensure_profile_dir() { mkdir -p -- "$PROFILE_DIR"; }
-sanitize_profile_name() {
-  printf '%s' "$1" \
-    | tr '[:upper:]' '[:lower:]' \
-    | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
-}
-
-# --- Required recoil keys & defaults ---
-RECOIL_KEYS=( # base keys only (no P2 suffix)
-  "IAgreeRecoilTermsInLicense"
-  "EnableRecoil"
-  "RecoilTrigger"
-  "RecoilTriggerOffscreen"
-  "RecoilPumpActionOnEvent"
-  "RecoilPumpActionOffEvent"
-  "RecoilFrontLeft"
-  "RecoilFrontRight"
-  "RecoilBackLeft"
-  "RecoilBackRight"
-  "RecoilStrength"
-  "TriggerRecoilNormalOrRepeat"
-  "AutoRecoilStrength"
-  "AutoRecoilStartDelay"
-  "AutoRecoilDelayBetweenPulses"
-)
-
-# Bool & numeric classification
-RECOIL_BOOL_KEYS=(
-  "IAgreeRecoilTermsInLicense" "EnableRecoil" "RecoilTrigger" "RecoilTriggerOffscreen"
-  "RecoilPumpActionOnEvent" "RecoilPumpActionOffEvent"
-  "RecoilFrontLeft" "RecoilFrontRight" "RecoilBackLeft" "RecoilBackRight"
-  "TriggerRecoilNormalOrRepeat"
-)
-RECOIL_NUM_KEYS=(
-  "RecoilStrength" "AutoRecoilStrength" "AutoRecoilStartDelay" "AutoRecoilDelayBetweenPulses"
-)
-
-# Defaults (Arcade-like baseline)
-declare -A RECOIL_DEFAULTS=(
-  ["IAgreeRecoilTermsInLicense"]="1"
-  ["EnableRecoil"]="1"
-  ["RecoilTrigger"]="1"
-  ["RecoilTriggerOffscreen"]="0"
-  ["RecoilPumpActionOnEvent"]="0"
-  ["RecoilPumpActionOffEvent"]="0"
-  ["RecoilFrontLeft"]="0"
-  ["RecoilFrontRight"]="0"
-  ["RecoilBackLeft"]="0"
-  ["RecoilBackRight"]="0"
-  ["TriggerRecoilNormalOrRepeat"]="0"
-  ["RecoilStrength"]="80"
-  ["AutoRecoilStrength"]="40"
-  ["AutoRecoilStartDelay"]="0"
-  ["AutoRecoilDelayBetweenPulses"]="13"
-)
-
-in_array() {
-  local needle="$1"; shift
-  local x
-  for x in "$@"; do [[ "$x" == "$needle" ]] && return 0; done
-  return 1
-}
-
-# Normalize raw value -> validated value; write reports when defaults applied
-normalize_recoil_value() {
-  local key="$1" raw="${2:-}" report_file="${3:-}"
-  local val=""
-  if in_array "$key" "${RECOIL_BOOL_KEYS[@]}"; then
-    if [[ -z "${raw-}" || ! "${raw}" =~ ^[01]$ ]]; then
-      val="${RECOIL_DEFAULTS[$key]:-0}"
-      [[ -n "${report_file-}" ]] && printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val" >> "$report_file"
-    else
-      val="$raw"
-    fi
-    echo "$val"; return
-  fi
-  if in_array "$key" "${RECOIL_NUM_KEYS[@]}"; then
-    if [[ -z "${raw-}" || ! "${raw}" =~ ^[0-9]+$ ]]; then
-      val="${RECOIL_DEFAULTS[$key]:-0}"
-      [[ -n "${report_file-}" ]] && printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val" >> "$report_file"
-    else
-      val="$raw"
-    fi
-    echo "$val"; return
-  fi
-  # Fallback for unexpected keys (shouldn't happen)
-  val="${raw-}"
-  if [[ -z "${val-}" ]]; then
-    val="${RECOIL_DEFAULTS[$key]:-0}"
-    [[ -n "${report_file-}" ]] && printf '%s\t%s\t%s\n' "$key" "<unset>" "$val" >> "$report_file"
-  fi
-  echo "$val"
-}
-
-# Build a complete, validated map of recoil values for current PLAYER from XML
-# Returns via stdout a NUL-delimited key,value list (safe for mapfile/readarray)
-collect_recoil_map_for_player() {
-  local report_file="$1"
-  : > "$report_file"
-  local -a out=()
-  local k actual raw val
-  for k in "${RECOIL_KEYS[@]}"; do
-    actual="$(key_for "$k")"
-    raw="$(get_config "$actual")"
-    val="$(normalize_recoil_value "$k" "$raw" "$report_file")"
-    out+=("$k" "$val")
-  done
-  printf '%s\0' "${out[@]}"
-}
-
-# Apply a recoil map (base keys -> values) to current PLAYER (writes XML)
-apply_recoil_map_to_player() {
-  local -a kv=("$@")
-  if (( ${#kv[@]} == 0 || ${#kv[@]} % 2 != 0 )); then
-    whiptail --msgbox "Internal error: invalid KV payload (${#kv[@]} items)." 10 70
-    return 1
-  fi
-  local i k v
-  for ((i=0; i<${#kv[@]}; i+=2)); do
-    k="${kv[i]-}"; v="${kv[i+1]-}"
-    if [[ -z "${k-}" || -z "${v-}" ]]; then
-      whiptail --msgbox "Empty key/value at index ${i}. Aborting write." 10 70
-      return 1
-    fi
-    update_config "$(key_for "$k")" "$v"
-  done
-}
-
-# --- Profile save/load (file-based) ---
-save_custom_recoil_profile() {
-  ensure_profile_dir
-
-  local name
-  name=$(whiptail --inputbox "Enter a name for this profile (e.g. arcade_heavy):" 10 70 "" 3>&1 1>&2 2>&3) || return
-  name=$(sanitize_profile_name "$name")
-
-  if [[ -z "$name" ]]; then
-    whiptail --msgbox "Profile name cannot be empty." 8 40
-    return
-  fi
-  local path="${PROFILE_DIR}/${name}.profile"
-
-  local report; report=$(mktemp)
-  local -a kv
-  IFS=$'\0' read -r -d '' -a kv < <(collect_recoil_map_for_player "$report" && printf '\0') || kv=()
-
-  if (( ${#kv[@]} == 0 || ${#kv[@]} % 2 != 0 )); then
-    whiptail --msgbox "Failed to read recoil values from XML.\nPlease check the config." 10 70
-    rm -f "$report"
-    return
-  fi
-
-  # Preview
-  local tmp; tmp=$(mktemp)
-  {
-    printf "Saving recoil settings for %s as profile:\n\n" "$PLAYER"
-    for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]-}"
-    done
-    if [[ -s "$report" ]]; then
-      printf "\nDefaults applied for missing/invalid values:\n"
-      printf "%-30s | %-16s -> %-s\n" "KEY" "Found" "Default"
-      printf "%-30s-+-%-16s-+-%-s\n" "------------------------------" "----------------" "----------------"
-      awk -F'\t' '{printf("%-30s | %-16s -> %s\n",$1,$2,$3)}' "$report"
-    fi
-    printf "\nFile:\n%s\n" "$path"
-  } > "$tmp"
-
-  if ! yesno_or_menu "Save Custom Profile" "$(cat "$tmp")"; then
-    rm -f "$tmp" "$report"
-    return
-  fi
-  rm -f "$tmp" "$report"
-
-  if [[ -f "$path" ]]; then
-    if ! yesno_or_menu "Overwrite Profile?" "Profile exists:\n$(basename "$path")\n\nOverwrite?"; then
-      whiptail --msgbox "Save cancelled." 8 30
-      return
-    fi
-  fi
-
-  {
-    printf "# Lightgun recoil profile\n"
-    printf "# Name: %s\n" "$name"
-    printf "# Saved: %s\n" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    printf "# Player at save time: %s\n" "$PLAYER"
-    for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%s=%s\n" "${kv[i]}" "${kv[i+1]-}"
-    done
-  } > "$path"
-
-  whiptail --msgbox "Saved profile:\n$(basename "$path")\n\nLocation:\n$path" 12 70
-}
-
-# Load a profile file and apply to current PLAYER
-load_recoil_profile() {
-  ensure_profile_dir
-
-  # Build a list of available profiles
-  shopt -s nullglob
-  local -a profs=( "$PROFILE_DIR/"*.profile )
-  shopt -u nullglob
-  if (( ${#profs[@]} == 0 )); then
-    whiptail --msgbox "No profiles found in:\n$PROFILE_DIR" 10 70
-    return
-  fi
-
-  local -a menu; local i=1
-  for p in "${profs[@]}"; do
-    menu+=( "$i" "$(basename "$p")" ); ((i++))
-  done
-
-  local choice
-  choice=$(whiptail --title "Load Profile" --menu "Select a profile to apply to ${PLAYER}" 20 70 10 "${menu[@]}" 3>&1 1>&2 2>&3) || return
-  local path="${profs[$((choice-1))]}"
-
-  # Parse file: key=value lines; ignore comments/blank
-  declare -A map=()
-  while IFS= read -r line; do
-    [[ -z "${line// }" ]] && continue
-    [[ "$line" =~ ^# ]] && continue
-    if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
-      local k="${BASH_REMATCH[1]}"
-      local v="${BASH_REMATCH[2]}"
-      # Only accept recognized recoil keys
-      in_array "$k" "${RECOIL_KEYS[@]}" && map["$k"]="$v"
-    fi
-  done < "$path"
-
-  # Validate completeness
-  local -a kv=()
-  for k in "${RECOIL_KEYS[@]}"; do
-    local v="${map[$k]-}"
-    if [[ -z "${v-}" ]]; then
-      whiptail --msgbox "Profile missing required key: $k\nAborting apply." 10 70
-      return
-    fi
-    kv+=( "$k" "$v" )
-  done
-
-  # Preview & apply
-  local tmp; tmp=$(mktemp)
-  {
-    printf "Apply profile to %s:\n\n" "$PLAYER"
-    for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]-}"
-    done
-  } > "$tmp"
-
-  if ! yesno_or_menu "Apply Profile" "$(cat "$tmp")"; then rm -f "$tmp"; return; fi
-  rm -f "$tmp"
-
-  apply_recoil_map_to_player "${kv[@]}"
-  whiptail --msgbox "Profile applied to ${PLAYER}." 8 50
-}
-
-# --- Presets ---
-preset_map() {
-  local name="$1"
-  declare -A m=()
-  case "$name" in
-    "Arcade")
-      m=( ["IAgreeRecoilTermsInLicense"]="1" ["EnableRecoil"]="1" ["RecoilTrigger"]="1" ["RecoilTriggerOffscreen"]="0"
-          ["RecoilPumpActionOnEvent"]="0" ["RecoilPumpActionOffEvent"]="0" ["RecoilFrontLeft"]="0" ["RecoilFrontRight"]="0"
-          ["RecoilBackLeft"]="0" ["RecoilBackRight"]="0" ["TriggerRecoilNormalOrRepeat"]="0"
-          ["RecoilStrength"]="80" ["AutoRecoilStrength"]="40" ["AutoRecoilStartDelay"]="0" ["AutoRecoilDelayBetweenPulses"]="13" )
-      ;;
-    "MachineGun")
-      m=( ["IAgreeRecoilTermsInLicense"]="1" ["EnableRecoil"]="1" ["RecoilTrigger"]="1" ["RecoilTriggerOffscreen"]="0"
-          ["TriggerRecoilNormalOrRepeat"]="1" ["RecoilStrength"]="60" ["AutoRecoilStrength"]="60"
-          ["AutoRecoilStartDelay"]="0" ["AutoRecoilDelayBetweenPulses"]="8" )
-      ;;
-    "Soft")
-      m=( ["IAgreeRecoilTermsInLicense"]="1" ["EnableRecoil"]="1" ["RecoilTrigger"]="1"
-          ["TriggerRecoilNormalOrRepeat"]="0" ["RecoilStrength"]="30" ["AutoRecoilStrength"]="25"
-          ["AutoRecoilStartDelay"]="0" ["AutoRecoilDelayBetweenPulses"]="15" )
-      ;;
-    "MixedMode")
-      m=( ["IAgreeRecoilTermsInLicense"]="1" ["EnableRecoil"]="1" ["RecoilTrigger"]="1"
-          ["TriggerRecoilNormalOrRepeat"]="1" ["RecoilStrength"]="70" ["AutoRecoilStrength"]="50"
-          ["AutoRecoilStartDelay"]="5" ["AutoRecoilDelayBetweenPulses"]="10" )
-      ;;
-    "NoRecoil")
-      m=( ["IAgreeRecoilTermsInLicense"]="1" ["EnableRecoil"]="0" ["RecoilTrigger"]="0"
-          ["TriggerRecoilNormalOrRepeat"]="0" ["RecoilStrength"]="0" ["AutoRecoilStrength"]="0"
-          ["AutoRecoilStartDelay"]="0" ["AutoRecoilDelayBetweenPulses"]="13" )
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-  # Convert map to KV array including ALL required keys (fill unspecified with defaults)
-  local -a kv=()
-  local k v
-  for k in "${RECOIL_KEYS[@]}"; do
-    v="${m[$k]-${RECOIL_DEFAULTS[$k]-0}}"
-    kv+=( "$k" "$v" )
-  done
-  printf '%s\0' "${kv[@]}"
-}
-
-apply_preset_flow() {
-  local preset="$1"
-
-  local -a kv
-  IFS=$'\0' read -r -d '' -a kv < <(preset_map "$preset" && printf '\0') || kv=()
-  if (( ${#kv[@]} == 0 || ${#kv[@]} % 2 != 0 )); then
-    whiptail --msgbox "Preset '${preset}' payload invalid. Aborting." 10 70
-    return
-  fi
-
-  local tmp; tmp=$(mktemp)
-  {
-    printf "Apply preset '%s' to %s:\n\n" "$preset" "$PLAYER"
-    for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]-}"
-    done
-  } > "$tmp"
-
-  if ! yesno_or_menu "Apply '${preset}' preset" "$(cat "$tmp")"; then rm -f "$tmp"; return; fi
-  rm -f "$tmp"
-
-  apply_recoil_map_to_player "${kv[@]}"
-  whiptail --msgbox "Preset '${preset}' applied to ${PLAYER}." 8 50
-}
-
-# --- Menus: Serial, Video, Calibration ---
+# --- Detection helpers ---
 detect_video_devices() { compgen -G "/dev/video*" | sort -V; }
 detect_tty_devices()  { compgen -G "/dev/tty*"   | sort -V; }
 
@@ -752,6 +424,8 @@ pick_from_list() {
   choice=$(whiptail --title "$title" --menu "$prompt" 20 70 12 "${menu[@]}" 3>&1 1>&2 2>&3) || return 1
   echo "${items[$((choice-1))]}"
 }
+
+# --- Menus: Serial, Video, Calibration, Recoil (granular only) ---
 
 serial_menu() {
   while true; do
@@ -869,99 +543,75 @@ calibration_menu() {
   done
 }
 
-# --- Recoil menus ---
-recoil_profiles_menu() {
-  local choice
-  choice=$(whiptail --title "Recoil Profiles ($PLAYER)" --menu "Pick a preset or action" 22 84 10 \
-    "Apply: Arcade"       "Strong single-shot arcade recoil" \
-    "Apply: MachineGun"   "Automatic fire; faster pulses" \
-    "Apply: Soft"         "Gentler single-shot recoil" \
-    "Apply: MixedMode"    "Single tap = single-shot, hold = auto" \
-    "Apply: NoRecoil"     "Disable recoil entirely" \
-    "Save Custom Profile" "Save current settings as a reusable profile" \
-    "Load Custom Profile" "Load a saved profile and apply to current player" \
-    3>&1 1>&2 2>&3) || return
-  case "$choice" in
-    "Save Custom Profile")  save_custom_recoil_profile ;;
-    "Load Custom Profile")  load_recoil_profile ;;
-    "Apply: Arcade")        apply_preset_flow "Arcade" ;;
-    "Apply: MachineGun")    apply_preset_flow "MachineGun" ;;
-    "Apply: Soft")          apply_preset_flow "Soft" ;;
-    "Apply: MixedMode")     apply_preset_flow "MixedMode" ;;
-    "Apply: NoRecoil")      apply_preset_flow "NoRecoil" ;;
-  esac
-}
-
+# NOTE: Recoil profile logic removed. Only granular recoil settings remain.
 recoil_menu() {
   while true; do
     local choice
     choice=$(whiptail --title "Recoil Settings ($PLAYER)" --menu "Editing: $(short_path "$CONFIG_FILE")" 28 100 14 \
-      "1"  "Recoil Profile Presets / Save / Load" \
-      "2"  "IAgreeRecoilTermsInLicense (0/1)" \
-      "3"  "EnableRecoil (0/1)" \
-      "4"  "RecoilStrength (0-100)" \
-      "5"  "TriggerRecoilNormalOrRepeat (0=single,1=auto)" \
-      "6"  "AutoRecoilStrength (0-100)" \
-      "7"  "AutoRecoilStartDelay (ms)" \
-      "8"  "AutoRecoilDelayBetweenPulses (ms)" \
-      "9"  "RecoilTrigger (0/1)" \
-      "10" "RecoilTriggerOffscreen (0/1)" \
-      "11" "RecoilPumpActionOnEvent (0/1)" \
-      "12" "RecoilPumpActionOffEvent (0/1)" \
-      "13" "RecoilFrontLeft (0/1)" \
-      "14" "RecoilFrontRight (0/1)" \
-      "15" "RecoilBackLeft (0/1)" \
-      "16" "RecoilBackRight (0/1)" \
-      "17" "Back" \
+      "1"  "IAgreeRecoilTermsInLicense (0/1)" \
+      "2"  "EnableRecoil (0/1)" \
+      "3"  "RecoilStrength (0-100)" \
+      "4"  "TriggerRecoilNormalOrRepeat (0=single,1=auto)" \
+      "5"  "AutoRecoilStrength (0-100)" \
+      "6"  "AutoRecoilStartDelay (ms)" \
+      "7"  "AutoRecoilDelayBetweenPulses (ms)" \
+      "8"  "RecoilTrigger (0/1)" \
+      "9"  "RecoilTriggerOffscreen (0/1)" \
+      "10" "RecoilPumpActionOnEvent (0/1)" \
+      "11" "RecoilPumpActionOffEvent (0/1)" \
+      "12" "RecoilFrontLeft (0/1)" \
+      "13" "RecoilFrontRight (0/1)" \
+      "14" "RecoilBackLeft (0/1)" \
+      "15" "RecoilBackRight (0/1)" \
+      "16" "Back" \
       3>&1 1>&2 2>&3) || break
     case "$choice" in
-      1) recoil_profiles_menu ;;
-      2) local k; k=$(key_for "IAgreeRecoilTermsInLicense"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      3) local k; k=$(key_for "EnableRecoil"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      4) local k; k=$(key_for "RecoilStrength"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0-100):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) || continue
-         is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-100}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
-      5) local k; k=$(key_for "TriggerRecoilNormalOrRepeat"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      6) local k; k=$(key_for "AutoRecoilStrength"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0-100):" 10 60 "${def:-40}" 3>&1 1>&2 2>&3) || continue
-         is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-40}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
-      7) local k; k=$(key_for "AutoRecoilStartDelay"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (ms):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
-      8) local k; k=$(key_for "AutoRecoilDelayBetweenPulses"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (ms):" 10 60 "${def:-13}" 3>&1 1>&2 2>&3) || continue
-         is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-13}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
-      9)  local k; k=$(key_for "RecoilTrigger"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      10) local k; k=$(key_for "RecoilTriggerOffscreen"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      11) local k; k=$(key_for "RecoilPumpActionOnEvent"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      12) local k; k=$(key_for "RecoilPumpActionOffEvent"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      13) local k; k=$(key_for "RecoilFrontLeft"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      14) local k; k=$(key_for "RecoilFrontRight"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      15) local k; k=$(key_for "RecoilBackLeft"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      16) local k; k=$(key_for "RecoilBackRight"); local def; def=$(get_config "$k")
-         local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
-         is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
-      17) break ;;
+      1)  local k; k=$(key_for "IAgreeRecoilTermsInLicense"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      2)  local k; k=$(key_for "EnableRecoil"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      3)  local k; k=$(key_for "RecoilStrength"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0-100):" 10 60 "${def:-100}" 3>&1 1>&2 2>&3) || continue
+          is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-100}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
+      4)  local k; k=$(key_for "TriggerRecoilNormalOrRepeat"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      5)  local k; k=$(key_for "AutoRecoilStrength"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0-100):" 10 60 "${def:-40}" 3>&1 1>&2 2>&3) || continue
+          is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-40}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
+      6)  local k; k=$(key_for "AutoRecoilStartDelay"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (milliseconds):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
+      7)  local k; k=$(key_for "AutoRecoilDelayBetweenPulses"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (milliseconds):" 10 60 "${def:-13}" 3>&1 1>&2 2>&3) || continue
+          is_uint "$v" && apply_kv_with_popup "$k" "$v" "${def:-13}" || whiptail --msgbox "Enter a non-negative integer." 8 40 ;;
+      8)  local k; k=$(key_for "RecoilTrigger"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-1}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-1}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      9)  local k; k=$(key_for "RecoilTriggerOffscreen"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      10) local k; k=$(key_for "RecoilPumpActionOnEvent"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      11) local k; k=$(key_for "RecoilPumpActionOffEvent"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      12) local k; k=$(key_for "RecoilFrontLeft"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      13) local k; k=$(key_for "RecoilFrontRight"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      14) local k; k=$(key_for "RecoilBackLeft"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      15) local k; k=$(key_for "RecoilBackRight"); local def; def=$(get_config "$k")
+          local v; v=$(whiptail --inputbox "Enter $k (0/1):" 10 60 "${def:-0}" 3>&1 1>&2 2>&3) || continue
+          is_bool "$v" && apply_kv_with_popup "$k" "$v" "${def:-0}" || whiptail --msgbox "Enter 0 or 1." 8 32 ;;
+      16) break ;;
     esac
   done
 }
@@ -996,7 +646,7 @@ while true; do
     6) create_backup_now ;;
     7) view_backups ;;
     8) restore_from_backup ;;
-    9) choose_config; ensure_config_access; CONFIRMED_WRITE="0" ;;
+    9) choose_config; ensure_config_access; CONFIRMED_WRITE="0" ;;  # reset confirm for new file
     10) break ;;
   esac
 done
@@ -1007,6 +657,6 @@ Backups kept (for listing): ${BACKUP_LIMIT}
 Last backup: $( [[ -n "${BACKUP_PATH}" ]] && rel_to_root "${BACKUP_PATH}" || echo "none" )
 " 12 70
 
+# Auto prune on exit (if enabled)
 if [[ "${PRUNE_ON_EXIT}" == "1" ]]; then
   prune_backups || true
-fi
