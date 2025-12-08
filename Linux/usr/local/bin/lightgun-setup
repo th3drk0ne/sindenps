@@ -25,15 +25,9 @@ BACKUP_DONE="0"
 BACKUP_PATH=""
 
 # --- Backup retention and pruning behavior ---
-
-# Keep latest N backups
-BACKUP_LIMIT="${BACKUP_LIMIT:-10}"
-
-# Auto prune on exit (1=enabled, 0=disabled)
-PRUNE_ON_EXIT="${PRUNE_ON_EXIT:-1}"
-
-# Prune immediately after each backup (1=enabled, 0=disabled)
-PRUNE_AFTER_BACKUP="${PRUNE_AFTER_BACKUP:-1}"
+BACKUP_LIMIT="${BACKUP_LIMIT:-10}"     # Keep latest N backups
+PRUNE_ON_EXIT="${PRUNE_ON_EXIT:-1}"    # Auto prune on exit (1=enabled)
+PRUNE_AFTER_BACKUP="${PRUNE_AFTER_BACKUP:-1}"  # Prune after each backup (1=enabled)
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
@@ -51,7 +45,6 @@ check_requirements() {
     echo "ERROR: 'whiptail' is required. Install: sudo apt-get install -y whiptail" >&2
     exit 1
   fi
-  # If xmlstarlet missing and perl missing, getter fallback may fail
   if ! have_cmd xmlstarlet && ! have_cmd perl; then
     whiptail --title "Dependency notice" --msgbox \
 "xmlstarlet is missing and Perl is not installed.
@@ -103,8 +96,6 @@ Install with:
 }
 
 # --- Path helpers ---
-
-# Compute ROOT_DIR as parent of PS1/PS2; set BACKUP_DIR to dirname(CONFIG_FILE)/backup
 set_paths_from_config() {
   local cfg_dir cfg_parent
   cfg_dir="$(dirname -- "$CONFIG_FILE")"
@@ -114,7 +105,6 @@ set_paths_from_config() {
   mkdir -p -- "$BACKUP_DIR"
 }
 
-# Return $1 relative to $ROOT_DIR; fallback to basename
 rel_to_root() {
   local p="$1"
   if [[ -z "$ROOT_DIR" || -z "$p" ]]; then
@@ -133,7 +123,6 @@ rel_to_root() {
 }
 
 # --- Backup / confirm gate ---
-
 ensure_confirm_and_backup() {
   if [[ "$CONFIRMED_WRITE" == "1" ]]; then return 0; fi
   [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
@@ -189,7 +178,6 @@ Proceed?"; then return; fi
   fi
 }
 
-# --- Helper to display a shorter path in menus
 short_path() {
   local p="$1"
   if [[ "$p" == /home/sinden/* ]]; then
@@ -199,8 +187,7 @@ short_path() {
   fi
 }
 
-# --- Robust getters/setters and fallback XML handling ---
-
+# --- XML helpers ---
 sed_escape() { printf '%s' "$1" | sed 's/[&|\\]/\\&/g'; }
 
 get_config_sed_fallback() {
@@ -234,7 +221,6 @@ update_config() {
       "$CONFIG_FILE"
   else
     local esc_val; esc_val="$(sed_escape "$value")"
-    # Optional guard against malformed XML (no closing tag)
     if ! grep -q '</appSettings>' "$CONFIG_FILE"; then
       whiptail --msgbox "Config appears malformed (no </appSettings> tag). Skipping write." 10 70
       return 1
@@ -263,18 +249,16 @@ update_config_if_nonempty() {
   update_config "$key" "$value"
 }
 
-# --- Simple validators ---
+# --- Validators ---
 is_bool() { [[ "$1" =~ ^[01]$ ]]; }
-is_uint() { [[ "$1" =~ ^[0-9]+$ ]]; }   # Non-negative integer
+is_uint() { [[ "$1" =~ ^[0-9]+$ ]]; }
 
-# --- Save-ok popup wrapper ---
 apply_kv_with_popup() {
   local key="$1" value="$2" default="${3:-}"
   whiptail --msgbox "Press OK to save the change:\n\n${key} = ${value}" 10 60
   update_config_if_nonempty "$key" "$value" "$default"
 }
 
-# --- Helpers for P2 and devices ---
 key_for() { [[ "$PLAYER" == "P2" ]] && echo "$1P2" || echo "$1"; }
 
 pick_from_list() {
@@ -296,8 +280,7 @@ pick_from_list() {
 detect_video_devices() { compgen -G "/dev/video*" | sort -V; }
 detect_tty_devices()  { compgen -G "/dev/tty*"   | sort -V; }
 
-# --- Backup utilities (robust across sessions & legacy locations) ---
-
+# --- Backup utilities ---
 list_recent_backups() {
   [[ -z "$BACKUP_DIR" ]] && set_paths_from_config
 
@@ -314,7 +297,6 @@ list_recent_backups() {
   )
   shopt -u nullglob
 
-  # De-duplicate and filter existing files only
   local -A seen=()
   local -a files=()
   for f in "${candidates[@]}"; do
@@ -393,7 +375,6 @@ prune_backups() {
 }
 
 # --- Config selection & validation ---
-
 choose_config() {
   local ps1="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
   local ps2="/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
@@ -423,11 +404,10 @@ ensure_config_access() {
     whiptail --msgbox "Config not writable:\n$(short_path "$CONFIG_FILE")\nTry running with sudo or adjust permissions." 12 70
     exit 1
   fi
-  # Ensure paths (ROOT_DIR, BACKUP_DIR) now that CONFIG_FILE is known
   set_paths_from_config
 }
 
-# --- Player selection shows "Player 1" / "Player 2" (maps internally to P1/P2) ---
+# --- Player selection ---
 choose_player() {
   local choice
   choice=$(whiptail --title "Choose Player" --menu "Current file:\n$(short_path "$CONFIG_FILE")" 12 50 2 \
@@ -441,7 +421,7 @@ choose_player() {
   esac
 }
 
-# --- Recoil Profiles storage (XDG-friendly) ---
+# --- Recoil Profiles storage ---
 PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/lightgun-config-editor/profiles"
 
 ensure_profile_dir() { mkdir -p -- "$PROFILE_DIR"; }
@@ -452,23 +432,7 @@ sanitize_profile_name() {
     | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
 }
 
-# Safe summary printing: pad odd item counts and use safe expansion
-recoil_profile_summary() {
-  local -a lines=("$@")
-  printf "Profile will set these values for %s:\n\n" "$PLAYER"
-  if (( ${#lines[@]} % 2 != 0 )); then
-    lines+=("")  # pad missing value to keep pairs even
-  fi
-  for ((i=0; i<${#lines[@]}; i+=2)); do
-    printf "%-30s = %s\n" "${lines[i]}" "${lines[i+1]-}"
-  done
-}
-
-set_kv() {
-  local k; k=$(key_for "$1")
-  update_config "$k" "$2"
-}
-
+# --- Required recoil keys & defaults ---
 recoil_profile_keys=(
   "IAgreeRecoilTermsInLicense"
   "EnableRecoil"
@@ -487,17 +451,135 @@ recoil_profile_keys=(
   "AutoRecoilDelayBetweenPulses"
 )
 
-# Ensure each key has a defined value so pairs stay even
-collect_current_recoil_kv() {
+# Boolean keys (must be 0 or 1)
+recoil_bool_keys=(
+  "IAgreeRecoilTermsInLicense"
+  "EnableRecoil"
+  "RecoilTrigger"
+  "RecoilTriggerOffscreen"
+  "RecoilPumpActionOnEvent"
+  "RecoilPumpActionOffEvent"
+  "RecoilFrontLeft"
+  "RecoilFrontRight"
+  "RecoilBackLeft"
+  "RecoilBackRight"
+  "TriggerRecoilNormalOrRepeat"
+)
+
+# Numeric keys
+recoil_num_keys=(
+  "RecoilStrength"
+  "AutoRecoilStrength"
+  "AutoRecoilStartDelay"
+  "AutoRecoilDelayBetweenPulses"
+)
+
+# Sensible defaults (Arcade-like baseline)
+# These are only used if the current config does not provide a valid value
+declare -A RECOIL_DEFAULTS=(
+  ["IAgreeRecoilTermsInLicense"]="1"
+  ["EnableRecoil"]="1"
+  ["RecoilTrigger"]="1"
+  ["RecoilTriggerOffscreen"]="0"
+  ["RecoilPumpActionOnEvent"]="0"
+  ["RecoilPumpActionOffEvent"]="0"
+  ["RecoilFrontLeft"]="0"
+  ["RecoilFrontRight"]="0"
+  ["RecoilBackLeft"]="0"
+  ["RecoilBackRight"]="0"
+  ["TriggerRecoilNormalOrRepeat"]="0"
+  ["RecoilStrength"]="80"
+  ["AutoRecoilStrength"]="40"
+  ["AutoRecoilStartDelay"]="0"
+  ["AutoRecoilDelayBetweenPulses"]="13"
+)
+
+# Utility: check membership in array
+in_array() {
+  local needle="$1"; shift
+  local x
+  for x in "$@"; do [[ "$x" == "$needle" ]] && return 0; done
+  return 1
+}
+
+# Normalize/get a single recoil value with validation and defaulting
+normalize_recoil_value() {
+  local key="$1" actual_key="$2"
+  local raw val
+  raw="$(get_config "$actual_key")"
+
+  if in_array "$key" "${recoil_bool_keys[@]}"; then
+    if [[ -z "${raw:-}" || ! "${raw}" =~ ^[01]$ ]]; then
+      val="${RECOIL_DEFAULTS[$key]}"
+      printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val"  # report default usage to caller
+      echo "$val"
+      return
+    fi
+    echo "$raw"
+    return
+  fi
+
+  if in_array "$key" "${recoil_num_keys[@]}"; then
+    if [[ -z "${raw:-}" || ! "${raw}" =~ ^[0-9]+$ ]]; then
+      val="${RECOIL_DEFAULTS[$key]}"
+      printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val"
+      echo "$val"
+      return
+    fi
+    # Non-negative integer accepted
+    echo "$raw"
+    return
+  fi
+
+  # Fallback: if not categorized, still return raw or default
+  if [[ -z "${raw:-}" ]]; then
+    val="${RECOIL_DEFAULTS[$key]}"
+    printf '%s\t%s\t%s\n' "$key" "<unset>" "$val"
+    echo "$val"
+    return
+  fi
+  echo "$raw"
+}
+
+# Build a complete, validated KV list (keys without P2 suffix; values from active player)
+# Also returns a "report" of defaults used via an output file path provided by caller
+collect_validated_recoil_kv() {
+  local report_file="$1"
+  : > "$report_file"  # truncate
   local -a out=()
-  local k val actual
+  local k actual v line
   for k in "${recoil_profile_keys[@]}"; do
-    actual=$(key_for "$k")
-    # Ensure a defined value (may be empty)
-    val="$(get_config "$actual")"
-    out+=("$k" "${val-}")
+    actual="$(key_for "$k")"
+    # normalize_recoil_value echoes the final value; also prints a tsv line to stdout for defaults
+    # To capture the tsv reporting, we run once for value and once for report via process substitution:
+    # Better: run once and capture both via a temp file.
+    local tmp; tmp=$(mktemp)
+    v="$(normalize_recoil_value "$k" "$actual" | tee "$tmp")"
+    # If tmp has 3 fields (key, raw, default), append to report
+    if awk -F'\t' 'NF==3' "$tmp" >/dev/null 2>&1; then
+      cat "$tmp" >> "$report_file"
+    fi
+    rm -f "$tmp"
+    out+=("$k" "$v")
   done
   printf '%s\0' "${out[@]}"
+}
+
+# Safe summary printing
+recoil_profile_summary() {
+  local -a lines=("$@")
+  printf "Profile will set these values for %s:\n\n" "$PLAYER"
+  if (( ${#lines[@]} % 2 != 0 )); then
+    lines+=("")  # pad missing value to keep pairs even
+  fi
+  for ((i=0; i<${#lines[@]}; i+=2)); do
+    printf "%-30s = %s\n" "${lines[i]}" "${lines[i+1]-}"
+  done
+}
+
+set_kv() {
+  local k; k=$(key_for "$1")
+  update_config "$k" "$2"
 }
 
 save_custom_recoil_profile() {
@@ -514,20 +596,18 @@ save_custom_recoil_profile() {
 
   local path="${PROFILE_DIR}/${name}.profile"
 
+  local report; report=$(mktemp)
   local -a kv
-  # Read collected pairs; if it fails, ensure kv is defined and empty under set -u.
-  IFS=$'\0' read -r -d '' -a kv < <(collect_current_recoil_kv && printf '\0') || kv=()
+  IFS=$'\0' read -r -d '' -a kv < <(collect_validated_recoil_kv "$report" && printf '\0') || kv=()
 
-  # Guards: avoid unbound index crashes and inform the user early.
   if (( ${#kv[@]} == 0 )); then
-    whiptail --msgbox "No recoil settings could be read from the config.
-Check the config file and try again." 12 70
+    whiptail --msgbox "No recoil settings could be read from the config.\nCheck the config file and try again." 12 70
+    rm -f "$report"
     return
   fi
   if (( ${#kv[@]} % 2 != 0 )); then
-    whiptail --msgbox "Recoil settings appear malformed (odd number of items).
-Some keys may be missing values.
-Please review the config and try again." 12 70
+    whiptail --msgbox "Recoil settings appear malformed (odd number of items).\nPlease review the config and try again." 12 70
+    rm -f "$report"
     return
   fi
 
@@ -535,17 +615,22 @@ Please review the config and try again." 12 70
   {
     printf "Saving current recoil settings for %s as profile:\n\n" "$PLAYER"
     for ((i=0; i<${#kv[@]}; i+=2)); do
-      # Safe expansion to avoid 'unbound variable' under set -u.
       printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]-}"
     done
+    if [[ -s "$report" ]]; then
+      printf "\nNote: Some parameters were missing/invalid and defaults were used:\n"
+      printf "%-30s | %-16s -> %-s\n" "KEY" "Found" "Default"
+      printf "%-30s-+-%-16s-+-%-s\n" "------------------------------" "----------------" "----------------"
+      awk -F'\t' '{printf("%-30s | %-16s -> %s\n",$1,$2,$3)}' "$report"
+    fi
     printf "\nFile:\n%s\n" "$path"
   } > "$tmp"
 
   if ! yesno_or_menu "Save Custom Profile" "$(cat "$tmp")"; then
-    rm -f "$tmp"
+    rm -f "$tmp" "$report"
     return
   fi
-  rm -f "$tmp"
+  rm -f "$tmp" "$report"
 
   if [[ -f "$path" ]]; then
     if ! yesno_or_menu "Overwrite Profile?" "Profile exists:\n$(basename "$path")\n\nOverwrite?"; then
@@ -560,7 +645,6 @@ Please review the config and try again." 12 70
     printf "# Saved: %s\n" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
     printf "# Player at save time: %s\n" "$PLAYER"
     for ((i=0; i<${#kv[@]}; i+=2)); do
-      # Safe expansion ensures we never trip set -u here.
       printf "%s=%s\n" "${kv[i]}" "${kv[i+1]-}"
     done
   } > "$path"
@@ -568,7 +652,7 @@ Please review the config and try again." 12 70
   whiptail --msgbox "Saved profile:\n$(basename "$path")\n\nLocation:\n$path" 12 70
 }
 
-# --- Recoil Profiles (presets + save custom) ---
+# --- Presets + save custom ---
 recoil_profiles_menu() {
   local choice
   choice=$(whiptail --title "Recoil Profiles ($PLAYER)" --menu "Pick a preset or action" 22 84 10 \
@@ -622,7 +706,6 @@ recoil_profiles_menu() {
 }
 
 # --- Menus: Serial, Video, Calibration ---
-
 serial_menu() {
   while true; do
     local choice
@@ -747,7 +830,7 @@ calibration_menu() {
   done
 }
 
-# --- Recoil Settings (granular keys + link to profiles) ---
+# --- Recoil Settings ---
 recoil_menu() {
   while true; do
     local choice
@@ -869,7 +952,7 @@ while true; do
     "6"  "Create Backup Now" \
     "7"  "View Backups" \
     "8"  "Restore from backup (choose)" \
-    "9" "Switch Config File" \
+    "9"  "Switch Config File" \
     "10" "Exit" \
     3>&1 1>&2 2>&3) || break
 
@@ -893,7 +976,6 @@ Backups kept (for listing): ${BACKUP_LIMIT}
 Last backup: $( [[ -n "${BACKUP_PATH}" ]] && rel_to_root "${BACKUP_PATH}" || echo "none" )
 " 12 70
 
-# Auto prune on exit (if enabled)
 if [[ "${PRUNE_ON_EXIT}" == "1" ]]; then
   prune_backups || true
 fi
