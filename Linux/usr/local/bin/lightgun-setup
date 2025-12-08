@@ -677,11 +677,35 @@ recoil_profiles_menu() {
                "RecoilStrength" "0" "AutoRecoilStrength" "0" "AutoRecoilStartDelay" "0" "AutoRecoilDelayBetweenPulses" "13" )
           ;;
       esac
+
+      # Guard: ensure preset payload is valid before applying
+      if (( ${#kv[@]} == 0 )); then
+        whiptail --msgbox "Preset '${preset}' payload is empty. Aborting." 10 70
+        return
+      fi
+      if (( ${#kv[@]} % 2 != 0 )); then
+        whiptail --msgbox "Preset '${preset}' payload malformed (items: ${#kv[@]}). Aborting." 10 70
+        return
+      fi
+
+      # Preview
       local tmp; tmp=$(mktemp)
       recoil_profile_summary "${kv[@]}" > "$tmp"
       if ! yesno_or_menu "Apply '${preset}' profile" "$(cat "$tmp")"; then rm -f "$tmp"; return; fi
       rm -f "$tmp"
-      for ((i=0; i<${#kv[@]}; i+=2)); do set_kv "${kv[i]}" "${kv[i+1]}"; done
+
+      # Apply safely under set -u
+      for ((i=0; i<${#kv[@]}; i+=2)); do
+        # Safe expansions avoid 'unbound variable' if anything is unexpectedly missing
+        local k="${kv[i]-}"
+        local v="${kv[i+1]-}"
+        if [[ -z "${k-}" || -z "${v-}" ]]; then
+          whiptail --msgbox "Preset '${preset}' has empty key/value at index ${i}. Aborting." 10 70
+          return
+        fi
+        set_kv "$k" "$v"
+      done
+
       whiptail --msgbox "Profile '${preset}' applied to ${PLAYER}." 8 50
       ;;
   esac
