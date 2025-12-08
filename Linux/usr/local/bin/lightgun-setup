@@ -660,3 +660,4 @@ Last backup: $( [[ -n "${BACKUP_PATH}" ]] && rel_to_root "${BACKUP_PATH}" || ech
 # Auto prune on exit (if enabled)
 if [[ "${PRUNE_ON_EXIT}" == "1" ]]; then
   prune_backups || true
+fi
