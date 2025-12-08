@@ -2,6 +2,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Helpful debug trap: prints the failing command and line if anything errors
+trap 'echo "ERROR at ${BASH_SOURCE}:${LINENO}: ${BASH_COMMAND}" >&2' ERR
+
 # --- High-contrast colour palette ---
 export NEWT_COLORS='
 root=white,blue
@@ -33,7 +36,7 @@ have_cmd() { command -v "$1" >/dev/null 2>&1; }
 now_stamp() { date +"%Y-%m-%d_%H-%M-%S"; }
 
 check_bash_version() {
-  local major=${BASH_VERSINFO[0]:-0}
+  local major=${BASH_VERSINFO-0}
   if (( major < 4 )); then
     echo "ERROR: Bash 4+ required (associative arrays/mapfile). Current: ${BASH_VERSION}" >&2
     exit 1
@@ -421,11 +424,9 @@ choose_player() {
   esac
 }
 
-# --- Recoil Profiles storage ---
+# --- Profiles storage ---
 PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/lightgun-config-editor/profiles"
-
 ensure_profile_dir() { mkdir -p -- "$PROFILE_DIR"; }
-
 sanitize_profile_name() {
   printf '%s' "$1" \
     | tr '[:upper:]' '[:lower:]' \
@@ -451,7 +452,7 @@ recoil_profile_keys=(
   "AutoRecoilDelayBetweenPulses"
 )
 
-# Boolean keys (must be 0 or 1)
+# Boolean keys (0/1)
 recoil_bool_keys=(
   "IAgreeRecoilTermsInLicense"
   "EnableRecoil"
@@ -466,7 +467,7 @@ recoil_bool_keys=(
   "TriggerRecoilNormalOrRepeat"
 )
 
-# Numeric keys
+# Numeric keys (non-negative integers)
 recoil_num_keys=(
   "RecoilStrength"
   "AutoRecoilStrength"
@@ -474,8 +475,7 @@ recoil_num_keys=(
   "AutoRecoilDelayBetweenPulses"
 )
 
-# Sensible defaults (Arcade-like baseline)
-# These are only used if the current config does not provide a valid value
+# Defaults: arcade-like baseline
 declare -A RECOIL_DEFAULTS=(
   ["IAgreeRecoilTermsInLicense"]="1"
   ["EnableRecoil"]="1"
@@ -494,7 +494,6 @@ declare -A RECOIL_DEFAULTS=(
   ["AutoRecoilDelayBetweenPulses"]="13"
 )
 
-# Utility: check membership in array
 in_array() {
   local needle="$1"; shift
   local x
@@ -502,64 +501,48 @@ in_array() {
   return 1
 }
 
-# Normalize/get a single recoil value with validation and defaulting
+# Normalize value; append a default-usage line to report file if default is applied
 normalize_recoil_value() {
-  local key="$1" actual_key="$2"
+  local key="$1" actual_key="$2" report_file="${3:-}"
   local raw val
   raw="$(get_config "$actual_key")"
 
   if in_array "$key" "${recoil_bool_keys[@]}"; then
-    if [[ -z "${raw:-}" || ! "${raw}" =~ ^[01]$ ]]; then
-      val="${RECOIL_DEFAULTS[$key]}"
-      printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val"  # report default usage to caller
-      echo "$val"
-      return
+    if [[ -z "${raw-}" || ! "${raw}" =~ ^[01]$ ]]; then
+      val="${RECOIL_DEFAULTS[$key]:-0}"
+      [[ -n "${report_file-}" ]] && printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val" >> "$report_file"
+      echo "$val"; return
     fi
-    echo "$raw"
-    return
+    echo "$raw"; return
   fi
 
   if in_array "$key" "${recoil_num_keys[@]}"; then
-    if [[ -z "${raw:-}" || ! "${raw}" =~ ^[0-9]+$ ]]; then
-      val="${RECOIL_DEFAULTS[$key]}"
-      printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val"
-      echo "$val"
-      return
+    if [[ -z "${raw-}" || ! "${raw}" =~ ^[0-9]+$ ]]; then
+      val="${RECOIL_DEFAULTS[$key]:-0}"
+      [[ -n "${report_file-}" ]] && printf '%s\t%s\t%s\n' "$key" "${raw:-<unset/invalid>}" "$val" >> "$report_file"
+      echo "$val"; return
     fi
-    # Non-negative integer accepted
-    echo "$raw"
-    return
+    echo "$raw"; return
   fi
 
-  # Fallback: if not categorized, still return raw or default
-  if [[ -z "${raw:-}" ]]; then
-    val="${RECOIL_DEFAULTS[$key]}"
-    printf '%s\t%s\t%s\n' "$key" "<unset>" "$val"
-    echo "$val"
-    return
+  # Fallback for any non-categorized key (shouldn't occur)
+  if [[ -z "${raw-}" ]]; then
+    val="${RECOIL_DEFAULTS[$key]:-0}"
+    [[ -n "${report_file-}" ]] && printf '%s\t%s\t%s\n' "$key" "<unset>" "$val" >> "$report_file"
+    echo "$val"; return
   fi
   echo "$raw"
 }
 
-# Build a complete, validated KV list (keys without P2 suffix; values from active player)
-# Also returns a "report" of defaults used via an output file path provided by caller
+# Build complete, validated KV pairs; write default-usage report
 collect_validated_recoil_kv() {
   local report_file="$1"
-  : > "$report_file"  # truncate
+  : > "$report_file"
   local -a out=()
-  local k actual v line
+  local k actual v
   for k in "${recoil_profile_keys[@]}"; do
     actual="$(key_for "$k")"
-    # normalize_recoil_value echoes the final value; also prints a tsv line to stdout for defaults
-    # To capture the tsv reporting, we run once for value and once for report via process substitution:
-    # Better: run once and capture both via a temp file.
-    local tmp; tmp=$(mktemp)
-    v="$(normalize_recoil_value "$k" "$actual" | tee "$tmp")"
-    # If tmp has 3 fields (key, raw, default), append to report
-    if awk -F'\t' 'NF==3' "$tmp" >/dev/null 2>&1; then
-      cat "$tmp" >> "$report_file"
-    fi
-    rm -f "$tmp"
+    v="$(normalize_recoil_value "$k" "$actual" "$report_file")"
     out+=("$k" "$v")
   done
   printf '%s\0' "${out[@]}"
@@ -976,6 +959,7 @@ Backups kept (for listing): ${BACKUP_LIMIT}
 Last backup: $( [[ -n "${BACKUP_PATH}" ]] && rel_to_root "${BACKUP_PATH}" || echo "none" )
 " 12 70
 
+# Auto prune on exit (if enabled)
 if [[ "${PRUNE_ON_EXIT}" == "1" ]]; then
   prune_backups || true
 fi
