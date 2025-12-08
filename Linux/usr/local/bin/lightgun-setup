@@ -452,11 +452,15 @@ sanitize_profile_name() {
     | sed -E 's/[[:space:]]+/_/g; s/[^a-z0-9._-]//g; s/^_+//; s/_+$//'
 }
 
+# Safe summary printing: pad odd item counts and use safe expansion
 recoil_profile_summary() {
   local -a lines=("$@")
   printf "Profile will set these values for %s:\n\n" "$PLAYER"
+  if (( ${#lines[@]} % 2 != 0 )); then
+    lines+=("")  # pad missing value to keep pairs even
+  fi
   for ((i=0; i<${#lines[@]}; i+=2)); do
-    printf "%-30s = %s\n" "${lines[i]}" "${lines[i+1]}"
+    printf "%-30s = %s\n" "${lines[i]}" "${lines[i+1]-}"
   done
 }
 
@@ -483,13 +487,15 @@ recoil_profile_keys=(
   "AutoRecoilDelayBetweenPulses"
 )
 
+# Ensure each key has a defined value so pairs stay even
 collect_current_recoil_kv() {
   local -a out=()
   local k val actual
   for k in "${recoil_profile_keys[@]}"; do
     actual=$(key_for "$k")
-    val=$(get_config "$actual")
-    out+=("$k" "$val")
+    # Ensure a defined value (may be empty)
+    val="$(get_config "$actual")"
+    out+=("$k" "${val-}")
   done
   printf '%s\0' "${out[@]}"
 }
@@ -509,13 +515,28 @@ save_custom_recoil_profile() {
   local path="${PROFILE_DIR}/${name}.profile"
 
   local -a kv
-  IFS=$'\0' read -r -d '' -a kv < <(collect_current_recoil_kv && printf '\0') || true
+  # Read collected pairs; if it fails, ensure kv is defined and empty under set -u.
+  IFS=$'\0' read -r -d '' -a kv < <(collect_current_recoil_kv && printf '\0') || kv=()
+
+  # Guards: avoid unbound index crashes and inform the user early.
+  if (( ${#kv[@]} == 0 )); then
+    whiptail --msgbox "No recoil settings could be read from the config.
+Check the config file and try again." 12 70
+    return
+  fi
+  if (( ${#kv[@]} % 2 != 0 )); then
+    whiptail --msgbox "Recoil settings appear malformed (odd number of items).
+Some keys may be missing values.
+Please review the config and try again." 12 70
+    return
+  fi
 
   local tmp; tmp=$(mktemp)
   {
     printf "Saving current recoil settings for %s as profile:\n\n" "$PLAYER"
     for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]}"
+      # Safe expansion to avoid 'unbound variable' under set -u.
+      printf "%-30s = %s\n" "${kv[i]}" "${kv[i+1]-}"
     done
     printf "\nFile:\n%s\n" "$path"
   } > "$tmp"
@@ -539,7 +560,8 @@ save_custom_recoil_profile() {
     printf "# Saved: %s\n" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
     printf "# Player at save time: %s\n" "$PLAYER"
     for ((i=0; i<${#kv[@]}; i+=2)); do
-      printf "%s=%s\n" "${kv[i]}" "${kv[i+1]}"
+      # Safe expansion ensures we never trip set -u here.
+      printf "%s=%s\n" "${kv[i]}" "${kv[i+1]-}"
     done
   } > "$path"
 
@@ -555,6 +577,7 @@ recoil_profiles_menu() {
     "Apply: Soft"         "Gentler single-shot recoil" \
     "Apply: MixedMode"    "Single tap = single-shot, hold = auto" \
     "Apply: NoRecoil"     "Disable recoil entirely" \
+    "Save Custom Profile" "Save current settings as a reusable profile" \
     3>&1 1>&2 2>&3) || return
   case "$choice" in
     "Save Custom Profile")
@@ -701,13 +724,13 @@ calibration_menu() {
     case "$choice" in
       1)
         local k; k=$(key_for "CalibrateX"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def}"
+        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def-}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def-}"
         ;;
       2)
         local k; k=$(key_for "CalibrateY"); local def; def=$(get_config "$k")
-        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def}" 3>&1 1>&2 2>&3) || continue
-        apply_kv_with_popup "$k" "$v" "${def}"
+        local v; v=$(whiptail --inputbox "Enter $k:" 10 60 "${def-}" 3>&1 1>&2 2>&3) || continue
+        apply_kv_with_popup "$k" "$v" "${def-}"
         ;;
       3)
         local k; k=$(key_for "OffsetX"); local def; def=$(get_config "$k")
@@ -854,7 +877,7 @@ while true; do
     1) choose_player ;;
     2) serial_menu ;;
     3) video_menu ;;
-    4) calibration_menu ;;          # ensure underscore function call
+    4) calibration_menu ;;
     5) recoil_menu ;;
     6) create_backup_now ;;
     7) view_backups ;;
