@@ -249,8 +249,9 @@ install -d -o sinden -g sinden /opt/sinden
   cd /opt/sinden
   log "Downloading lightgun scripts to /opt/sinden."
   wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun.sh" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/sinden/lightgun-monitor.sh"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/setup-gcon2-serial.sh"
 
   chmod +x lightgun.sh lightgun-monitor.sh
   chown sinden:sinden lightgun.sh lightgun-monitor.sh
