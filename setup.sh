@@ -1,5 +1,5 @@
 
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
 # Downloads different PS1/PS2 assets based on VERSION ("current" or "psiloc")
