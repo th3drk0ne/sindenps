@@ -64,8 +64,8 @@ lsusb | while read -r line; do
     for DEVICE in "${DEVICE_IDS[@]}"; do
         if [[ "$VID:$PID" == "$DEVICE" ]]; then
             echo "[OK] Detected Arduino/GCon device: $VID:$PID"
-            RULE1="KERNEL==\"ttyACM[0-9]*\", SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"$VID\", ATTRS{idProduct}==\"$PID\", SYMLINK+=\"ttyGCON%n\""
-            RULE2="KERNEL==\"ttyUSB[0-9]*\", SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"$VID\", ATTRS{idProduct}==\"$PID\", SYMLINK+=\"ttyGCON%n\""
+            RULE1="KERNEL==\"ttyACM[0-9]*\", SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"$VID\", ATTRS{idProduct}==\"$PID\", SYMLINK+=\"ttyGCON45S_%n\""
+            RULE2="KERNEL==\"ttyUSB[0-9]*\", SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"$VID\", ATTRS{idProduct}==\"$PID\", SYMLINK+=\"ttyGCON45S_%n\""
 
             for RULE in "$RULE1" "$RULE2"; do
                 if ! grep -Fxq "$RULE" "$UDEV_FILE"; then
