@@ -108,8 +108,6 @@ else
   log "dtoverlay=uart5 already present."
 fi
   
-fi
-
 if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
   echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
   log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
