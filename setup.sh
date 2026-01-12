@@ -76,7 +76,7 @@ fi
 log "Version selected: ${VERSION} (${VERSION_TAG})"
 
 #-----------------------------------------------------------
-# Step 2) Update config.txt (UART5 enable + overlay)
+# Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18)
 #-----------------------------------------------------------
 BOOT_DIR="/boot/firmware"
 CONFIG_FILE="${BOOT_DIR}/config.txt"
@@ -106,6 +106,15 @@ if ! grep -qE '^dtoverlay=uart5\b' "$CONFIG_FILE"; then
   log "Added dtoverlay=uart5."
 else
   log "dtoverlay=uart5 already present."
+fi
+  
+fi
+
+if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
+  echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
+  log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
+else
+  log "dtoverlay=gpio-fan,gpiopin=18,temp=60000 already present."
 fi
   
 fi
