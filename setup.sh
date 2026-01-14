@@ -76,9 +76,9 @@ fi
 log "Version selected: ${VERSION} (${VERSION_TAG})"
 
 #-----------------------------------------------------------
-# Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18)
+# Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18
 #-----------------------------------------------------------
-[For HifiBerry CAse with Fan]BOOT_DIR="/boot/firmware"
+BOOT_DIR="/boot/firmware"
 CONFIG_FILE="${BOOT_DIR}/config.txt"
 
 if [[ ! -d "$BOOT_DIR" ]]; then
