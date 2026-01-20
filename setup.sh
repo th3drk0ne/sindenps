@@ -497,7 +497,6 @@ log "configuration tool installed"
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
-#!/usr/bin/env bash
 set -euo pipefail
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
@@ -564,17 +563,22 @@ resolve_primary_kernel() {
   fi
 }
 
-enable_overlay() {
-  banner "Ensuring overlay '$OVERLAY' is enabled in $CONFIG_FILE"
-  if grep -q "^${OVERLAY}" "$CONFIG_FILE"; then
-    banner "Overlay already enabled: $OVERLAY"
-  else
-    banner "Overlay not found; enabling now."
-    cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+enable_overlays_and_mini_uart() {
+  banner "Ensuring overlays and mini-UART settings in $CONFIG_FILE"
+  cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+
+  grep -q "^enable_uart=1" "$CONFIG_FILE" || echo "enable_uart=1" >> "$CONFIG_FILE"
+  grep -q "^dtoverlay=disable-bt" "$CONFIG_FILE" || echo "dtoverlay=disable-bt" >> "$CONFIG_FILE"
+  grep -q "^core_freq=" "$CONFIG_FILE" || echo "core_freq=250" >> "$CONFIG_FILE"
+
+  if ! grep -q "^${OVERLAY}" "$CONFIG_FILE"; then
     echo "$OVERLAY" >> "$CONFIG_FILE"
-    banner "Overlay added. Backup created: ${CONFIG_FILE}.bak.*"
-    echo "Reboot required for overlay to take effect."
+    banner "Overlay added: $OVERLAY"
+  else
+    banner "Overlay already enabled: $OVERLAY"
   fi
+
+  banner "Config updated. Backup created: ${CONFIG_FILE}.bak.*"
 }
 
 write_udev_rules() {
@@ -622,20 +626,34 @@ show_status() {
   done
 }
 
+prompt_reboot() {
+  echo
+  read -rp "Do you want to reboot now to apply changes? [y/N]: " choice
+  case "$choice" in
+    [Yy]*)
+      banner "Rebooting now..."
+      reboot
+      ;;
+    *)
+      banner "Reboot skipped. Please reboot manually later."
+      ;;
+  esac
+}
+
 main() {
   require_root
   detect_model
   ensure_tools_and_groups
   resolve_primary_kernel
-  enable_overlay
+  enable_overlays_and_mini_uart
   write_udev_rules
   write_profile_aliases
   show_status
   echo
   echo "Next steps:"
-  echo "  • If overlays were just enabled, reboot first."
   echo "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
   echo "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   echo "  • Check:   gcon2_serial_status"
+  prompt_reboot
 }
 main
