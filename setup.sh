@@ -93,20 +93,6 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
    
 log "Updating ${CONFIG_FILE} (backup will be created)."
 cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
-
-if ! grep -qE '^enable_uart=5\b' "$CONFIG_FILE"; then
-  echo "enable_uart=5" >> "$CONFIG_FILE"
-  log "Added enable_uart=5."
-else
-  log "enable_uart=5 already present."
-fi
-
-if ! grep -qE '^dtoverlay=uart5\b' "$CONFIG_FILE"; then
-  echo "dtoverlay=uart5" >> "$CONFIG_FILE"
-  log "Added dtoverlay=uart5."
-else
-  log "dtoverlay=uart5 already present."
-fi
   
 if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
   echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
@@ -511,122 +497,104 @@ log "configuration tool installed"
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
+#!/usr/bin/env bash
 set -euo pipefail
 
-PREFIX0="ttyGCON2S_0"
-PREFIX1="ttyGCON2S_1"
+PREFIX0="ttyGCON2S_0"   # Primary UART alias
+PREFIX1="ttyGCON2S_1"   # Secondary UART alias
 BAUD="${BAUD:-115200}"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-gcon2-serial.rules"
 PROFILE_SNIPPET="/etc/profile.d/gcon2-serial.sh"
+CONFIG_FILE="/boot/firmware/config.txt"
 
-# ---------- Utility ----------
-banner() {
-  local msg="$1"
-  printf "\n\033[1;36m[%s]\033[0m %s\n" "GCON2-Serial" "$msg"
-}
+banner() { printf "\n\033[1;36m[%s]\033[0m %s\n" "GCON2-Serial" "$1"; }
+warn()   { printf "\033[1;33m[WARN]\033[0m %s\n" "$1"; }
+error()  { printf "\033[1;31m[ERROR]\033[0m %s\n" "$1"; }
 
-warn() {
-  local msg="$1"
-  printf "\033[1;33m[WARN]\033[0m %s\n" "$msg"
-}
-
-error() {
-  local msg="$1"
-  printf "\033[1;31m[ERROR]\033[0m %s\n" "$msg"
-}
-
-# ---------- Model detection (prints banner for Raspberry Pi 5) ----------
 detect_model() {
   MODEL_STR="Unknown"
   if [[ -r /proc/device-tree/model ]]; then
-    # /proc/device-tree/model is NUL-terminated; strip trailing NULs
     MODEL_STR="$(tr -d '\000' < /proc/device-tree/model 2>/dev/null || echo "Unknown")"
-  elif command -v cat >/dev/null 2>&1 && [[ -r /sys/firmware/devicetree/base/model ]]; then
-    MODEL_STR="$(tr -d '\000' < /sys/firmware/devicetree/base/model 2>/dev/null || echo "Unknown")"
   fi
-
   if echo "$MODEL_STR" | grep -qi "Raspberry Pi 5"; then
-    banner "Raspberry Pi 5 detected: primary UART is typically a PL011 (ttyAMA*)."
+    banner "Raspberry Pi 5 detected: secondary alias will use UART4 (GPIO 12/16)."
+    IS_PI5=1
+    OVERLAY="dtoverlay=uart4"
+    SECONDARY_KERNELS=("ttyAMA4" "ttyS4")
   else
-    banner "Model detected: ${MODEL_STR}"
+    banner "Assuming Raspberry Pi 4 or earlier: secondary alias will use UART5."
+    IS_PI5=0
+    OVERLAY="dtoverlay=uart5"
+    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")
   fi
 }
 
-# ---------- Pre-flight ----------
 require_root() {
-  if [[ $EUID -ne 0 ]]; then
-    error "Please run as root (sudo)."
-    exit 1
-  fi
+  if [[ $EUID -ne 0 ]]; then error "Please run as root (sudo)."; exit 1; fi
 }
 
 ensure_tools_and_groups() {
-  # Optional: install picocom if missing (comment out in managed build pipelines)
   if ! command -v picocom >/dev/null 2>&1; then
     banner "picocom not found; installing via apt..."
     apt-get update -y && apt-get install -y picocom
   fi
-  # Ensure dialout group permissions
   getent group dialout >/dev/null 2>&1 || groupadd dialout
   local u="${SUDO_USER:-$USER}"
-  if ! id -nG "$u" | tr ' ' '\n' | grep -qx dialout; then
+  if ! id -nG "$u" | grep -qw dialout; then
     banner "Adding $u to 'dialout' group (relog required)."
     usermod -aG dialout "$u" || true
   fi
 }
 
-# ---------- Primary UART resolution ----------
-# Decide what the primary UART kernel device is (we will create ONLY ONE rule for it)
 resolve_primary_kernel() {
   PRIMARY_KERNEL=""
   if [[ -e /dev/serial0 ]]; then
     local target
     target="$(readlink -f /dev/serial0 || true)"
-    # Expect /dev/ttyAMA0, /dev/ttyAMA10, /dev/ttyS0, etc.
     if [[ "$target" =~ /dev/(ttyAMA[0-9]+|ttyS[0-9]+)$ ]]; then
       PRIMARY_KERNEL="${BASH_REMATCH[1]}"
     fi
   fi
-
-  # Fallbacks if /dev/serial0 missing (unusual on Raspberry Pi OS)
+  [[ -z "$PRIMARY_KERNEL" && -e /dev/ttyAMA0 ]] && PRIMARY_KERNEL="ttyAMA0"
+  [[ -z "$PRIMARY_KERNEL" && -e /dev/ttyS0 ]] && PRIMARY_KERNEL="ttyS0"
   if [[ -z "$PRIMARY_KERNEL" ]]; then
-    if [[ -e /dev/ttyAMA0 ]]; then PRIMARY_KERNEL="ttyAMA0"; fi
-    if [[ -z "$PRIMARY_KERNEL" && -e /dev/ttyS0 ]]; then PRIMARY_KERNEL="ttyS0"; fi
-  fi
-
-  if [[ -z "$PRIMARY_KERNEL" ]]; then
-    warn "Could not determine primary UART. No primary alias will be created."
+    warn "Could not determine primary UART."
   else
     banner "Primary UART resolved to: /dev/${PRIMARY_KERNEL}"
   fi
 }
 
-# ---------- udev rules ----------
+enable_overlay() {
+  banner "Ensuring overlay '$OVERLAY' is enabled in $CONFIG_FILE"
+  if grep -q "^${OVERLAY}" "$CONFIG_FILE"; then
+    banner "Overlay already enabled: $OVERLAY"
+  else
+    banner "Overlay not found; enabling now."
+    cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+    echo "$OVERLAY" >> "$CONFIG_FILE"
+    banner "Overlay added. Backup created: ${CONFIG_FILE}.bak.*"
+    echo "Reboot required for overlay to take effect."
+  fi
+}
+
 write_udev_rules() {
   banner "Writing udev rules -> $UDEV_RULE_FILE"
+  tmpfile=$(mktemp)
   {
     echo '# Auto-generated by setup-gcon2-serial.sh'
-    echo '# Creates exactly one primary alias and one UART5 alias.'
+    echo '# Creates one primary alias and one secondary alias.'
     echo
-    if [[ -n "$PRIMARY_KERNEL" ]]; then
-      # Create only ONE rule for the detected primary kernel device
-      echo "SUBSYSTEM==\"tty\", KERNEL==\"${PRIMARY_KERNEL}\", SYMLINK+=\"${PREFIX0}\""
-    fi
+    [[ -n "$PRIMARY_KERNEL" ]] && echo "SUBSYSTEM==\"tty\", KERNEL==\"${PRIMARY_KERNEL}\", SYMLINK+=\"${PREFIX0}\""
     echo
-    # UART5 can surface as PL011 or miniUART
-    echo "SUBSYSTEM==\"tty\", KERNEL==\"ttyAMA5\", SYMLINK+=\"${PREFIX1}\""
-    echo "SUBSYSTEM==\"tty\", KERNEL==\"ttyS5\",   SYMLINK+=\"${PREFIX1}\""
-    echo
-    echo '# Notes:'
-    echo '# - On Pi 5, /dev/serial0 typically points to a PL011 (ttyAMA*).'
-    echo '# - On earlier models, it may point to ttyAMA0 or ttyS0 depending on overlays.'
-  } > "$UDEV_RULE_FILE"
-
+    for k in "${SECONDARY_KERNELS[@]}"; do
+      echo "SUBSYSTEM==\"tty\", KERNEL==\"$k\", SYMLINK+=\"${PREFIX1}\""
+    done
+  } > "$tmpfile"
+  mv "$tmpfile" "$UDEV_RULE_FILE"
   udevadm control --reload
   udevadm trigger --subsystem-match=tty || true
 }
 
-# ---------- aliases ----------
 write_profile_aliases() {
   banner "Creating shell aliases -> $PROFILE_SNIPPET"
   cat > "$PROFILE_SNIPPET" <<EOF
@@ -647,34 +615,27 @@ gcon2_serial_status() {
 EOF
 }
 
-# ---------- status ----------
 show_status() {
   banner "Symlink status"
   for link in "/dev/${PREFIX0}" "/dev/${PREFIX1}"; do
-    if [[ -e "$link" ]]; then
-      echo "  Found: $link -> $(readlink -f "$link")"
-    else
-      echo "  Missing: $link"
-    fi
+    [[ -e "$link" ]] && echo "  Found: $link -> $(readlink -f "$link")" || echo "  Missing: $link"
   done
 }
 
-# ---------- main ----------
 main() {
   require_root
   detect_model
   ensure_tools_and_groups
   resolve_primary_kernel
+  enable_overlay
   write_udev_rules
   write_profile_aliases
   show_status
-
   echo
   echo "Next steps:"
-  echo "  • If you just enabled overlays, reboot first."
+  echo "  • If overlays were just enabled, reboot first."
   echo "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
-  echo "  • Connect: ${PREFIX0}   (primary UART)   or   ${PREFIX1} (UART5)"
+  echo "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   echo "  • Check:   gcon2_serial_status"
 }
 main
-
