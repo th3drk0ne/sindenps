@@ -497,7 +497,6 @@ log "configuration tool installed"
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
-
 set -euo pipefail
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
@@ -505,7 +504,8 @@ PREFIX1="ttyGCON2S_1"   # Secondary UART alias
 BAUD="${BAUD:-115200}"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-gcon2-serial.rules"
 PROFILE_SNIPPET="/etc/profile.d/gcon2-serial.sh"
-CONFIG_FILE="/boot/firmware/config.txt"
+CONFIG_FILE="/boot/config.txt"
+[[ -f /boot/firmware/config.txt ]] && CONFIG_FILE="/boot/firmware/config.txt"
 
 banner() { printf "\n\033[1;36m[%s]\033[0m %s\n" "GCON2-Serial" "$1"; }
 warn()   { printf "\033[1;33m[WARN]\033[0m %s\n" "$1"; }
@@ -517,16 +517,22 @@ detect_model() {
     MODEL_STR="$(tr -d '\000' < /proc/device-tree/model 2>/dev/null || echo "Unknown")"
   fi
   if echo "$MODEL_STR" | grep -qi "Raspberry Pi 5"; then
-    banner "Raspberry Pi 5 detected: primary alias will use UART0, secondary alias will use UART4."
+    banner "Raspberry Pi 5 detected: primary alias will use ttyS0 only, secondary alias will use UART4."
     IS_PI5=1
-    PRIMARY_KERNELS=("ttyS0" "ttyAMA0")      # UART0
+    PRIMARY_KERNELS=("ttyS0")                # Force ttyS0 only
     SECONDARY_KERNELS=("ttyAMA4" "ttyS4")    # UART4
     OVERLAYS=("dtoverlay=uart0" "dtoverlay=uart4")
   else
     banner "Assuming Raspberry Pi 4 or earlier: primary alias uses serial0, secondary alias uses UART5."
     IS_PI5=0
-    PRIMARY_KERNELS=("serial0")              # Default
-    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")    # UART5
+    PRIMARY_KERNELS=()
+    if [[ -e /dev/serial0 ]]; then
+      resolved=$(readlink -f /dev/serial0)
+      if [[ "$resolved" =~ /dev/(ttyAMA[0-9]+|ttyS[0-9]+)$ ]]; then
+        PRIMARY_KERNELS+=("${BASH_REMATCH[1]}")
+      fi
+    fi
+    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")
     OVERLAYS=("dtoverlay=uart5")
   fi
 }
@@ -580,7 +586,7 @@ write_udev_rules() {
   } > "$tmpfile"
   mv "$tmpfile" "$UDEV_RULE_FILE"
   udevadm control --reload
-  udevadm trigger --subsystem-match=tty || true
+  udevadm trigger --subsystem-match=tty --action=add || true
 }
 
 write_profile_aliases() {
