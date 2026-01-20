@@ -523,7 +523,7 @@ detect_model() {
     SECONDARY_KERNELS=("ttyAMA4" "ttyS4")    # UART4
     OVERLAYS=("dtoverlay=uart0-pi5" "dtoverlay=uart4")
   else
-    banner "Assuming Raspberry Pi 4 or earlier: primary alias uses serial0, secondary alias uses UART5."
+    banner "Assuming Raspberry Pi 4 or earlier: primary alias uses ttyS0, secondary alias uses UART5."
     IS_PI5=0
     PRIMARY_KERNELS=("ttyS0")              # Default
     SECONDARY_KERNELS=("ttyAMA5" "ttyS5")    # UART5
