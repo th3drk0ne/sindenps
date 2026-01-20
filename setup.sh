@@ -497,6 +497,7 @@ log "configuration tool installed"
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
+
 set -euo pipefail
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
@@ -633,3 +634,10 @@ main() {
   show_status
   echo
   echo "Next steps:"
+  echo "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
+  echo "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
+  echo "  • Check:   gcon2_serial_status"
+  prompt_reboot
+}
+main
+
