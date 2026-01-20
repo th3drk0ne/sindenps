@@ -497,6 +497,7 @@ log "configuration tool installed"
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
+
 set -euo pipefail
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
@@ -504,8 +505,7 @@ PREFIX1="ttyGCON2S_1"   # Secondary UART alias
 BAUD="${BAUD:-115200}"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-gcon2-serial.rules"
 PROFILE_SNIPPET="/etc/profile.d/gcon2-serial.sh"
-CONFIG_FILE="/boot/config.txt"
-[[ -f /boot/firmware/config.txt ]] && CONFIG_FILE="/boot/firmware/config.txt"
+CONFIG_FILE="/boot/firmware/config.txt"
 
 banner() { printf "\n\033[1;36m[%s]\033[0m %s\n" "GCON2-Serial" "$1"; }
 warn()   { printf "\033[1;33m[WARN]\033[0m %s\n" "$1"; }
@@ -517,22 +517,16 @@ detect_model() {
     MODEL_STR="$(tr -d '\000' < /proc/device-tree/model 2>/dev/null || echo "Unknown")"
   fi
   if echo "$MODEL_STR" | grep -qi "Raspberry Pi 5"; then
-    banner "Raspberry Pi 5 detected: primary alias will use ttyS0, secondary alias will use UART4."
+    banner "Raspberry Pi 5 detected: primary alias will use /dev/ttyAMA0, secondary alias will use /dev/ttyAMA4."
     IS_PI5=1
-    PRIMARY_KERNELS=("ttyS0")                # Force ttyS0 only
+    PRIMARY_KERNELS=("ttyAMA0")              # UART0 for Pi 5
     SECONDARY_KERNELS=("ttyAMA4" "ttyS4")    # UART4
-    OVERLAYS=("dtoverlay=uart0" "dtoverlay=uart4")
+    OVERLAYS=("dtoverlay=uart0-pi5" "dtoverlay=uart4")
   else
     banner "Assuming Raspberry Pi 4 or earlier: primary alias uses serial0, secondary alias uses UART5."
     IS_PI5=0
-    PRIMARY_KERNELS=()
-    if [[ -e /dev/serial0 ]]; then
-      resolved=$(readlink -f /dev/serial0)
-      if [[ "$resolved" =~ /dev/(ttyAMA[0-9]+|ttyS[0-9]+)$ ]]; then
-        PRIMARY_KERNELS+=("${BASH_REMATCH[1]}")
-      fi
-    fi
-    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")
+    PRIMARY_KERNELS=("ttyS0")              # Default
+    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")    # UART5
     OVERLAYS=("dtoverlay=uart5")
   fi
 }
@@ -554,33 +548,26 @@ ensure_tools_and_groups() {
   fi
 }
 
-update_config() {
-  banner "Updating $CONFIG_FILE for UART configuration"
+enable_overlays_and_mini_uart() {
+  banner "Ensuring overlays and UART settings in $CONFIG_FILE"
   cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
 
-  if [[ $IS_PI5 -eq 1 ]]; then
-    # Remove old UART settings
-    sed -i '/^enable_uart=/d' "$CONFIG_FILE"
-    sed -i '/^dtoverlay=disable-bt/d' "$CONFIG_FILE"
-    sed -i '/^core_freq=/d' "$CONFIG_FILE"
-    sed -i '/^dtoverlay=uart[0-9]/d' "$CONFIG_FILE"
+  # Always disable Bluetooth
+  grep -q "^dtoverlay=disable-bt" "$CONFIG_FILE" || echo "dtoverlay=disable-bt" >> "$CONFIG_FILE"
 
-    # Add Pi 5 config
-    echo "enable_uart=0" >> "$CONFIG_FILE"
-    for overlay in "${OVERLAYS[@]}"; do
-      echo "$overlay" >> "$CONFIG_FILE"
-    done
-    banner "Pi 5 config applied: enable_uart=0, dtoverlay=uart0, dtoverlay=uart4"
+  if [[ $IS_PI5 -eq 1 ]]; then
+    # Pi 5 specific settings
+    grep -q "^enable_uart=" "$CONFIG_FILE" && sed -i 's/^enable_uart=.*/enable_uart=0/' "$CONFIG_FILE" || echo "enable_uart=0" >> "$CONFIG_FILE"
+    grep -q "^dtoverlay=uart0-pi5" "$CONFIG_FILE" || echo "dtoverlay=uart0-pi5" >> "$CONFIG_FILE"
+    grep -q "^dtoverlay=uart4" "$CONFIG_FILE" || echo "dtoverlay=uart4" >> "$CONFIG_FILE"
   else
-    # Pi 4 config
+    # Pi 4 and earlier
     grep -q "^enable_uart=1" "$CONFIG_FILE" || echo "enable_uart=1" >> "$CONFIG_FILE"
-    for overlay in "${OVERLAYS[@]}"; do
-      grep -q "^$overlay" "$CONFIG_FILE" || echo "$overlay" >> "$CONFIG_FILE"
-    done
-    banner "Pi 4 config applied: enable_uart=1, dtoverlay=uart5"
+    grep -q "^enable_uart=5" "$CONFIG_FILE" || echo "enable_uart=5" >> "$CONFIG_FILE"
+    grep -q "^dtoverlay=uart5" "$CONFIG_FILE" || echo "dtoverlay=uart5" >> "$CONFIG_FILE"
   fi
 
-  banner "Backup created: ${CONFIG_FILE}.bak.*"
+  banner "Config updated. Backup created: ${CONFIG_FILE}.bak.*"
 }
 
 write_udev_rules() {
@@ -600,7 +587,7 @@ write_udev_rules() {
   } > "$tmpfile"
   mv "$tmpfile" "$UDEV_RULE_FILE"
   udevadm control --reload
-  udevadm trigger --subsystem-match=tty --action=add || true
+  udevadm trigger --subsystem-match=tty || true
 }
 
 write_profile_aliases() {
@@ -648,7 +635,7 @@ main() {
   require_root
   detect_model
   ensure_tools_and_groups
-  update_config
+  enable_overlays_and_mini_uart
   write_udev_rules
   write_profile_aliases
   show_status
