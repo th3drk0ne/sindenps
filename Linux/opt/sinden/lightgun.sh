@@ -48,18 +48,6 @@ lsusb | while read -r line; do
 
     echo "[INFO] Checking USB device VID:$VID PID:$PID - Description: '${DEVICE_DESC}'"
 
-    # ---- Sinden Lightgun Rule ----
-    if [[ "$DEVICE_DESC" == "SindenLightgun" ]]; then
-        echo "[OK] Detected Sinden Lightgun. Writing udev rule..."
-        RULE="KERNEL==\"ttyACM[0-9]*\", SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"$VID\", ATTRS{idProduct}==\"$PID\", SYMLINK+=\"ttySinden%n\""
-        if ! grep -Fxq "$RULE" "$UDEV_FILE"; then
-            echo "$RULE" | sudo tee -a "$UDEV_FILE" >/dev/null
-            echo "[INFO] Added Sinden Lightgun rule."
-        else
-            echo "[INFO] Sinden rule already exists, skipping."
-        fi
-    fi
-
     # ---- Arduino/GCon Rules ----
     for DEVICE in "${DEVICE_IDS[@]}"; do
         if [[ "$VID:$PID" == "$DEVICE" ]]; then
