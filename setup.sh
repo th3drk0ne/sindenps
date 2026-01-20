@@ -517,7 +517,7 @@ detect_model() {
     MODEL_STR="$(tr -d '\000' < /proc/device-tree/model 2>/dev/null || echo "Unknown")"
   fi
   if echo "$MODEL_STR" | grep -qi "Raspberry Pi 5"; then
-    banner "Raspberry Pi 5 detected: primary alias will use ttyS0 only, secondary alias will use UART4."
+    banner "Raspberry Pi 5 detected: primary alias will use ttyS0, secondary alias will use UART4."
     IS_PI5=1
     PRIMARY_KERNELS=("ttyS0")                # Force ttyS0 only
     SECONDARY_KERNELS=("ttyAMA4" "ttyS4")    # UART4
@@ -554,19 +554,33 @@ ensure_tools_and_groups() {
   fi
 }
 
-enable_overlays_and_mini_uart() {
-  banner "Ensuring overlays and mini-UART settings in $CONFIG_FILE"
+update_config() {
+  banner "Updating $CONFIG_FILE for UART configuration"
   cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
 
-  grep -q "^enable_uart=1" "$CONFIG_FILE" || echo "enable_uart=1" >> "$CONFIG_FILE"
-  grep -q "^dtoverlay=disable-bt" "$CONFIG_FILE" || echo "dtoverlay=disable-bt" >> "$CONFIG_FILE"
-  grep -q "^core_freq=" "$CONFIG_FILE" || echo "core_freq=250" >> "$CONFIG_FILE"
+  if [[ $IS_PI5 -eq 1 ]]; then
+    # Remove old UART settings
+    sed -i '/^enable_uart=/d' "$CONFIG_FILE"
+    sed -i '/^dtoverlay=disable-bt/d' "$CONFIG_FILE"
+    sed -i '/^core_freq=/d' "$CONFIG_FILE"
+    sed -i '/^dtoverlay=uart[0-9]/d' "$CONFIG_FILE"
 
-  for overlay in "${OVERLAYS[@]}"; do
-    grep -q "^$overlay" "$CONFIG_FILE" || echo "$overlay" >> "$CONFIG_FILE"
-  done
+    # Add Pi 5 config
+    echo "enable_uart=0" >> "$CONFIG_FILE"
+    for overlay in "${OVERLAYS[@]}"; do
+      echo "$overlay" >> "$CONFIG_FILE"
+    done
+    banner "Pi 5 config applied: enable_uart=0, dtoverlay=uart0, dtoverlay=uart4"
+  else
+    # Pi 4 config
+    grep -q "^enable_uart=1" "$CONFIG_FILE" || echo "enable_uart=1" >> "$CONFIG_FILE"
+    for overlay in "${OVERLAYS[@]}"; do
+      grep -q "^$overlay" "$CONFIG_FILE" || echo "$overlay" >> "$CONFIG_FILE"
+    done
+    banner "Pi 4 config applied: enable_uart=1, dtoverlay=uart5"
+  fi
 
-  banner "Config updated. Backup created: ${CONFIG_FILE}.bak.*"
+  banner "Backup created: ${CONFIG_FILE}.bak.*"
 }
 
 write_udev_rules() {
@@ -634,7 +648,7 @@ main() {
   require_root
   detect_model
   ensure_tools_and_groups
-  enable_overlays_and_mini_uart
+  update_config
   write_udev_rules
   write_profile_aliases
   show_status
@@ -646,3 +660,4 @@ main() {
   prompt_reboot
 }
 main
+``
