@@ -1,4 +1,4 @@
-# sindenps
+# SindenPS
 
 Install by running the following command on Raspberry Pi OS Lite x86
 
