@@ -14,7 +14,7 @@ exec > >(while IFS= read -r line; do
     echo "$(date '+%Y-%m-%d %H:%M:%S') $line"
 done | tee -a "$LOG_FILE") 2>&1
 
-echo "[INFO] Starting Sinden Lightgun and Arduino setup..."
+echo "[INFO] Starting Arduino setup..."
 
 # ---- Step 1: Validate prerequisites ----
 if ! command -v mono >/dev/null; then
