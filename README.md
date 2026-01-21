@@ -43,7 +43,6 @@ For Linux installs that do not have a sinden user please specify a password belo
 
 
 
-Latest Official Sinden driver
 ```bash
 # Install Latest Official Sinden driver
 VERSION=current SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
