@@ -1,6 +1,7 @@
 # sindenps
 
-Install by running the following command on Raspberry Pi OS Lite x86 
+Install by running the following command on Raspberry Pi OS Lite x86
+
 [x64 distribution is missing dependencies do not use]
 
 [Open the Sinden Base OS Install PDF](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/sinden-base-os-install.pdf)
