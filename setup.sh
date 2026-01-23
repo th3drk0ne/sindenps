@@ -496,7 +496,7 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       }
 
       .header-title img {
-        height: 36px;  /* smaller logo on mobile */
+        height: 36px;        /* smaller logo for mobile */
       }
 
       header::before {
@@ -505,8 +505,8 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       }
 
       #log {
-        font-size: 1.20rem;       /* larger for readability */
-        line-height: 1.50;        /* mobile spacing */
+        font-size: 1.20rem;  /* larger for readability */
+        line-height: 1.50;
       }
     }
 
@@ -563,11 +563,11 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 
   <header>
     <div class="header-title">
-      logo.png
+      <img src="logo.png" alt="Logo">
       Sinden Lightgun Log
     </div>
 
-    <!-- Theme Selector Dropdown (Namco removed) -->
+    <!-- Theme Selector Dropdown -->
     <select id="themeSwitcher" class="theme-select">
       <option value="default">GunCon Red</option>
       <option value="theme-ps1">PS1 Gray</option>
