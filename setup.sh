@@ -364,13 +364,11 @@ cd /var/www/logviewer
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/var/www/logviewer/logo.png" \
 	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/var/www/logviewer/index.html"
 	
-# 2) Docroot and index.html (literal HTML, not escaped)
 
-
-# 3) Link the log file (adjust the source if needed)
+# 2) Link the log file (adjust the source if needed)
 sudo ln -sf /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
 
-# 4) Permissions
+# 3) Permissions
 
 # File permissions (readable to Apache)
 sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
@@ -387,7 +385,7 @@ sudo chown -R www-data:www-data /var/www/logviewer
 sudo chmod -R 755 /var/www/logviewer
 
 
-# 5) Priority vhost as default + DirectoryIndex
+# 4) Priority vhost as default + DirectoryIndex
 sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
 <VirtualHost *:80>
     DocumentRoot /var/www/logviewer
@@ -428,22 +426,22 @@ sudo tee /etc/apache2/sites-available/000-logviewer-ssl.conf >/dev/null <<'APACH
 </VirtualHost>
 APACHE
 
-# 6) Silence FQDN warning (optional but recommended)
+# 5) Silence FQDN warning (optional but recommended)
 echo 'ServerName localhost' | sudo tee /etc/apache2/conf-available/servername.conf >/dev/null
 sudo a2enconf servername >/dev/null || true
 
-# 7) Enable your site, disable distro default, reload
+# 6) Enable your site, disable distro default, reload
 sudo a2dissite 000-default.conf >/dev/null 2>&1 || true
 sudo a2ensite 000-logviewer.conf >/dev/null
 sudo a2enmod headers >/dev/null || true
 sudo apache2ctl configtest
 sudo systemctl reload apache2
 
-# 8) restart services
+# 7) restart services
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
-# 9) install configuration editor
+# 8) install configuration editor
 
 cd 	/usr/local/bin
  sudo wget --quiet --show-progress --https-only --timestamping \
