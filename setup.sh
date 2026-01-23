@@ -23,7 +23,7 @@ log "Running as root."
 
 #-----------------------------------------------------------
 # Step 0) Version selection menu (sets VERSION + VERSION_TAG)
-# - Non-interactive: set VERSION env var before running (current/psiloc/new/old/latest/legacy)
+# - Non-interactive: set VERSION env var before running (current/psiloc)
 # - Interactive: prompts user if VERSION is not preset
 #-----------------------------------------------------------
 normalize_version() {
@@ -40,8 +40,8 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [1] Latest version"
   echo "  [2] Psiloc version"
   while true; do
-    read -r -p "Enter choice (1/2) [default: 2]: " choice
-    choice="${choice:-2}"
+    read -r -p "Enter choice (1/2) [default: 1]: " choice
+    choice="${choice:-1}"
     case "$choice" in
       1) VERSION="current"; break ;;
       2) VERSION="psiloc";  break ;;
