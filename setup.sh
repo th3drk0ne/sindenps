@@ -365,78 +365,235 @@ cd /var/www/logviewer
 	
 # 2) Docroot and index.html (literal HTML, not escaped)
 sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
+
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Sinden Log Viewer</title>
+
   <style>
-    
-/* GunCon‑style header */
-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 18px;
-  background: #000;
-  border-bottom: 0;
-  position: relative;
-  font-family: Verdana, sans-serif;
-}
 
-/* GunCon red underline bar */
-header::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 6px;
-  width: 100%;
-  background: #ff1a1a;   /* GunCon red */
-}
+    /* ------------------ THEME VARIABLES ------------------ */
+    :root {
+      --accent-color: #ff1a1a;        /* GunCon Red (default) */
+      --header-bg: #000000;
+      --log-bg: #111111;
+      --text-color: #ffffff;
+      --font-main: Verdana, sans-serif;
+    }
 
-/* GunCon angled “trigger slash” */
-header::before {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 160px;            /* adjust based on logo width */
-  width: 40px;
-  height: 6px;
-  background: #ff1a1a;
-  transform: skewX(-30deg);
-}
+    /* NAMCO ORANGE THEME */
+    .theme-namco {
+      --accent-color: #ff8c00;
+      --header-bg: #000;
+      --log-bg: #1a1a1a;
+      --text-color: #fff;
+    }
 
-/* Logo + title alignment */
-header h2 {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 0;
-  color: #fff; /* ensures header text is white */
-}
-header h2 img {
-  height: 60px;
-}
+    /* PS1 GRAY THEME */
+    .theme-ps1 {
+      --accent-color: #c0c0c0;
+      --header-bg: #1e1e1e;
+      --log-bg: #2b2b2b;
+      --text-color: #ffffff;
+    }
 
-#log {
-  background: #111;    /* deep gray but not pure black */
-  border: 0;
-  padding: 12px 14px;
-  white-space: pre-wrap;
-  overflow-y: auto;
-  height: calc(100vh - 60px);
-  color: #fff; /* ensures header text is white */
-  font-family: Verdana, sans-serif;
-}
-</style>
+    /* ------------------ GLOBAL LAYOUT ------------------ */
+    body {
+      background: #1a1a1a;
+      margin: 0;
+      color: var(--text-color);
+      font-family: Impact, "Arial Black", sans-serif;
+
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      transition: background 0.3s ease;
+    }
+
+    /* ------------------ HEADER ------------------ */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      background: var(--header-bg);
+      position: relative;
+      z-index: 1;
+
+      color: var(--text-color);
+      font-family: var(--font-main);
+    }
+
+    /* Left side title */
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 1.8rem;
+      z-index: 2;
+      position: relative;
+    }
+
+    .header-title img {
+      height: 60px;
+    }
+
+    /* Theme selector dropdown */
+    .theme-select {
+      font-family: var(--font-main);
+      font-size: 0.9rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+    }
+
+    /* GunCon underline bar */
+    header::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 6px;
+      width: 100%;
+      background: var(--accent-color);
+      z-index: 0;
+      transition: background 0.3s ease;
+    }
+
+    /* GunCon angled slash */
+    header::before {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 160px;
+      width: 40px;
+      height: 6px;
+      background: var(--accent-color);
+      transform: skewX(-30deg);
+      z-index: 0;
+      transition: background 0.3s ease;
+    }
+
+    /* ------------------ LOG WINDOW ------------------ */
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--log-bg);
+      padding: 12px 14px;
+      white-space: pre-wrap;
+      color: var(--text-color);
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      transition: background 0.3s ease;
+    }
+
+    /* ------------------ MOBILE ------------------ */
+    @media (max-width: 600px) {
+
+      header {
+        padding: 8px 10px;
+      }
+
+      .header-title {
+        font-size: 1.2rem;
+        gap: 8px;
+      }
+
+      .header-title img {
+        height: 40px;
+      }
+
+      header::before {
+        left: 100px;
+        width: 28px;
+      }
+    }
+
+    /* ------------------ ULTRAWIDE ------------------ */
+    @media (min-width: 1600px) {
+      header {
+        padding: 16px 40px;
+      }
+
+      .header-title {
+        font-size: 2.2rem;
+        gap: 20px;
+      }
+
+      .header-title img {
+        height: 80px;
+      }
+
+      header::before {
+        left: 220px;
+        width: 60px;
+      }
+
+      #log {
+        font-size: 1.05rem;
+      }
+    }
+
+    /* ------------------ SUPER ULTRAWIDE ------------------ */
+    @media (min-width: 2200px) {
+      header {
+        padding: 20px 60px;
+      }
+
+      .header-title {
+        font-size: 2.6rem;
+      }
+
+      .header-title img {
+        height: 90px;
+      }
+
+      #log {
+        font-size: 1.15rem;
+        line-height: 1.4;
+      }
+    }
+
+  </style>
 </head>
+
+
 <body>
+
   <header>
-    <h2 style="margin:0"><img src="logo.png" />Sinden Lightgun Log</h2>
+    <div class="header-title">
+      <img src="logo.png" alt="">
+      Sinden Lightgun Log
+    </div>
+
+    <!-- Theme Selector Dropdown -->
+    <select id="themeSwitcher" class="theme-select">
+      <option value="default">GunCon Red</option>
+      <option value="theme-namco">Namco Orange</option>
+      <option value="theme-ps1">PS1 Gray</option>
+    </select>
   </header>
+
   <div id="log" aria-live="polite">Loading…</div>
+
   <script>
+    /* ------------ THEME SWITCHER ------------ */
+    const themeSwitcher = document.getElementById("themeSwitcher");
+
+    themeSwitcher.addEventListener("change", function () {
+      document.body.classList.remove("theme-namco", "theme-ps1");
+
+      if (this.value !== "default") {
+        document.body.classList.add(this.value);
+      }
+    });
+
+    /* ------------ LOG REFRESH ------------ */
     async function fetchLog() {
       try {
         const res = await fetch('sinden.log', { cache: 'no-store' });
@@ -446,12 +603,14 @@ header h2 img {
         el.textContent = text || '(empty)';
         el.scrollTop = el.scrollHeight;
       } catch (e) {
-        document.getElementById('log').textContent = 'Failed to load log: ' + e.message;
+        document.getElementById('log').textContent =
+          'Failed to load log: ' + e.message;
       }
     }
     fetchLog();
     setInterval(fetchLog, 2000);
   </script>
+
 </body>
 </html>
 HTML
