@@ -1,4 +1,6 @@
 # SindenPS
+![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/media/images/SindenPS.png?raw=true)
+
 
 Install by running the following command on Raspberry Pi OS Lite x86
 
