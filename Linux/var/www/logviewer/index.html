@@ -2,24 +2,89 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sinden Log Viewer</title>
-    <style>
-        body { background: #000; color: #02b; font-family: monospace; }
-        #log { white-space: pre-wrap; overflow-y: scroll; height: 90vh; border: 1px solid #02b; padding: 10px; }
-    </style>
+  <meta charset="utf-8">
+  <title>Sinden Log Viewer</title>
+  <style>
+    
+/* GunCon‑style header */
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: #000;
+  border-bottom: 0;
+  position: relative;
+  font-family: Verdana, sans-serif;
+}
+
+/* GunCon red underline bar */
+header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  width: 100%;
+  background: #ff1a1a;   /* GunCon red */
+}
+
+/* GunCon angled “trigger slash” */
+header::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 160px;            /* adjust based on logo width */
+  width: 40px;
+  height: 6px;
+  background: #ff1a1a;
+  transform: skewX(-30deg);
+}
+
+/* Logo + title alignment */
+header h2 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  color: #fff; /* ensures header text is white */
+}
+header h2 img {
+  height: 60px;
+}
+
+#log {
+  background: #111;    /* deep gray but not pure black */
+  border: 0;
+  padding: 12px 14px;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+  color: #fff; /* ensures header text is white */
+  font-family: Verdana, sans-serif;
+}
+</style>
 </head>
 <body>
-    <h2>Sinden Lightgun Log</h2>
-    <div id="log"></div>
-    <script>
-        async function fetchLog() {
-            const response = await fetch('sinden.log');
-            const text = await response.text();
-            document.getElementById('log').textContent = text;
-            document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
-        }
-        setInterval(fetchLog, 2000); // refresh every 2 seconds
-        fetchLog();
-    </script>
+  <header>
+    <h2 style="margin:0"><img src="logo.png" />Sinden Lightgun Log</h2>
+  </header>
+  <div id="log" aria-live="polite">Loading…</div>
+  <script>
+    async function fetchLog() {
+      try {
+        const res = await fetch('sinden.log', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const el = document.getElementById('log');
+        el.textContent = text || '(empty)';
+        el.scrollTop = el.scrollHeight;
+      } catch (e) {
+        document.getElementById('log').textContent = 'Failed to load log: ' + e.message;
+      }
+    }
+    fetchLog();
+    setInterval(fetchLog, 2000);
+  </script>
 </body>
 </html>

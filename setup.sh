@@ -357,8 +357,13 @@ log "Assets deployment complete."
 #-----------------------------------------------------------
 log "Install Apache Log Site"
 
-# 1) Docroot and index.html (literal HTML, not escaped)
+# 1) download logo
 sudo mkdir -p /var/www/logviewer
+cd /var/www/logviewer
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/var/www/logviewer/logo.png"
+	
+# 2) Docroot and index.html (literal HTML, not escaped)
 sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 <!DOCTYPE html>
 <html>
@@ -366,15 +371,69 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
   <meta charset="utf-8">
   <title>Sinden Log Viewer</title>
   <style>
-    body { background: #000; color: #fff; font-family: monospace; margin: 0; }
-    header { padding: 10px 14px; border-bottom: 1px solid #fff; }
-    #log { white-space: pre-wrap; overflow-y: auto; height: calc(100vh - 60px); border: 0; padding: 12px 14px; }
-    a, a:visited { color: #39f; }
-  </style>
+    
+/* GunCon‑style header */
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: #000;
+  border-bottom: 0;
+  position: relative;
+  font-family: Verdana, sans-serif;
+}
+
+/* GunCon red underline bar */
+header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  width: 100%;
+  background: #ff1a1a;   /* GunCon red */
+}
+
+/* GunCon angled “trigger slash” */
+header::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 160px;            /* adjust based on logo width */
+  width: 40px;
+  height: 6px;
+  background: #ff1a1a;
+  transform: skewX(-30deg);
+}
+
+/* Logo + title alignment */
+header h2 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  color: #fff; /* ensures header text is white */
+}
+header h2 img {
+  height: 60px;
+}
+
+#log {
+  background: #111;    /* deep gray but not pure black */
+  border: 0;
+  padding: 12px 14px;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+  color: #fff; /* ensures header text is white */
+  font-family: Verdana, sans-serif;
+}
+</style>
 </head>
 <body>
   <header>
-    <h2 style="margin:0">Sinden Lightgun Log</h2>
+    <h2 style="margin:0"><img src="logo.png" />Sinden Lightgun Log</h2>
   </header>
   <div id="log" aria-live="polite">Loading…</div>
   <script>
@@ -397,10 +456,10 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 </html>
 HTML
 
-# 2) Link the log file (adjust the source if needed)
+# 3) Link the log file (adjust the source if needed)
 sudo ln -sf /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
 
-# 3) Permissions
+# 4) Permissions
 
 # File permissions (readable to Apache)
 sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
@@ -417,7 +476,7 @@ sudo chown -R www-data:www-data /var/www/logviewer
 sudo chmod -R 755 /var/www/logviewer
 
 
-# 4) Priority vhost as default + DirectoryIndex
+# 5) Priority vhost as default + DirectoryIndex
 sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
 <VirtualHost *:80>
     DocumentRoot /var/www/logviewer
@@ -458,22 +517,22 @@ sudo tee /etc/apache2/sites-available/000-logviewer-ssl.conf >/dev/null <<'APACH
 </VirtualHost>
 APACHE
 
-# 5) Silence FQDN warning (optional but recommended)
+# 6) Silence FQDN warning (optional but recommended)
 echo 'ServerName localhost' | sudo tee /etc/apache2/conf-available/servername.conf >/dev/null
 sudo a2enconf servername >/dev/null || true
 
-# 6) Enable your site, disable distro default, reload
+# 7) Enable your site, disable distro default, reload
 sudo a2dissite 000-default.conf >/dev/null 2>&1 || true
 sudo a2ensite 000-logviewer.conf >/dev/null
 sudo a2enmod headers >/dev/null || true
 sudo apache2ctl configtest
 sudo systemctl reload apache2
 
-# 7) restart services
+# 8) restart services
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
-# 8) install configuration editor
+# 9) install configuration editor
 
 cd 	/usr/local/bin
  sudo wget --quiet --show-progress --https-only --timestamping \
