@@ -370,13 +370,14 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 <html>
 <head>
   <meta charset="utf-8">
+  <!-- Critical for correct sizing on iPhone/iPad -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sinden Log Viewer</title>
 
   <style>
-
     html {
-      -webkit-text-size-adjust: 100%; /* Fix tiny text on iPhone */
+      /* Prevent iOS from shrinking text */
+      -webkit-text-size-adjust: 100%;
     }
 
     /* ------------------ THEME VARIABLES ------------------ */
@@ -501,7 +502,7 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       }
 
       .header-title img {
-        height: 36px;
+        height: 36px;        /* smaller logo for mobile */
       }
 
       header::before {
@@ -559,8 +560,32 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
         line-height: 1.4;
       }
     }
-
   </style>
+
+  <script>
+    /* Apply saved theme BEFORE first paint to avoid flash */
+    (function applySavedThemeEarly() {
+      try {
+        // Try cookie first
+        const cookieMatch = document.cookie.match(/(?:^|; )theme=([^;]*)/);
+        let saved = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+
+        // Fallback to localStorage
+        if (!saved && window.localStorage) {
+          saved = localStorage.getItem('themeChoice');
+        }
+
+        if (saved === 'theme-ps1') {
+          document.documentElement.classList.add('theme-ps1');
+        } else {
+          // default (GunCon Red) → ensure no leftover class
+          document.documentElement.classList.remove('theme-ps1');
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    })();
+  </script>
 </head>
 
 
@@ -568,12 +593,12 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 
   <header>
     <div class="header-title">
-      <img src="logo.png" alt="Sinden Logo">
+      <img src="logo.png" alt="Sinden Lightgun Logo">
       Sinden Lightgun Log
     </div>
 
     <!-- Theme Selector Dropdown -->
-    <select id="themeSwitcher" class="theme-select">
+    <select id="themeSwitcher" class="theme-select" aria-label="Theme selector">
       <option value="default">GunCon Red</option>
       <option value="theme-ps1">PS1 Gray</option>
     </select>
@@ -582,17 +607,49 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
   <div id="log" aria-live="polite">Loading…</div>
 
   <script>
+    /* ------------ COOKIE & THEME UTILS ------------ */
 
-    /* ------------ THEME SWITCHER ------------ */
-    const themeSwitcher = document.getElementById("themeSwitcher");
+    // Set cookie with 400 days max-age (Chrome iOS honors max-age; SameSite/Lax by default)
+    function setThemeCookie(value) {
+      const encoded = encodeURIComponent(value);
+      // Path=/ makes it available across the site if you host this at a path
+      document.cookie = `theme=${encoded}; max-age=${60 * 60 * 24 * 400}; path=/`;
+    }
 
-    themeSwitcher.addEventListener("change", function () {
-      document.body.classList.remove("theme-ps1");
+    function getThemeCookie() {
+      const m = document.cookie.match(/(?:^|; )theme=([^;]*)/);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
 
-      if (this.value !== "default") {
-        document.body.classList.add(this.value);
+    function applyTheme(value) {
+      // toggle class on <html> so CSS variables apply everywhere
+      if (value === 'theme-ps1') {
+        document.documentElement.classList.add('theme-ps1');
+      } else {
+        document.documentElement.classList.remove('theme-ps1');
+        value = 'default'; // normalize
       }
-    });
+      // persist to cookie & localStorage
+      setThemeCookie(value);
+      try { localStorage.setItem('themeChoice', value); } catch (_) {}
+    }
+
+    // Initialize selector from persisted value
+    (function initThemeSelector() {
+      const sel = document.getElementById('themeSwitcher');
+      let current = getThemeCookie();
+      if (!current) {
+        try { current = localStorage.getItem('themeChoice'); } catch (_) {}
+      }
+      if (current === 'theme-ps1') {
+        sel.value = 'theme-ps1';
+      } else {
+        sel.value = 'default';
+      }
+      sel.addEventListener('change', function () {
+        applyTheme(this.value);
+      });
+    })();
 
     /* ------------ LOG REFRESH ------------ */
     async function fetchLog() {
@@ -610,12 +667,10 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
     }
     fetchLog();
     setInterval(fetchLog, 2000);
-
   </script>
 
 </body>
 </html>
-
 
 HTML
 
