@@ -370,9 +370,14 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sinden Log Viewer</title>
 
   <style>
+
+    html {
+      -webkit-text-size-adjust: 100%; /* Fix tiny text on iPhone */
+    }
 
     /* ------------------ THEME VARIABLES ------------------ */
     :root {
@@ -491,12 +496,12 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       }
 
       .header-title {
-        font-size: 1.5rem;   /* bigger mobile title */
+        font-size: 1.6rem;   /* bigger mobile title */
         gap: 10px;
       }
 
       .header-title img {
-        height: 36px;        /* smaller logo for mobile */
+        height: 36px;
       }
 
       header::before {
@@ -505,8 +510,8 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       }
 
       #log {
-        font-size: 1.20rem;  /* larger for readability */
-        line-height: 1.50;
+        font-size: 1.25rem;  /* larger for readability */
+        line-height: 1.55;
       }
     }
 
@@ -563,7 +568,7 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 
   <header>
     <div class="header-title">
-      <img src="logo.png" alt="Logo">
+      <img src="logo.png" alt="Sinden Logo">
       Sinden Lightgun Log
     </div>
 
@@ -610,6 +615,7 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 
 </body>
 </html>
+
 
 HTML
 
