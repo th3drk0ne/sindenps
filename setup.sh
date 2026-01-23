@@ -383,14 +383,6 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       --font-main: Verdana, sans-serif;
     }
 
-    /* NAMCO ORANGE THEME */
-    .theme-namco {
-      --accent-color: #ff8c00;
-      --header-bg: #000;
-      --log-bg: #1a1a1a;
-      --text-color: #fff;
-    }
-
     /* PS1 GRAY THEME */
     .theme-ps1 {
       --accent-color: #c0c0c0;
@@ -427,14 +419,13 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       font-family: var(--font-main);
     }
 
-    /* Left side title */
     .header-title {
       display: flex;
       align-items: center;
       gap: 14px;
       font-size: 1.8rem;
-      z-index: 2;
       position: relative;
+      z-index: 2;
     }
 
     .header-title img {
@@ -500,17 +491,22 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
       }
 
       .header-title {
-        font-size: 1.2rem;
-        gap: 8px;
+        font-size: 1.5rem;   /* bigger mobile title */
+        gap: 10px;
       }
 
       .header-title img {
-        height: 40px;
+        height: 36px;  /* smaller logo on mobile */
       }
 
       header::before {
-        left: 100px;
-        width: 28px;
+        left: 95px;
+        width: 30px;
+      }
+
+      #log {
+        font-size: 1.20rem;       /* larger for readability */
+        line-height: 1.50;        /* mobile spacing */
       }
     }
 
@@ -567,14 +563,13 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
 
   <header>
     <div class="header-title">
-      <img src="logo.png" alt="">
+      logo.png
       Sinden Lightgun Log
     </div>
 
-    <!-- Theme Selector Dropdown -->
+    <!-- Theme Selector Dropdown (Namco removed) -->
     <select id="themeSwitcher" class="theme-select">
       <option value="default">GunCon Red</option>
-      <option value="theme-namco">Namco Orange</option>
       <option value="theme-ps1">PS1 Gray</option>
     </select>
   </header>
@@ -582,11 +577,12 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
   <div id="log" aria-live="polite">Loading…</div>
 
   <script>
+
     /* ------------ THEME SWITCHER ------------ */
     const themeSwitcher = document.getElementById("themeSwitcher");
 
     themeSwitcher.addEventListener("change", function () {
-      document.body.classList.remove("theme-namco", "theme-ps1");
+      document.body.classList.remove("theme-ps1");
 
       if (this.value !== "default") {
         document.body.classList.add(this.value);
@@ -609,10 +605,12 @@ sudo tee /var/www/logviewer/index.html >/dev/null <<'HTML'
     }
     fetchLog();
     setInterval(fetchLog, 2000);
+
   </script>
 
 </body>
 </html>
+
 HTML
 
 # 3) Link the log file (adjust the source if needed)
