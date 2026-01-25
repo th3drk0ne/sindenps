@@ -226,7 +226,7 @@ systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "$
 #-----------------------------------------------------------
 log "Installing prerequisites via apt."
 sudo apt-get update -y
-sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev apache2 xmlstarlet whiptail
+sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev xmlstarlet whiptail
 log "Prerequisites installed."
 
 #-----------------------------------------------------------
@@ -353,89 +353,184 @@ cd 	${LIGHTGUN_DIR}/log
 log "Assets deployment complete."
 
 #-----------------------------------------------------------
-# Step 8) apache logging site
+# Step 7) config site
 #-----------------------------------------------------------
-log "Install Apache Log Site"
+#!/bin/bash
+set -e
 
-# 1) download site
-sudo mkdir -p /var/www/logviewer
-cd /var/www/logviewer
-  wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/var/www/logviewer/logo.png" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/var/www/logviewer/index.html"
-	
+echo "=== Installing system packages ==="
+sudo apt update
+sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof
 
-# 2) Link the log file (adjust the source if needed)
-sudo ln -sf /home/sinden/Lightgun/log/sinden.log /var/www/logviewer/sinden.log
+echo "=== Creating dashboard directory ==="
+sudo mkdir -p /opt/lightgun-dashboard
+sudo chown -R sinden:sinden /opt/lightgun-dashboard
 
-# 3) Permissions
+echo "=== Downloading clean UTF-8 index.html from GitHub ==="
+sudo wget -O /opt/lightgun-dashboard/index.html \
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
+sudo chown sinden:sinden /opt/lightgun-dashboard/index.html
 
-# File permissions (readable to Apache)
-sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
-sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
+echo "=== Downloading dashboard logo from GitHub ==="
+sudo wget -O /opt/lightgun-dashboard/logo.png \
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/logo.png
+sudo chown sinden:sinden /opt/lightgun-dashboard/logo.png
 
-# Ensure Apache can traverse the directory chain:
-sudo chmod o+x /home
-sudo chmod o+x /home/sinden
-sudo chmod o+x /home/sinden/Lightgun
-sudo chmod o+x /home/sinden/Lightgun/log
+echo "=== Creating Python virtual environment ==="
+python3 -m venv /opt/lightgun-dashboard/venv
+source /opt/lightgun-dashboard/venv/bin/activate
 
-# Web root permissions
-sudo chown -R www-data:www-data /var/www/logviewer
-sudo chmod -R 755 /var/www/logviewer
+echo "=== Installing Python dependencies ==="
+pip install --upgrade pip
+pip install flask gunicorn
+
+echo "=== Writing Flask app ==="
+cat << 'EOF' > /opt/lightgun-dashboard/app.py
+import subprocess
+from flask import Flask, jsonify, render_template_string, send_from_directory
+
+app = Flask(__name__)
+
+SERVICES = [
+    "lightgun.service",
+    "lightgun-monitor.service"
+]
+
+SYSTEMCTL = "/usr/bin/systemctl"
+SUDO = "/usr/bin/sudo"
 
 
-# 4) Priority vhost as default + DirectoryIndex
-sudo tee /etc/apache2/sites-available/000-logviewer.conf >/dev/null <<'APACHE'
-<VirtualHost *:80>
-    DocumentRoot /var/www/logviewer
-    DirectoryIndex index.html
+def get_status(service):
+    try:
+        output = subprocess.check_output(
+            [SYSTEMCTL, "is-active", service],
+            stderr=subprocess.STDOUT
+        ).decode().strip()
+        return output
+    except subprocess.CalledProcessError:
+        return "unknown"
 
-    <Directory /var/www/logviewer>
-        Options -Indexes +FollowSymLinks
-        AllowOverride None
-        Require all granted
-    </Directory>
 
-    <Files "sinden.log">
-        Require all granted
-    </Files>
+def control_service(service, action):
+    try:
+        subprocess.check_output(
+            [SUDO, SYSTEMCTL, action, service],
+            stderr=subprocess.STDOUT
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        print("CONTROL ERROR:", e.output.decode())
+        return False
 
-    ErrorLog ${APACHE_LOG_DIR}/logviewer_error.log
-    CustomLog ${APACHE_LOG_DIR}/logviewer_access.log combined
-</VirtualHost>
-APACHE
 
-sudo tee /etc/apache2/sites-available/000-logviewer-ssl.conf >/dev/null <<'APACHE'
-<VirtualHost *:443>
-    DocumentRoot /var/www/logviewer
-    DirectoryIndex index.html
+@app.route("/api/services")
+def list_services():
+    return jsonify({s: get_status(s) for s in SERVICES})
 
-    <Directory /var/www/logviewer>
-        Options -Indexes +FollowSymLinks
-        AllowOverride None
-        Require all granted
-    </Directory>
 
-    <Files "sinden.log">
-        Require all granted
-    </Files>
+@app.route("/api/service/<name>/<action>", methods=["POST"])
+def service_action(name, action):
+    if name not in SERVICES:
+        return jsonify({"error": "unknown service"}), 400
+    if action not in ["start", "stop", "restart"]:
+        return jsonify({"error": "invalid action"}), 400
+    ok = control_service(name, action)
+    return jsonify({"success": ok, "status": get_status(name)})
 
-    ErrorLog ${APACHE_LOG_DIR}/logviewer_error.log
-    CustomLog ${APACHE_LOG_DIR}/logviewer_access.log combined
-</VirtualHost>
-APACHE
 
-# 5) Silence FQDN warning (optional but recommended)
-echo 'ServerName localhost' | sudo tee /etc/apache2/conf-available/servername.conf >/dev/null
-sudo a2enconf servername >/dev/null || true
+@app.route("/api/logs/<service>")
+def service_logs(service):
+    if service not in SERVICES:
+        return jsonify({"error": "unknown service"}), 400
+    try:
+        output = subprocess.check_output(
+            [SYSTEMCTL, "status", service, "--no-pager"],
+            stderr=subprocess.STDOUT
+        ).decode()
+        return jsonify({"logs": output})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"logs": e.output.decode()})
 
-# 6) Enable your site, disable distro default, reload
-sudo a2dissite 000-default.conf >/dev/null 2>&1 || true
-sudo a2ensite 000-logviewer.conf >/dev/null
-sudo a2enmod headers >/dev/null || true
-sudo apache2ctl configtest
-sudo systemctl reload apache2
+
+@app.route("/api/sinden-log")
+def sinden_log():
+    LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
+    try:
+        with open(LOGFILE, "r", encoding="utf-8", errors="replace") as f:
+            data = f.read()
+        return jsonify({"logs": data})
+    except Exception as e:
+        return jsonify({"logs": f"Error reading log: {e}"})
+
+
+@app.route("/logo.png")
+def logo():
+    return send_from_directory("/opt/lightgun-dashboard", "logo.png")
+
+
+@app.route("/")
+def index():
+    with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
+        html = f.read()
+    return render_template_string(html)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+EOF
+
+sudo chown sinden:sinden /opt/lightgun-dashboard/app.py
+
+echo "=== Writing lightgun-dashboard systemd service ==="
+sudo bash -c 'cat << EOF > /etc/systemd/system/lightgun-dashboard.service
+[Unit]
+Description=Lightgun Dashboard (Flask + Gunicorn)
+After=network.target
+
+[Service]
+User=sinden
+WorkingDirectory=/opt/lightgun-dashboard
+Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/lightgun-dashboard/venv/bin"
+ExecStart=/opt/lightgun-dashboard/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+echo "=== Adding sudoers rule for systemctl ==="
+sudo bash -c 'echo "sinden ALL=NOPASSWD: /usr/bin/systemctl" > /etc/sudoers.d/90-sinden-systemctl'
+sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
+
+echo "=== Enabling dashboard service ==="
+sudo systemctl daemon-reload
+sudo systemctl enable lightgun-dashboard.service
+sudo systemctl restart lightgun-dashboard.service
+
+echo "=== Configuring Nginx reverse proxy on port 80 ==="
+sudo bash -c 'cat << EOF > /etc/nginx/sites-available/lightgun-dashboard
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}
+EOF'
+
+sudo ln -sf /etc/nginx/sites-available/lightgun-dashboard /etc/nginx/sites-enabled/lightgun-dashboard
+
+# Disable default site to avoid port 80 conflicts
+if [ -L /etc/nginx/sites-enabled/default ]; then
+  sudo rm /etc/nginx/sites-enabled/default
+fi
+
+sudo nginx -t && sudo systemctl restart nginx
+
+echo "=== Setup complete! Dashboard running at http://sindenps.local/ ==="
 
 # 7) restart services
 sudo systemctl restart lightgun.service
@@ -451,7 +546,7 @@ cd 	/usr/local/bin
 log "configuration tool installed"
 
 #-----------------------------------------------------------
-# Step 9) GCON2 UDEV Rules Pi4 and Pi5
+# Step 8) GCON2 UDEV Rules Pi4 and Pi5
 #-----------------------------------------------------------
 # setup-gcon2-serial.sh
 #
