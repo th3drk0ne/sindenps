@@ -957,7 +957,7 @@ echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenp
 
 
 #Profiles
-# Helper: download a set of URLs into a destination, fix perms and exe bit
+# Helper: download a set of URLs into a destination
 download_profiles() {
   local dest="$1"; shift
   install -d -o sinden -g sinden "$dest"
@@ -980,23 +980,23 @@ if [[ "$VERSION" == "current" ]]; then
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
   )
   PS2_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS/profile/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Low-Resolution.config"
   )
 else
   # PSILOC (Legacy) asset set — UPDATED with your URLs
   PS1_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Low-Resolution.config"
   )
   PS2_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Low-Resolution.config"
   )
 fi
 
-download_profiles "${LIGHTGUN_DIR}/PS1/profiles" "${PS1_P_URLS[@]}"
-download_profiles "${LIGHTGUN_DIR}/PS2/profiles" "${PS2_P_URLS[@]}"
+download_profiles "$/home/sinden/Lightgun/PS1/profiles" "${PS1_P_URLS[@]}"
+download_profiles "$/home/sinden/Lightgun/PS2/profiles" "${PS2_P_URLS[@]}"
 
 
 # 7) restart services
