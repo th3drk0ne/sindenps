@@ -995,8 +995,8 @@ else
   )
 fi
 
-download_profiles "$/home/sinden/Lightgun/PS1/profiles" "${PS1_P_URLS[@]}"
-download_profiles "$/home/sinden/Lightgun/PS2/profiles" "${PS2_P_URLS[@]}"
+download_profiles "/home/sinden/Lightgun/PS1/profiles" "${PS1_P_URLS[@]}"
+download_profiles "/home/sinden/Lightgun/PS2/profiles" "${PS2_P_URLS[@]}"
 
 
 # 7) restart services
