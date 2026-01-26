@@ -353,12 +353,9 @@ cd 	${LIGHTGUN_DIR}/log
 log "Assets deployment complete."
 
 #-----------------------------------------------------------
-# Step 7) config site
+# Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
 #-----------------------------------------------------------
 
-#-----------------------------------------------------------
-# Lightgun Dashboard - Setup (PS1/PS2 + XML Order Support)
-#-----------------------------------------------------------
 #!/bin/bash
 set -e
 
