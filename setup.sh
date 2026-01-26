@@ -408,12 +408,18 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 echo "=== 4) Backend: Flask app (app.py) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
-import os, time, subprocess
+
+import os
+import time
+import subprocess
 import xml.etree.ElementTree as ET
 from flask import Flask, jsonify, render_template_string, send_from_directory, request
 
 app = Flask(__name__)
 
+# ---------------------------
+# Services & system utilities
+# ---------------------------
 SERVICES = [
     "lightgun.service",
     "lightgun-monitor.service"
@@ -422,13 +428,21 @@ SERVICES = [
 SYSTEMCTL = "/usr/bin/systemctl"
 SUDO = "/usr/bin/sudo"
 
+# ---------------------------
+# Config file locations
+# ---------------------------
 CONFIG_PATHS = {
     "ps2": "/home/sinden/Lightgun/PS2/LightgunMono.exe.config",
     "ps1": "/home/sinden/Lightgun/PS1/LightgunMono.exe.config",
 }
 DEFAULT_PLATFORM = "ps2"
 
-def get_status(service):
+
+# ===========================
+# Systemd helpers
+# ===========================
+def get_status(service: str) -> str:
+    """Return 'active', 'inactive', 'failed', 'unknown', etc."""
     try:
         output = subprocess.check_output(
             [SYSTEMCTL, "is-active", service],
@@ -438,7 +452,9 @@ def get_status(service):
     except subprocess.CalledProcessError:
         return "unknown"
 
-def control_service(service, action):
+
+def control_service(service: str, action: str) -> bool:
+    """Run sudo systemctl <action> <service>. Returns True on success."""
     try:
         subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
         return True
@@ -446,9 +462,14 @@ def control_service(service, action):
         print("CONTROL ERROR:", e.output.decode())
         return False
 
+
+# ===========================
+# Flask routes: services
+# ===========================
 @app.route("/api/services")
 def list_services():
     return jsonify({s: get_status(s) for s in SERVICES})
+
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
@@ -458,6 +479,7 @@ def service_action(name, action):
         return jsonify({"error": "invalid action"}), 400
     ok = control_service(name, action)
     return jsonify({"success": ok, "status": get_status(name)})
+
 
 @app.route("/api/logs/<service>")
 def service_logs(service):
@@ -472,6 +494,10 @@ def service_logs(service):
     except subprocess.CalledProcessError as e:
         return jsonify({"logs": e.output.decode()})
 
+
+# ===========================
+# Sinden log passthrough
+# ===========================
 @app.route("/api/sinden-log")
 def sinden_log():
     LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
@@ -482,33 +508,57 @@ def sinden_log():
     except Exception as e:
         return jsonify({"logs": f"Error reading log: {e}"})
 
-# ---------- Configuration API (PS1/PS2) preserving XML order ----------
-def _resolve_platform(p):
+
+# ===========================
+# XML config helpers (PS1/PS2)
+# ===========================
+def _resolve_platform(p: str) -> str:
+    """Normalize/validate platform key."""
     p = (p or "").lower()
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
 
-def _ensure_stub(path):
+
+def _ensure_stub(path: str):
+    """Create minimal XML stub if file is missing."""
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            f.write('<?xml version="1.0" encoding="utf-8"?>\n<configuration><appSettings></appSettings></configuration>\n')
+            f.write('<?xml version="1.0" encoding="utf-8"?>\n'
+                    '<configuration><appSettings></appSettings></configuration>\n')
 
-def _load_config_tree(path):
+
+def _load_config_tree(path: str) -> ET.ElementTree:
+    """Load XML tree, ensuring a stub exists."""
     _ensure_stub(path)
+    # Default ElementTree parser preserves comments as ET.Comment nodes
     return ET.parse(path)
 
-def _appsettings_root(tree):
+
+def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
+    """Return/create the <appSettings> element under <configuration>."""
     root = tree.getroot()
     appsettings = root.find("appSettings")
     if appsettings is None:
         appsettings = ET.SubElement(root, "appSettings")
     return appsettings
 
-def _kv_items(appsettings):
-    return [el for el in appsettings if el.tag == "add" and "key" in el.attrib]
 
-def _split_by_player(appsettings):
-    p1, p2 = [], []
+def _kv_items(appsettings: ET.Element):
+    """
+    Return existing <add> elements (key/value pairs) in document order.
+    We don't touch comments or any other node types.
+    """
+    return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
+
+
+def _split_by_player(appsettings: ET.Element):
+    """
+    Produce two ordered lists representing Player 1 and Player 2 keys.
+    Player 2 keys are recognized by a 'P2' suffix, which is stripped in the returned
+    'key' field so the UI can edit a single base key for both players.
+    """
+    p1 = []
+    p2 = []
     for el in _kv_items(appsettings):
         key = el.attrib["key"]
         val = el.attrib.get("value", "")
@@ -518,30 +568,66 @@ def _split_by_player(appsettings):
             p1.append({"key": key, "value": val})
     return p1, p2
 
-def _write_players_back(appsettings, p1_list, p2_list):
+
+def _remove_add_nodes(appsettings: ET.Element):
+    """
+    Remove only <add> nodes from <appSettings>, leaving comments and
+    any other custom nodes intact to preserve users' annotations.
+    """
     for el in list(appsettings):
         if el.tag == "add":
             appsettings.remove(el)
+
+
+def _write_players_back(appsettings: ET.Element, p1_list, p2_list):
+    """
+    Rebuild <add> nodes under <appSettings> while preserving any existing
+    non-<add> nodes (e.g., comments) that were left in place.
+    The final order is:
+      - (existing comments/other nodes remain where they were after removals)
+      - all Player 1 <add> in provided order
+      - all Player 2 <add> in provided order (with 'P2' suffix)
+    """
+    _remove_add_nodes(appsettings)
+
+    # Append Player 1 items
     for item in p1_list:
         el = ET.SubElement(appsettings, "add")
         el.set("key", item["key"])
         el.set("value", item.get("value", ""))
+
+    # Append Player 2 items (with suffix)
     for item in p2_list:
         el = ET.SubElement(appsettings, "add")
         el.set("key", item["key"] + "P2")
         el.set("value", item.get("value", ""))
 
-def _pretty_xml(tree):
-    try:
-        import xml.dom.minidom as minidom
-        rough = ET.tostring(tree.getroot(), encoding="utf-8")
-        reparsed = minidom.parseString(rough)
-        return reparsed.toprettyxml(indent="  ", encoding="utf-8")
-    except Exception:
-        return ET.tostring(tree.getroot(), encoding="utf-8")
 
+def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
+    """
+    Serialize XML without pretty-print reparsing.
+    Using ElementTree's write() keeps ET.Comment nodes intact.
+    """
+    # Ensure directory exists (should already from _ensure_stub/backup path creation)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+
+
+# ===========================
+# Flask routes: configuration
+# ===========================
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
+    """
+    Returns:
+      {
+        ok: True,
+        platform: "ps1"|"ps2",
+        path: "<absolute file path>",
+        player1: [{key, value}, ...],
+        player2: [{key, value}, ...]
+      }
+    """
     try:
         platform = _resolve_platform(request.args.get("platform"))
         path = CONFIG_PATHS[platform]
@@ -552,14 +638,28 @@ def api_config_get():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
+
 @app.route("/api/config/save", methods=["POST"])
 def api_config_save():
+    """
+    Body:
+      {
+        platform: "ps1"|"ps2",
+        player1: [{key, value}, ...],
+        player2: [{key, value}, ...]
+      }
+    Behavior:
+      - Backs up the original file alongside as <file>.YYYYmmdd-HHMMSS.bak
+      - Writes updated XML preserving comments and non-<add> siblings
+    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         path = CONFIG_PATHS[platform]
-        p1_list = data.get("player1", [])
+        p1_list = data.get("player1", [])  # ordered list of {key, value}
         p2_list = data.get("player2", [])
+
+        # ----- Backup original -----
         ts = time.strftime("%Y%m%d-%H%M%S")
         backup_path = f"{path}.{ts}.bak"
         os.makedirs(os.path.dirname(backup_path), exist_ok=True)
@@ -568,20 +668,25 @@ def api_config_save():
                 dst.write(src.read())
         else:
             _ensure_stub(path)
+
+        # ----- Load, modify, and write without losing comments -----
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         _write_players_back(appsettings, p1_list, p2_list)
-        xml_bytes = _pretty_xml(tree)
-        with open(path, "wb") as f:
-            f.write(xml_bytes)
+        _write_tree_preserving_comments(tree, path)
+
         return jsonify({"ok": True, "platform": platform, "path": path, "backup": backup_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
-# ---------- End Configuration API ----------
 
+
+# ===========================
+# Static passthroughs & index
+# ===========================
 @app.route("/logo.png")
 def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
+
 
 @app.route("/")
 def index():
@@ -589,7 +694,18 @@ def index():
         html = f.read()
     return render_template_string(html)
 
+
+# Optional health endpoint (useful for monitors)
+@app.route("/healthz")
+def healthz():
+    return jsonify({"ok": True}), 200
+
+
+# ===========================
+# Local dev entrypoint
+# ===========================
 if __name__ == "__main__":
+    # For production the systemd unit runs gunicorn; this is just for local testing.
     app.run(host="0.0.0.0", port=5000)
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
