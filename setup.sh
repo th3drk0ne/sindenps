@@ -976,22 +976,22 @@ download_profiles() {
 if [[ "$VERSION" == "current" ]]; then
   # CURRENT (Latest) asset set
   PS1_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profiles/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profiles/Low-Resolution.config"
   )
   PS2_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profiles/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profiles/Low-Resolution.config"
   )
 else
   # PSILOC (Legacy) asset set — UPDATED with your URLs
   PS1_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profiles/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profiles/Low-Resolution.config"
   )
   PS2_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profile/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profiles/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profiles/Low-Resolution.config"
   )
 fi
 
