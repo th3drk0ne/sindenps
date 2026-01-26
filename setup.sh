@@ -673,7 +673,7 @@ def _list_profiles(platform: str) -> List[Dict[str, str]]:
             try:
                 st = os.stat(full)
                 items.append({
-                    "name": fname[:-len(".config")],  # FIXED dynamic strip
+                    "name": fname[:-len(".config")],
                     "path": full,
                     "mtime": int(st.st_mtime)
                 })
@@ -742,7 +742,7 @@ def api_config_save():
 
 
 # ===========================
-# Profiles API
+# Profiles API (Preserve comments)
 # ===========================
 @app.route("/api/config/profiles", methods=["GET"])
 def api_profiles_list():
@@ -757,7 +757,7 @@ def api_profiles_list():
 @app.route("/api/config/profile/save", methods=["POST"])
 def api_profile_save():
     """
-    Save profile with form data instead of copying live config.
+    Save profile with form data and preserve comments from original config.
     """
     try:
         data = request.get_json(force=True) or {}
@@ -772,12 +772,15 @@ def api_profile_save():
         if os.path.exists(prof_path) and not overwrite:
             return jsonify({"ok": False, "error": "Profile already exists"}), 409
 
-        # Create XML tree and write form data
+        # ✅ Load original config to preserve comments
         tree = _load_config_tree(CONFIG_PATHS[platform])
         appsettings = _appsettings_root(tree)
-        _write_players_back_in_place(appsettings, p1_list, p2_list)
-        _write_tree_preserving_comments(tree, prof_path)
 
+        # ✅ Replace <add> elements but keep comments
+        _write_players_back_in_place(appsettings, p1_list, p2_list)
+
+        # ✅ Write to profile file
+        _write_tree_preserving_comments(tree, prof_path)
         os.chmod(prof_path, 0o664)
 
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": prof_path})
@@ -851,7 +854,6 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
 
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
