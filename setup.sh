@@ -445,13 +445,15 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 echo "=== 4) Backend: Flask app (app.py, with Profiles feature) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
+
 #!/usr/bin/env python3
 import os
 import time
 import re
 import subprocess
 import xml.etree.ElementTree as ET
-from typing import List, Dict
+from typing import List, Dict, Tuple
+
 from flask import Flask, jsonify, render_template_string, send_from_directory, request
 
 app = Flask(__name__)
@@ -461,7 +463,7 @@ app = Flask(__name__)
 # ---------------------------
 SERVICES = [
     "lightgun.service",
-    "lightgun-monitor.service"
+    "lightgun-monitor.service",
 ]
 
 SYSTEMCTL = "/usr/bin/systemctl"
@@ -476,6 +478,10 @@ CONFIG_PATHS = {
 }
 DEFAULT_PLATFORM = "ps2"
 
+# ---------------------------
+# Sinden log
+# ---------------------------
+SINDEN_LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
 
 # ===========================
 # Systemd helpers
@@ -498,7 +504,7 @@ def control_service(service: str, action: str) -> bool:
         subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
         return True
     except subprocess.CalledProcessError as e:
-        print("CONTROL ERROR:", e.output.decode())
+        print("CONTROL ERROR:", e.output.decode(errors="replace"))
         return False
 
 
@@ -528,10 +534,10 @@ def service_logs(service):
         output = subprocess.check_output(
             [SYSTEMCTL, "status", service, "--no-pager"],
             stderr=subprocess.STDOUT
-        ).decode()
+        ).decode(errors="replace")
         return jsonify({"logs": output})
     except subprocess.CalledProcessError as e:
-        return jsonify({"logs": e.output.decode()})
+        return jsonify({"logs": e.output.decode(errors="replace")})
 
 
 # ===========================
@@ -539,9 +545,8 @@ def service_logs(service):
 # ===========================
 @app.route("/api/sinden-log")
 def sinden_log():
-    LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
     try:
-        with open(LOGFILE, "r", encoding="utf-8", errors="replace") as f:
+        with open(SINDEN_LOGFILE, "r", encoding="utf-8", errors="replace") as f:
             data = f.read()
         return jsonify({"logs": data})
     except Exception as e:
@@ -557,7 +562,7 @@ def _resolve_platform(p: str) -> str:
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
 
 
-def _ensure_stub(path: str):
+def _ensure_stub(path: str) -> None:
     """Create minimal XML stub if file is missing."""
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -569,7 +574,7 @@ def _ensure_stub(path: str):
 def _load_config_tree(path: str) -> ET.ElementTree:
     """
     Load XML tree, ensuring a stub exists.
-    Use a parser that preserves comments and processing instructions.
+    Parser preserves comments and processing instructions.
     """
     _ensure_stub(path)
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
@@ -585,18 +590,18 @@ def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
     return appsettings
 
 
-def _kv_items(appsettings: ET.Element):
+def _kv_items(appsettings: ET.Element) -> List[ET.Element]:
     """Return existing <add> elements (key/value pairs) in document order."""
     return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
 
 
-def _split_by_player(appsettings: ET.Element):
+def _split_by_player(appsettings: ET.Element) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
     """
     Produce two ordered lists representing Player 1 and Player 2 keys.
     Player 2 keys are recognized by a 'P2' suffix; we strip it for UI editing.
     """
-    p1 = []
-    p2 = []
+    p1: List[Dict[str, str]] = []
+    p2: List[Dict[str, str]] = []
     for el in _kv_items(appsettings):
         key = el.attrib["key"]
         val = el.attrib.get("value", "")
@@ -607,12 +612,12 @@ def _split_by_player(appsettings: ET.Element):
     return p1, p2
 
 
-def _build_add_elements(parent: ET.Element, p1_list, p2_list):
+def _build_add_elements(p1_list: List[Dict[str, str]], p2_list: List[Dict[str, str]]) -> List[ET.Element]:
     """
     Create new <add> elements (not attached yet) for both players,
     preserving the provided order.
     """
-    new_elems = []
+    new_elems: List[ET.Element] = []
     for item in p1_list:
         el = ET.Element("add")
         el.set("key", item["key"])
@@ -626,19 +631,20 @@ def _build_add_elements(parent: ET.Element, p1_list, p2_list):
     return new_elems
 
 
-def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
+def _write_players_back_in_place(appsettings: ET.Element,
+                                 p1_list: List[Dict[str, str]],
+                                 p2_list: List[Dict[str, str]]) -> None:
     """
     Rebuild <add> nodes under <appSettings> *in place*:
-      • Insert the rebuilt block at the position of the first <add>
+      • Insert rebuilt block at the position of the first <add>
       • Skip all original <add> nodes that follow
       • Preserve every non-<add> node (comments, PIs, etc.) where it was
     If no <add> exists, append at the end.
     """
     children = list(appsettings)  # snapshot
+    new_adds = _build_add_elements(p1_list, p2_list)
 
-    new_adds = _build_add_elements(appsettings, p1_list, p2_list)
-
-    new_children = []
+    new_children: List[ET.Element] = []
     inserted = False
 
     for node in children:
@@ -658,7 +664,7 @@ def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
         appsettings.append(node)
 
 
-def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
+def _write_tree_preserving_comments(tree: ET.ElementTree, path: str) -> None:
     """Serialize without pretty-print reparsing. Comments/PIs preserved."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tree.write(path, encoding="utf-8", xml_declaration=True)
@@ -669,12 +675,14 @@ def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
 # ===========================
 PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,60}$")
 
+
 def _profiles_dir_for(path: str) -> str:
     """Return the profiles subfolder for a given config file path."""
     base_dir = os.path.dirname(path)
     pdir = os.path.join(base_dir, "profiles")
     os.makedirs(pdir, exist_ok=True)
     return pdir
+
 
 def _safe_profile_name(name: str) -> str:
     """Validate a safe profile name (no traversal, no spaces)."""
@@ -683,6 +691,7 @@ def _safe_profile_name(name: str) -> str:
     if not PROFILE_NAME_RE.match(name):
         raise ValueError("Invalid profile name. Use letters, digits, _ or -, max 60 chars.")
     return name
+
 
 def _profile_path(platform: str, name: str) -> str:
     """
@@ -694,26 +703,34 @@ def _profile_path(platform: str, name: str) -> str:
     pdir = _profiles_dir_for(live_cfg)
     return os.path.join(pdir, f"{_safe_profile_name(name)}.config")
 
+
 def _list_profiles(platform: str) -> List[Dict[str, str]]:
-    """Enumerate profiles for a platform, sorted by mtime desc."""
+    """
+    Enumerate profiles for a platform, sorted by mtime desc.
+
+    FIX: Do NOT use fname[:-8] to strip ".config" (that removes one extra char).
+         Use os.path.splitext(fname)[0] which correctly removes the extension.
+    """
     platform = _resolve_platform(platform)
     live_cfg = CONFIG_PATHS[platform]
     pdir = _profiles_dir_for(live_cfg)
-    items = []
+
+    items: List[Dict[str, str]] = []
     if os.path.isdir(pdir):
-        for fname in sorted(os.listdir(pdir)):
+        for fname in os.listdir(pdir):
             if not fname.endswith(".config"):
                 continue
             full = os.path.join(pdir, fname)
             try:
                 st = os.stat(full)
                 items.append({
-                    "name": fname[:-8],  # strip ".config"
+                    "name": os.path.splitext(fname)[0],  # ✅ correct
                     "path": full,
                     "mtime": int(st.st_mtime)
                 })
             except FileNotFoundError:
                 pass
+
     items.sort(key=lambda x: x["mtime"], reverse=True)
     return items
 
@@ -727,14 +744,6 @@ def api_config_get():
     Optional query params:
       platform: ps1|ps2 (default ps2)
       profile: <profileName>  (if present, reads that profile file, not the live file)
-
-    Returns:
-      {
-        ok: True,
-        platform, path, player1, player2,
-        source: "live"|"profile",
-        profile: "<name or ''>"
-      }
     """
     try:
         platform = _resolve_platform(request.args.get("platform"))
@@ -769,8 +778,8 @@ def api_config_save():
     Body:
       { platform: "ps1"|"ps2", player1: [...], player2: [...] }
     Behavior:
-      - Backs up the original file under <config_dir>/backups/<filename>.<timestamp>.bak
-      - Writes updated XML preserving comments and the placement of non-<add> nodes.
+      - Backup original file under <config_dir>/backups/<filename>.<timestamp>.bak
+      - Write updated XML preserving comments and placement of non-<add> nodes.
     """
     try:
         data = request.get_json(force=True) or {}
@@ -810,8 +819,6 @@ def api_profiles_list():
     """
     Query:
       platform: ps1|ps2
-    Returns:
-      { ok: True, platform, profiles: [{name, path, mtime}, ...] }
     """
     try:
         platform = _resolve_platform(request.args.get("platform"))
@@ -827,8 +834,8 @@ def api_profile_save():
     Body:
       { platform: "ps1"|"ps2", name: "<profileName>", overwrite?: bool }
     Behavior:
-      - Copies CURRENT LIVE config to profiles/<name>.config.
-      - Respects overwrite flag (default False).
+      - Copies CURRENT LIVE config to profiles/<name>.config
+      - Respects overwrite flag (default False)
     """
     try:
         data = request.get_json(force=True) or {}
@@ -849,12 +856,7 @@ def api_profile_save():
         with open(live_path, "rb") as src, open(prof_path, "wb") as dst:
             dst.write(src.read())
 
-        try:
-            os.chown(prof_path, os.getuid(), os.getgid())
-        except Exception:
-            pass
         os.chmod(prof_path, 0o664)
-
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": prof_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
@@ -896,12 +898,7 @@ def api_profile_load():
         with open(prof_path, "rb") as src, open(live_path, "wb") as dst:
             dst.write(src.read())
 
-        try:
-            os.chown(live_path, os.getuid(), os.getgid())
-        except Exception:
-            pass
         os.chmod(live_path, 0o664)
-
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": live_path, "backup": backup_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
@@ -948,10 +945,8 @@ def healthz():
     return jsonify({"ok": True}), 200
 
 
-# ===========================
-# Local dev entrypoint
-# ===========================
 if __name__ == "__main__":
+    # Dev only
     app.run(host="0.0.0.0", port=5000)
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
