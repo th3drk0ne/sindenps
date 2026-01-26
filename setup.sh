@@ -409,6 +409,7 @@ pip install "flask==3.*" "gunicorn==21.*"
 echo "=== 4) Backend: Flask app (app.py) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
 
+#!/usr/bin/env python3
 import os
 import time
 import subprocess
@@ -528,10 +529,13 @@ def _ensure_stub(path: str):
 
 
 def _load_config_tree(path: str) -> ET.ElementTree:
-    """Load XML tree, ensuring a stub exists."""
+    """
+    Load XML tree, ensuring a stub exists.
+    IMPORTANT: Use a parser that preserves comments and processing instructions.
+    """
     _ensure_stub(path)
-    # Default ElementTree parser preserves comments as ET.Comment nodes
-    return ET.parse(path)
+    parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
+    return ET.parse(path, parser=parser)
 
 
 def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
@@ -606,7 +610,8 @@ def _write_players_back(appsettings: ET.Element, p1_list, p2_list):
 def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
     """
     Serialize XML without pretty-print reparsing.
-    Using ElementTree's write() keeps ET.Comment nodes intact.
+    Comments (ET.Comment) and PIs are preserved if they were parsed with
+    insert_comments/insert_pis.
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tree.write(path, encoding="utf-8", xml_declaration=True)
@@ -710,6 +715,7 @@ def healthz():
 if __name__ == "__main__":
     # For production the systemd unit runs gunicorn; this is just for local testing.
     app.run(host="0.0.0.0", port=5000)
+
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 
