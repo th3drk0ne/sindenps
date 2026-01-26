@@ -531,7 +531,7 @@ def _ensure_stub(path: str):
 def _load_config_tree(path: str) -> ET.ElementTree:
     """
     Load XML tree, ensuring a stub exists.
-    IMPORTANT: Use a parser that preserves comments and processing instructions.
+    Use a parser that preserves comments and processing instructions.
     """
     _ensure_stub(path)
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
@@ -541,6 +541,7 @@ def _load_config_tree(path: str) -> ET.ElementTree:
 def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
     """Return/create the <appSettings> element under <configuration>."""
     root = tree.getroot()
+    # Direct child in .NET/Mono config
     appsettings = root.find("appSettings")
     if appsettings is None:
         appsettings = ET.SubElement(root, "appSettings")
@@ -550,7 +551,6 @@ def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
 def _kv_items(appsettings: ET.Element):
     """
     Return existing <add> elements (key/value pairs) in document order.
-    We don't touch comments or any other node types.
     """
     return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
 
@@ -558,8 +558,7 @@ def _kv_items(appsettings: ET.Element):
 def _split_by_player(appsettings: ET.Element):
     """
     Produce two ordered lists representing Player 1 and Player 2 keys.
-    Player 2 keys are recognized by a 'P2' suffix, which is stripped in the returned
-    'key' field so the UI can edit a single base key for both players.
+    Player 2 keys are recognized by a 'P2' suffix; we strip it for UI editing.
     """
     p1 = []
     p2 = []
@@ -573,47 +572,74 @@ def _split_by_player(appsettings: ET.Element):
     return p1, p2
 
 
-def _remove_add_nodes(appsettings: ET.Element):
+def _build_add_elements(parent: ET.Element, p1_list, p2_list):
     """
-    Remove only <add> nodes from <appSettings>, leaving comments and
-    any other custom nodes intact to preserve users' annotations.
+    Create new <add> elements (not attached yet) for both players,
+    preserving the provided order.
     """
-    for el in list(appsettings):
-        if el.tag == "add":
-            appsettings.remove(el)
-
-
-def _write_players_back(appsettings: ET.Element, p1_list, p2_list):
-    """
-    Rebuild <add> nodes under <appSettings> while preserving any existing
-    non-<add> nodes (e.g., comments) that were left in place.
-    The final order is:
-      - (existing comments/other nodes remain where they were after removals)
-      - all Player 1 <add> in provided order
-      - all Player 2 <add> in provided order (with 'P2' suffix)
-    """
-    _remove_add_nodes(appsettings)
-
-    # Append Player 1 items
+    new_elems = []
     for item in p1_list:
-        el = ET.SubElement(appsettings, "add")
+        el = ET.Element("add")
         el.set("key", item["key"])
         el.set("value", item.get("value", ""))
-
-    # Append Player 2 items (with suffix)
+        new_elems.append(el)
     for item in p2_list:
-        el = ET.SubElement(appsettings, "add")
+        el = ET.Element("add")
         el.set("key", item["key"] + "P2")
         el.set("value", item.get("value", ""))
+        new_elems.append(el)
+    return new_elems
+
+
+def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
+    """
+    Rebuild <add> nodes under <appSettings> *in place*:
+
+      • Find the first <add> node among appsettings children.
+      • Insert the *new* sequence at that exact position (once).
+      • Skip all original <add> nodes that follow.
+      • Preserve every non-<add> node (comments, PIs, etc.) exactly
+        where it was (including those interleaved between keys).
+
+    If no <add> exists, append at the end.
+    """
+    children = list(appsettings)  # snapshot (includes ET.Comment, etc.)
+
+    # Prepare new <add> nodes
+    new_adds = _build_add_elements(appsettings, p1_list, p2_list)
+
+    new_children = []
+    inserted = False
+
+    for node in children:
+        if node.tag == "add":
+            if not inserted:
+                # Insert the full rebuilt block at the position of the first <add>
+                new_children.extend(new_adds)
+                inserted = True
+            # Skip this and any subsequent original <add> nodes
+            continue
+        else:
+            # Keep comments/other nodes as-is
+            new_children.append(node)
+
+    if not inserted:
+        # No existing <add>; append the rebuilt block at the end
+        new_children.extend(new_adds)
+
+    # Clear and reattach in the precise new order
+    appsettings.clear()
+    for node in new_children:
+        appsettings.append(node)
 
 
 def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
     """
-    Serialize XML without pretty-print reparsing.
-    Comments (ET.Comment) and PIs are preserved if they were parsed with
-    insert_comments/insert_pis.
+    Serialize without pretty-print reparsing.
+    Comments and PIs are preserved (due to parser setup).
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # Keep default serialization; do not pretty-print to avoid whitespace churn
     tree.write(path, encoding="utf-8", xml_declaration=True)
 
 
@@ -654,7 +680,8 @@ def api_config_save():
       }
     Behavior:
       - Backs up the original file under <config_dir>/backups/<filename>.<timestamp>.bak
-      - Writes updated XML preserving comments and non-<add> siblings
+      - Writes updated XML preserving comments and the relative placement
+        of non-<add> nodes within <appSettings>.
     """
     try:
         data = request.get_json(force=True) or {}
@@ -677,10 +704,10 @@ def api_config_save():
         else:
             _ensure_stub(path)
 
-        # ----- Load, modify, and write without losing comments -----
+        # ----- Load, modify, and write while preserving comments and positions -----
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
-        _write_players_back(appsettings, p1_list, p2_list)
+        _write_players_back_in_place(appsettings, p1_list, p2_list)
         _write_tree_preserving_comments(tree, path)
 
         return jsonify({"ok": True, "platform": platform, "path": path, "backup": backup_path})
