@@ -395,7 +395,7 @@ sudo mkdir -p "${APP_DIR}"
 sudo chown -R "${APP_USER}:${APP_GROUP}" "${APP_DIR}"
 sudo mkdir -p /home/sinden/.cache/pip
 sudo chown -R sinden:sinden /home/sinden/.cache
-
+sudo chmod 777 /home/sinden/.cache
 
 echo "=== 3) Python venv & dependencies ==="
 if [ ! -d "${VENV_DIR}" ]; then
