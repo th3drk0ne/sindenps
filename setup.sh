@@ -462,11 +462,7 @@ app = Flask(__name__)
 # ---------------------------
 # Services & system utilities
 # ---------------------------
-SERVICES = [
-    "lightgun.service",
-    "lightgun-monitor.service"
-]
-
+SERVICES = ["lightgun.service", "lightgun-monitor.service"]
 SYSTEMCTL = "/usr/bin/systemctl"
 SUDO = "/usr/bin/sudo"
 
@@ -479,83 +475,11 @@ CONFIG_PATHS = {
 }
 DEFAULT_PLATFORM = "ps2"
 
-
 # ===========================
-# Systemd helpers
-# ===========================
-def get_status(service: str) -> str:
-    try:
-        output = subprocess.check_output(
-            [SYSTEMCTL, "is-active", service],
-            stderr=subprocess.STDOUT
-        ).decode().strip()
-        return output
-    except subprocess.CalledProcessError:
-        return "unknown"
-
-
-def control_service(service: str, action: str) -> bool:
-    try:
-        subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
-        return True
-    except subprocess.CalledProcessError as e:
-        print("CONTROL ERROR:", e.output.decode())
-        return False
-
-
-# ===========================
-# Flask routes: services
-# ===========================
-@app.route("/api/services")
-def list_services():
-    return jsonify({s: get_status(s) for s in SERVICES})
-
-
-@app.route("/api/service/<name>/<action>", methods=["POST"])
-def service_action(name, action):
-    if name not in SERVICES:
-        return jsonify({"error": "unknown service"}), 400
-    if action not in ["start", "stop", "restart"]:
-        return jsonify({"error": "invalid action"}), 400
-    ok = control_service(name, action)
-    return jsonify({"success": ok, "status": get_status(name)})
-
-
-@app.route("/api/logs/<service>")
-def service_logs(service):
-    if service not in SERVICES:
-        return jsonify({"error": "unknown service"}), 400
-    try:
-        output = subprocess.check_output(
-            [SYSTEMCTL, "status", service, "--no-pager"],
-            stderr=subprocess.STDOUT
-        ).decode()
-        return jsonify({"logs": output})
-    except subprocess.CalledProcessError as e:
-        return jsonify({"logs": e.output.decode()})
-
-
-# ===========================
-# Sinden log passthrough
-# ===========================
-@app.route("/api/sinden-log")
-def sinden_log():
-    LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
-    try:
-        with open(LOGFILE, "r", encoding="utf-8", errors="replace") as f:
-            data = f.read()
-        return jsonify({"logs": data})
-    except Exception as e:
-        return jsonify({"logs": f"Error reading log: {e}"})
-
-
-# ===========================
-# XML config helpers
+# XML helpers
 # ===========================
 def _resolve_platform(p: str) -> str:
-    p = (p or "").lower()
-    return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
-
+    return (p or "").lower() if (p or "").lower() in CONFIG_PATHS else DEFAULT_PLATFORM
 
 def _ensure_stub(path: str):
     if not os.path.exists(path):
@@ -564,12 +488,10 @@ def _ensure_stub(path: str):
             f.write('<?xml version="1.0" encoding="utf-8"?>\n'
                     '<configuration><appSettings></appSettings></configuration>\n')
 
-
 def _load_config_tree(path: str) -> ET.ElementTree:
     _ensure_stub(path)
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
     return ET.parse(path, parser=parser)
-
 
 def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
     root = tree.getroot()
@@ -578,63 +500,53 @@ def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
         appsettings = ET.SubElement(root, "appSettings")
     return appsettings
 
-
 def _kv_items(appsettings: ET.Element):
     return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
 
-
 def _split_by_player(appsettings: ET.Element):
-    p1 = []
-    p2 = []
+    p1, p2 = [], []
     for el in _kv_items(appsettings):
-        key = el.attrib["key"]
-        val = el.attrib.get("value", "")
+        key, val = el.attrib["key"], el.attrib.get("value", "")
         if key.endswith("P2"):
             p2.append({"key": key[:-2], "value": val})
         else:
             p1.append({"key": key, "value": val})
     return p1, p2
 
-
-def _build_add_elements(parent: ET.Element, p1_list, p2_list):
-    new_elems = []
+def _build_add_elements(p1_list, p2_list):
+    elems = []
     for item in p1_list:
         el = ET.Element("add")
         el.set("key", item["key"])
         el.set("value", item.get("value", ""))
-        new_elems.append(el)
+        elems.append(el)
     for item in p2_list:
         el = ET.Element("add")
         el.set("key", item["key"] + "P2")
         el.set("value", item.get("value", ""))
-        new_elems.append(el)
-    return new_elems
-
+        elems.append(el)
+    return elems
 
 def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
     children = list(appsettings)
-    new_adds = _build_add_elements(appsettings, p1_list, p2_list)
-    new_children = []
-    inserted = False
+    new_adds = _build_add_elements(p1_list, p2_list)
+    new_children, inserted = [], False
     for node in children:
         if node.tag == "add":
             if not inserted:
                 new_children.extend(new_adds)
                 inserted = True
             continue
-        else:
-            new_children.append(node)
+        new_children.append(node)
     if not inserted:
         new_children.extend(new_adds)
     appsettings.clear()
     for node in new_children:
         appsettings.append(node)
 
-
 def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tree.write(path, encoding="utf-8", xml_declaration=True)
-
 
 # ===========================
 # Profiles helpers
@@ -642,173 +554,101 @@ def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
 PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,60}$")
 
 def _profiles_dir_for(path: str) -> str:
-    base_dir = os.path.dirname(path)
-    pdir = os.path.join(base_dir, "profiles")
+    pdir = os.path.join(os.path.dirname(path), "profiles")
     os.makedirs(pdir, exist_ok=True)
     return pdir
 
 def _safe_profile_name(name: str) -> str:
-    if not name:
-        raise ValueError("Profile name is required")
-    if not PROFILE_NAME_RE.match(name):
+    if not name or not PROFILE_NAME_RE.match(name):
         raise ValueError("Invalid profile name. Use letters, digits, _ or -, max 60 chars.")
     return name
 
 def _profile_path(platform: str, name: str) -> str:
-    platform = _resolve_platform(platform)
-    live_cfg = CONFIG_PATHS[platform]
-    pdir = _profiles_dir_for(live_cfg)
-    return os.path.join(pdir, f"{_safe_profile_name(name)}.config")
+    return os.path.join(_profiles_dir_for(CONFIG_PATHS[platform]), f"{_safe_profile_name(name)}.config")
 
 def _list_profiles(platform: str) -> List[Dict[str, str]]:
-    platform = _resolve_platform(platform)
-    live_cfg = CONFIG_PATHS[platform]
-    pdir = _profiles_dir_for(live_cfg)
+    pdir = _profiles_dir_for(CONFIG_PATHS[platform])
     items = []
-    if os.path.isdir(pdir):
-        for fname in sorted(os.listdir(pdir)):
-            if not fname.endswith(".config"):
-                continue
+    for fname in sorted(os.listdir(pdir)):
+        if fname.endswith(".config"):
             full = os.path.join(pdir, fname)
             try:
                 st = os.stat(full)
-                items.append({
-                    "name": fname[:-len(".config")],
-                    "path": full,
-                    "mtime": int(st.st_mtime)
-                })
+                items.append({"name": fname[:-len(".config")], "path": full, "mtime": int(st.st_mtime)})
             except FileNotFoundError:
                 pass
-    items.sort(key=lambda x: x["mtime"], reverse=True)
-    return items
-
+    return sorted(items, key=lambda x: x["mtime"], reverse=True)
 
 # ===========================
-# Flask routes: configuration
+# Routes
 # ===========================
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
     try:
         platform = _resolve_platform(request.args.get("platform"))
         profile_name = (request.args.get("profile") or "").strip()
-        if profile_name:
-            path = _profile_path(platform, profile_name)
-            source = "profile"
-        else:
-            path = CONFIG_PATHS[platform]
-            source = "live"
+        path = _profile_path(platform, profile_name) if profile_name else CONFIG_PATHS[platform]
         tree = _load_config_tree(path)
-        appsettings = _appsettings_root(tree)
-        p1, p2 = _split_by_player(appsettings)
-        return jsonify({
-            "ok": True,
-            "platform": platform,
-            "path": path,
-            "player1": p1,
-            "player2": p2,
-            "source": source,
-            "profile": profile_name if profile_name else ""
-        })
+        p1, p2 = _split_by_player(_appsettings_root(tree))
+        return jsonify({"ok": True, "platform": platform, "path": path, "player1": p1, "player2": p2})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
-
 
 @app.route("/api/config/save", methods=["POST"])
 def api_config_save():
     try:
-        data = request.get_json(force=True) or {}
+        data = request.get_json(force=True)
         platform = _resolve_platform(data.get("platform"))
         path = CONFIG_PATHS[platform]
-        p1_list = data.get("player1", [])
-        p2_list = data.get("player2", [])
+        p1_list, p2_list = data.get("player1", []), data.get("player2", [])
+        # Backup
         ts = time.strftime("%Y%m%d-%H%M%S")
-        cfg_dir = os.path.dirname(path)
-        cfg_base = os.path.basename(path)
-        backup_dir = os.path.join(cfg_dir, "backups")
+        backup_dir = os.path.join(os.path.dirname(path), "backups")
         os.makedirs(backup_dir, exist_ok=True)
-        backup_path = os.path.join(backup_dir, f"{cfg_base}.{ts}.bak")
+        backup_path = os.path.join(backup_dir, f"{os.path.basename(path)}.{ts}.bak")
         if os.path.exists(path):
             with open(path, "rb") as src, open(backup_path, "wb") as dst:
                 dst.write(src.read())
-        else:
-            _ensure_stub(path)
+        # Preserve comments
         tree = _load_config_tree(path)
-        appsettings = _appsettings_root(tree)
-        _write_players_back_in_place(appsettings, p1_list, p2_list)
+        _write_players_back_in_place(_appsettings_root(tree), p1_list, p2_list)
         _write_tree_preserving_comments(tree, path)
         return jsonify({"ok": True, "platform": platform, "path": path, "backup": backup_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
-
-# ===========================
-# Profiles API (Preserve comments)
-# ===========================
-@app.route("/api/config/profiles", methods=["GET"])
-def api_profiles_list():
-    try:
-        platform = _resolve_platform(request.args.get("platform"))
-        items = _list_profiles(platform)
-        return jsonify({"ok": True, "platform": platform, "profiles": items})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
-
-
 @app.route("/api/config/profile/save", methods=["POST"])
 def api_profile_save():
-    """
-    Save profile with form data and preserve comments from original config.
-    """
     try:
-        data = request.get_json(force=True) or {}
+        data = request.get_json(force=True)
         platform = _resolve_platform(data.get("platform"))
-        name = _safe_profile_name((data.get("name") or "").strip())
-        overwrite = bool(data.get("overwrite", False))
-        p1_list = data.get("player1", [])
-        p2_list = data.get("player2", [])
-
+        name = _safe_profile_name(data.get("name", "").strip())
+        p1_list, p2_list = data.get("player1", []), data.get("player2", [])
         prof_path = _profile_path(platform, name)
-
-        if os.path.exists(prof_path) and not overwrite:
-            return jsonify({"ok": False, "error": "Profile already exists"}), 409
-
-        # ✅ Load original config to preserve comments
         tree = _load_config_tree(CONFIG_PATHS[platform])
-        appsettings = _appsettings_root(tree)
-
-        # ✅ Replace <add> elements but keep comments
-        _write_players_back_in_place(appsettings, p1_list, p2_list)
-
-        # ✅ Write to profile file
+        _write_players_back_in_place(_appsettings_root(tree), p1_list, p2_list)
         _write_tree_preserving_comments(tree, prof_path)
         os.chmod(prof_path, 0o664)
-
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": prof_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 
-
 @app.route("/api/config/profile/load", methods=["POST"])
 def api_profile_load():
     try:
-        data = request.get_json(force=True) or {}
+        data = request.get_json(force=True)
         platform = _resolve_platform(data.get("platform"))
-        name = _safe_profile_name((data.get("name") or "").strip())
-        live_path = CONFIG_PATHS[platform]
-        prof_path = _profile_path(platform, name)
+        name = _safe_profile_name(data.get("name", "").strip())
+        live_path, prof_path = CONFIG_PATHS[platform], _profile_path(platform, name)
         if not os.path.exists(prof_path):
             return jsonify({"ok": False, "error": "Profile not found"}), 404
         ts = time.strftime("%Y%m%d-%H%M%S")
-        cfg_dir = os.path.dirname(live_path)
-        cfg_base = os.path.basename(live_path)
-        backup_dir = os.path.join(cfg_dir, "backups")
+        backup_dir = os.path.join(os.path.dirname(live_path), "backups")
         os.makedirs(backup_dir, exist_ok=True)
-        backup_path = os.path.join(backup_dir, f"{cfg_base}.{ts}.bak")
+        backup_path = os.path.join(backup_dir, f"{os.path.basename(live_path)}.{ts}.bak")
         if os.path.exists(live_path):
             with open(live_path, "rb") as src, open(backup_path, "wb") as dst:
                 dst.write(src.read())
-        else:
-            _ensure_stub(live_path)
         with open(prof_path, "rb") as src, open(live_path, "wb") as dst:
             dst.write(src.read())
         os.chmod(live_path, 0o664)
@@ -816,13 +656,20 @@ def api_profile_load():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 
+@app.route("/api/config/profiles", methods=["GET"])
+def api_profiles_list():
+    try:
+        platform = _resolve_platform(request.args.get("platform"))
+        return jsonify({"ok": True, "platform": platform, "profiles": _list_profiles(platform)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
 
 @app.route("/api/config/profile/delete", methods=["POST"])
 def api_profile_delete():
     try:
-        data = request.get_json(force=True) or {}
+        data = request.get_json(force=True)
         platform = _resolve_platform(data.get("platform"))
-        name = _safe_profile_name((data.get("name") or "").strip())
+        name = _safe_profile_name(data.get("name", "").strip())
         prof_path = _profile_path(platform, name)
         if not os.path.exists(prof_path):
             return jsonify({"ok": False, "error": "Profile not found"}), 404
@@ -831,26 +678,21 @@ def api_profile_delete():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 
-
 # ===========================
-# Static passthroughs & index
+# Static passthroughs
 # ===========================
 @app.route("/logo.png")
 def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
 
-
 @app.route("/")
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
-        html = f.read()
-    return render_template_string(html)
-
+        return render_template_string(f.read())
 
 @app.route("/healthz")
 def healthz():
     return jsonify({"ok": True}), 200
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
