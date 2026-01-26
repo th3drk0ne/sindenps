@@ -528,6 +528,11 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
   sudo rm /etc/nginx/sites-enabled/default
 fi
 
+
+# File permissions (readable to nginx)
+sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
+sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
+
 sudo nginx -t && sudo systemctl restart nginx
 
 echo "=== Setup complete! Dashboard running at http://sindenps.local/ ==="
