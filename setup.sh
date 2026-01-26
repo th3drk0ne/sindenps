@@ -1010,7 +1010,7 @@ done
 
 # Download profiles
 (
-  cd /home/sinden/Lightgun/PS1/Profiles
+  cd /home/sinden/Lightgun/PS1/profiles
   log "Downloading PS1 profiles."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Default.config" \
@@ -1018,7 +1018,7 @@ done
 
   chown sinden:sinden Default.config Low-Resolution.config
   
-  cd /home/sinden/Lightgun/PS2/Profiles
+  cd /home/sinden/Lightgun/PS1/profiles
   log "Downloading PS2 profiles."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Default.config" \
