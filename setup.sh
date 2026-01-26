@@ -596,12 +596,16 @@ def _split_by_player(appsettings: ET.Element):
 
 
 # ============================================================
-# FIXED VERSION — PRESERVES ALL COMMENTS AND ORDERING
+# STRICT PRESERVATION MODE (A2)
 # ============================================================
 def _write_players_back_in_place(appsettings, p1_list, p2_list):
     """
-    Update <add> nodes in place while preserving ALL comments,
-    whitespace, and non-<add> nodes exactly where they were.
+    Strict preservation mode (A2):
+      - Preserve ALL comments, whitespace, and ordering.
+      - Preserve original key order.
+      - Update existing keys in place.
+      - Remove keys no longer present.
+      - Insert new keys where they would have appeared originally.
     """
 
     # Build desired key/value map
@@ -611,32 +615,49 @@ def _write_players_back_in_place(appsettings, p1_list, p2_list):
     for item in p2_list:
         desired[item["key"] + "P2"] = item.get("value", "")
 
-    seen = set()
+    # Extract original key order
+    original_order = []
+    for node in list(appsettings):
+        if node.tag == "add" and "key" in node.attrib:
+            original_order.append(node.attrib["key"])
 
-    # Update existing <add> nodes
+    # Update existing keys and remove deleted ones
     for node in list(appsettings):
         if node.tag == "add" and "key" in node.attrib:
             key = node.attrib["key"]
             if key in desired:
                 node.attrib["value"] = desired[key]
-                seen.add(key)
+            else:
+                appsettings.remove(node)
 
-    # Find insertion point (after last <add>)
-    last_add_index = None
-    for i, node in enumerate(list(appsettings)):
-        if node.tag == "add":
-            last_add_index = i
+    # Insert missing keys in original order
+    for key in original_order:
+        if key in desired:
+            continue  # already exists or updated
 
-    insert_pos = (last_add_index + 1) if last_add_index is not None else len(appsettings)
+        # Find where this key should be inserted
+        idx = original_order.index(key)
+        insert_after = None
 
-    # Insert missing keys
-    for key, value in desired.items():
-        if key not in seen:
-            new_el = ET.Element("add")
-            new_el.set("key", key)
-            new_el.set("value", value)
-            appsettings.insert(insert_pos, new_el)
-            insert_pos += 1
+        # Find previous existing key
+        for prev_key in reversed(original_order[:idx]):
+            for node in list(appsettings):
+                if node.tag == "add" and node.attrib.get("key") == prev_key:
+                    insert_after = node
+                    break
+            if insert_after:
+                break
+
+        # Create new <add> node
+        new_el = ET.Element("add")
+        new_el.set("key", key)
+        new_el.set("value", desired[key])
+
+        if insert_after:
+            pos = list(appsettings).index(insert_after) + 1
+            appsettings.insert(pos, new_el)
+        else:
+            appsettings.insert(0, new_el)
 
 
 def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
@@ -717,7 +738,6 @@ def healthz():
 # ===========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 
