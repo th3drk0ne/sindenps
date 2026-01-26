@@ -339,12 +339,49 @@ fi
 
 # Create PS1/PS2 and download according to version
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
-download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
-download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
+
 cd ${LIGHTGUN_DIR}
 install -d -o sinden -g sinden "PS1/backups"
 install -d -o sinden -g sinden "PS2/backups"
 
+
+PS1_SOURCE="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
+PS1_BACKUP_DIR="/home/sinden/Lightgun/PS1/backups"
+
+PS2_SOURCE="/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
+PS2_BACKUP_DIR="/home/sinden/Lightgun/PS2/backups"
+
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+echo "Starting backup..."
+
+# --- PS1 BACKUP ---
+if [[ -f "$PS1_SOURCE" ]]; then
+    mkdir -p "$PS1_BACKUP_DIR"
+    BASENAME=$(basename "$PS1_SOURCE")
+    DEST="$PS1_BACKUP_DIR/upgrade-${BASENAME}.${TIMESTAMP}.bak"
+    cp "$PS1_SOURCE" "$DEST"
+    echo "PS1 config backed up to: $DEST"
+else
+    echo "PS1 config not found, skipping."
+fi
+
+# --- PS2 BACKUP ---
+if [[ -f "$PS2_SOURCE" ]]; then
+    mkdir -p "$PS2_BACKUP_DIR"
+    BASENAME=$(basename "$PS2_SOURCE")
+    DEST="$PS2_BACKUP_DIR/upgrade-${BASENAME}.${TIMESTAMP}.bak"
+    cp "$PS2_SOURCE" "$DEST"
+    echo "PS2 config backed up to: $DEST"
+else
+    echo "PS2 config not found, skipping."
+fi
+
+echo "Backup complete."
+
+
+download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
 
 cd 	${LIGHTGUN_DIR}/log
   wget --quiet --show-progress --https-only --timestamping \
