@@ -979,8 +979,8 @@ else
   )
 fi
 
-download_assets "${LIGHTGUN_DIR}/PS1/profiles" "${PS1_P_URLS[@]}"
-download_assets "${LIGHTGUN_DIR}/PS2/profiles" "${PS2_P_URLS[@]}"
+#download_assets "${LIGHTGUN_DIR}/PS1/profiles" "${PS1_P_URLS[@]}"
+#download_assets "${LIGHTGUN_DIR}/PS2/profiles" "${PS2_P_URLS[@]}"
 
 
 # 7) restart services
