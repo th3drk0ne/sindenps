@@ -754,21 +754,30 @@ def api_profiles_list():
 
 @app.route("/api/config/profile/save", methods=["POST"])
 def api_profile_save():
+    """
+    Save profile with form data instead of copying live config.
+    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         name = _safe_profile_name((data.get("name") or "").strip())
         overwrite = bool(data.get("overwrite", False))
-        live_path = CONFIG_PATHS[platform]
+        p1_list = data.get("player1", [])
+        p2_list = data.get("player2", [])
+
         prof_path = _profile_path(platform, name)
-        if not os.path.exists(live_path):
-            _ensure_stub(live_path)
+
         if os.path.exists(prof_path) and not overwrite:
             return jsonify({"ok": False, "error": "Profile already exists"}), 409
-        os.makedirs(os.path.dirname(prof_path), exist_ok=True)
-        with open(live_path, "rb") as src, open(prof_path, "wb") as dst:
-            dst.write(src.read())
+
+        # Create XML tree and write form data
+        tree = _load_config_tree(CONFIG_PATHS[platform])
+        appsettings = _appsettings_root(tree)
+        _write_players_back_in_place(appsettings, p1_list, p2_list)
+        _write_tree_preserving_comments(tree, prof_path)
+
         os.chmod(prof_path, 0o664)
+
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": prof_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
@@ -840,6 +849,7 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
