@@ -393,16 +393,13 @@ log "Assets deployment complete."
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
 #-----------------------------------------------------------
 
-#-----------------------------------------------------------
-# Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
-#-----------------------------------------------------------
-
 #!/bin/bash
 set -euo pipefail
 
 #========================================
 # Lightgun Dashboard - Installer/Updater
-# Toolbar order: Platform selector -> File path -> Save & Restart (right-aligned)
+# With Profiles (save/list/preview/activate/delete)
+# Toolbar order: Platform -> Profile -> File path -> Save & Restart (right-aligned)
 #========================================
 
 #----- Variables -----
@@ -423,9 +420,8 @@ CFG_PS2="/home/${APP_USER}/Lightgun/PS2/LightgunMono.exe.config"
 SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
 SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 
-# Upstream assets (kept in case you want to refresh logo)
+# Upstream assets (logo only; index.html is written by this script)
 LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
-HTML_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/index.html"
 
 echo "=== 1) Install OS packages ==="
 sudo apt update
@@ -434,9 +430,9 @@ sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
 echo "=== 2) Ensure app directory and ownership ==="
 sudo mkdir -p "${APP_DIR}"
 sudo chown -R "${APP_USER}:${APP_GROUP}" "${APP_DIR}"
-sudo mkdir -p /home/sinden/.cache/pip
-sudo chown -R sinden:sinden /home/sinden/.cache
-sudo chmod 777 /home/sinden/.cache
+sudo mkdir -p /home/${APP_USER}/.cache/pip
+sudo chown -R ${APP_USER}:${APP_GROUP} /home/${APP_USER}/.cache
+sudo chmod 777 /home/${APP_USER}/.cache
 
 echo "=== 3) Python venv & dependencies ==="
 if [ ! -d "${VENV_DIR}" ]; then
@@ -447,13 +443,15 @@ source "${VENV_DIR}/bin/activate"
 pip install --upgrade pip
 pip install "flask==3.*" "gunicorn==21.*"
 
-echo "=== 4) Backend: Flask app (app.py) ==="
+echo "=== 4) Backend: Flask app (app.py, with Profiles feature) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
 #!/usr/bin/env python3
 import os
 import time
+import re
 import subprocess
 import xml.etree.ElementTree as ET
+from typing import List, Dict
 from flask import Flask, jsonify, render_template_string, send_from_directory, request
 
 app = Flask(__name__)
@@ -483,6 +481,7 @@ DEFAULT_PLATFORM = "ps2"
 # Systemd helpers
 # ===========================
 def get_status(service: str) -> str:
+    """Return 'active', 'inactive', 'failed', 'unknown', etc."""
     try:
         output = subprocess.check_output(
             [SYSTEMCTL, "is-active", service],
@@ -494,6 +493,7 @@ def get_status(service: str) -> str:
 
 
 def control_service(service: str, action: str) -> bool:
+    """Run sudo systemctl <action> <service>. Returns True on success."""
     try:
         subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
         return True
@@ -552,11 +552,13 @@ def sinden_log():
 # XML config helpers (PS1/PS2)
 # ===========================
 def _resolve_platform(p: str) -> str:
+    """Normalize/validate platform key."""
     p = (p or "").lower()
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
 
 
 def _ensure_stub(path: str):
+    """Create minimal XML stub if file is missing."""
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
@@ -565,12 +567,17 @@ def _ensure_stub(path: str):
 
 
 def _load_config_tree(path: str) -> ET.ElementTree:
+    """
+    Load XML tree, ensuring a stub exists.
+    Use a parser that preserves comments and processing instructions.
+    """
     _ensure_stub(path)
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
     return ET.parse(path, parser=parser)
 
 
 def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
+    """Return/create the <appSettings> element under <configuration>."""
     root = tree.getroot()
     appsettings = root.find("appSettings")
     if appsettings is None:
@@ -579,10 +586,15 @@ def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
 
 
 def _kv_items(appsettings: ET.Element):
+    """Return existing <add> elements (key/value pairs) in document order."""
     return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
 
 
 def _split_by_player(appsettings: ET.Element):
+    """
+    Produce two ordered lists representing Player 1 and Player 2 keys.
+    Player 2 keys are recognized by a 'P2' suffix; we strip it for UI editing.
+    """
     p1 = []
     p2 = []
     for el in _kv_items(appsettings):
@@ -595,74 +607,115 @@ def _split_by_player(appsettings: ET.Element):
     return p1, p2
 
 
-# ============================================================
-# STRICT PRESERVATION MODE (A2)
-# ============================================================
-def _write_players_back_in_place(appsettings, p1_list, p2_list):
+def _build_add_elements(parent: ET.Element, p1_list, p2_list):
     """
-    Strict preservation mode (A2):
-      - Preserve ALL comments, whitespace, and ordering.
-      - Preserve original key order.
-      - Update existing keys in place.
-      - Remove keys no longer present.
-      - Insert new keys where they would have appeared originally.
+    Create new <add> elements (not attached yet) for both players,
+    preserving the provided order.
     """
-
-    # Build desired key/value map
-    desired = {}
+    new_elems = []
     for item in p1_list:
-        desired[item["key"]] = item.get("value", "")
+        el = ET.Element("add")
+        el.set("key", item["key"])
+        el.set("value", item.get("value", ""))
+        new_elems.append(el)
     for item in p2_list:
-        desired[item["key"] + "P2"] = item.get("value", "")
+        el = ET.Element("add")
+        el.set("key", item["key"] + "P2")
+        el.set("value", item.get("value", ""))
+        new_elems.append(el)
+    return new_elems
 
-    # Extract original key order
-    original_order = []
-    for node in list(appsettings):
-        if node.tag == "add" and "key" in node.attrib:
-            original_order.append(node.attrib["key"])
 
-    # Update existing keys and remove deleted ones
-    for node in list(appsettings):
-        if node.tag == "add" and "key" in node.attrib:
-            key = node.attrib["key"]
-            if key in desired:
-                node.attrib["value"] = desired[key]
-            else:
-                appsettings.remove(node)
+def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
+    """
+    Rebuild <add> nodes under <appSettings> *in place*:
+      • Insert the rebuilt block at the position of the first <add>
+      • Skip all original <add> nodes that follow
+      • Preserve every non-<add> node (comments, PIs, etc.) where it was
+    If no <add> exists, append at the end.
+    """
+    children = list(appsettings)  # snapshot
 
-    # Insert missing keys in original order
-    for key in original_order:
-        if key in desired:
-            continue  # already exists or updated
+    new_adds = _build_add_elements(appsettings, p1_list, p2_list)
 
-        # Find where this key should be inserted
-        idx = original_order.index(key)
-        insert_after = None
+    new_children = []
+    inserted = False
 
-        # Find previous existing key
-        for prev_key in reversed(original_order[:idx]):
-            for node in list(appsettings):
-                if node.tag == "add" and node.attrib.get("key") == prev_key:
-                    insert_after = node
-                    break
-            if insert_after:
-                break
-
-        # Create new <add> node
-        new_el = ET.Element("add")
-        new_el.set("key", key)
-        new_el.set("value", desired[key])
-
-        if insert_after:
-            pos = list(appsettings).index(insert_after) + 1
-            appsettings.insert(pos, new_el)
+    for node in children:
+        if node.tag == "add":
+            if not inserted:
+                new_children.extend(new_adds)
+                inserted = True
+            continue
         else:
-            appsettings.insert(0, new_el)
+            new_children.append(node)
+
+    if not inserted:
+        new_children.extend(new_adds)
+
+    appsettings.clear()
+    for node in new_children:
+        appsettings.append(node)
 
 
 def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
+    """Serialize without pretty-print reparsing. Comments/PIs preserved."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tree.write(path, encoding="utf-8", xml_declaration=True)
+
+
+# ===========================
+# Profiles helpers
+# ===========================
+PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,60}$")
+
+def _profiles_dir_for(path: str) -> str:
+    """Return the profiles subfolder for a given config file path."""
+    base_dir = os.path.dirname(path)
+    pdir = os.path.join(base_dir, "profiles")
+    os.makedirs(pdir, exist_ok=True)
+    return pdir
+
+def _safe_profile_name(name: str) -> str:
+    """Validate a safe profile name (no traversal, no spaces)."""
+    if not name:
+        raise ValueError("Profile name is required")
+    if not PROFILE_NAME_RE.match(name):
+        raise ValueError("Invalid profile name. Use letters, digits, _ or -, max 60 chars.")
+    return name
+
+def _profile_path(platform: str, name: str) -> str:
+    """
+    Build a profile file path for the given platform/name.
+    Store as <profiles>/<name>.config
+    """
+    platform = _resolve_platform(platform)
+    live_cfg = CONFIG_PATHS[platform]
+    pdir = _profiles_dir_for(live_cfg)
+    return os.path.join(pdir, f"{_safe_profile_name(name)}.config")
+
+def _list_profiles(platform: str) -> List[Dict[str, str]]:
+    """Enumerate profiles for a platform, sorted by mtime desc."""
+    platform = _resolve_platform(platform)
+    live_cfg = CONFIG_PATHS[platform]
+    pdir = _profiles_dir_for(live_cfg)
+    items = []
+    if os.path.isdir(pdir):
+        for fname in sorted(os.listdir(pdir)):
+            if not fname.endswith(".config"):
+                continue
+            full = os.path.join(pdir, fname)
+            try:
+                st = os.stat(full)
+                items.append({
+                    "name": fname[:-8],  # strip ".config"
+                    "path": full,
+                    "mtime": int(st.st_mtime)
+                })
+            except FileNotFoundError:
+                pass
+    items.sort(key=lambda x: x["mtime"], reverse=True)
+    return items
 
 
 # ===========================
@@ -670,19 +723,55 @@ def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
 # ===========================
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
+    """
+    Optional query params:
+      platform: ps1|ps2 (default ps2)
+      profile: <profileName>  (if present, reads that profile file, not the live file)
+
+    Returns:
+      {
+        ok: True,
+        platform, path, player1, player2,
+        source: "live"|"profile",
+        profile: "<name or ''>"
+      }
+    """
     try:
         platform = _resolve_platform(request.args.get("platform"))
-        path = CONFIG_PATHS[platform]
+        profile_name = (request.args.get("profile") or "").strip()
+
+        if profile_name:
+            path = _profile_path(platform, profile_name)
+            source = "profile"
+        else:
+            path = CONFIG_PATHS[platform]
+            source = "live"
+
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         p1, p2 = _split_by_player(appsettings)
-        return jsonify({"ok": True, "platform": platform, "path": path, "player1": p1, "player2": p2})
+        return jsonify({
+            "ok": True,
+            "platform": platform,
+            "path": path,
+            "player1": p1,
+            "player2": p2,
+            "source": source,
+            "profile": profile_name if profile_name else ""
+        })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/api/config/save", methods=["POST"])
 def api_config_save():
+    """
+    Body:
+      { platform: "ps1"|"ps2", player1: [...], player2: [...] }
+    Behavior:
+      - Backs up the original file under <config_dir>/backups/<filename>.<timestamp>.bak
+      - Writes updated XML preserving comments and the placement of non-<add> nodes.
+    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
@@ -714,6 +803,132 @@ def api_config_save():
 
 
 # ===========================
+# Profiles API
+# ===========================
+@app.route("/api/config/profiles", methods=["GET"])
+def api_profiles_list():
+    """
+    Query:
+      platform: ps1|ps2
+    Returns:
+      { ok: True, platform, profiles: [{name, path, mtime}, ...] }
+    """
+    try:
+        platform = _resolve_platform(request.args.get("platform"))
+        items = _list_profiles(platform)
+        return jsonify({"ok": True, "platform": platform, "profiles": items})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+@app.route("/api/config/profile/save", methods=["POST"])
+def api_profile_save():
+    """
+    Body:
+      { platform: "ps1"|"ps2", name: "<profileName>", overwrite?: bool }
+    Behavior:
+      - Copies CURRENT LIVE config to profiles/<name>.config.
+      - Respects overwrite flag (default False).
+    """
+    try:
+        data = request.get_json(force=True) or {}
+        platform = _resolve_platform(data.get("platform"))
+        name = _safe_profile_name((data.get("name") or "").strip())
+        overwrite = bool(data.get("overwrite", False))
+
+        live_path = CONFIG_PATHS[platform]
+        prof_path = _profile_path(platform, name)
+
+        if not os.path.exists(live_path):
+            _ensure_stub(live_path)
+
+        if os.path.exists(prof_path) and not overwrite:
+            return jsonify({"ok": False, "error": "Profile already exists"}), 409
+
+        os.makedirs(os.path.dirname(prof_path), exist_ok=True)
+        with open(live_path, "rb") as src, open(prof_path, "wb") as dst:
+            dst.write(src.read())
+
+        try:
+            os.chown(prof_path, os.getuid(), os.getgid())
+        except Exception:
+            pass
+        os.chmod(prof_path, 0o664)
+
+        return jsonify({"ok": True, "platform": platform, "profile": name, "path": prof_path})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+@app.route("/api/config/profile/load", methods=["POST"])
+def api_profile_load():
+    """
+    Body:
+      { platform: "ps1"|"ps2", name: "<profileName>" }
+    Behavior:
+      - Backs up current LIVE config.
+      - Overwrites LIVE config with selected profile file.
+    """
+    try:
+        data = request.get_json(force=True) or {}
+        platform = _resolve_platform(data.get("platform"))
+        name = _safe_profile_name((data.get("name") or "").strip())
+
+        live_path = CONFIG_PATHS[platform]
+        prof_path = _profile_path(platform, name)
+
+        if not os.path.exists(prof_path):
+            return jsonify({"ok": False, "error": "Profile not found"}), 404
+
+        ts = time.strftime("%Y%m%d-%H%M%S")
+        cfg_dir = os.path.dirname(live_path)
+        cfg_base = os.path.basename(live_path)
+        backup_dir = os.path.join(cfg_dir, "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        backup_path = os.path.join(backup_dir, f"{cfg_base}.{ts}.bak")
+
+        if os.path.exists(live_path):
+            with open(live_path, "rb") as src, open(backup_path, "wb") as dst:
+                dst.write(src.read())
+        else:
+            _ensure_stub(live_path)
+
+        with open(prof_path, "rb") as src, open(live_path, "wb") as dst:
+            dst.write(src.read())
+
+        try:
+            os.chown(live_path, os.getuid(), os.getgid())
+        except Exception:
+            pass
+        os.chmod(live_path, 0o664)
+
+        return jsonify({"ok": True, "platform": platform, "profile": name, "path": live_path, "backup": backup_path})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+@app.route("/api/config/profile/delete", methods=["POST"])
+def api_profile_delete():
+    """
+    Body:
+      { platform: "ps1"|"ps2", name: "<profileName>" }
+    """
+    try:
+        data = request.get_json(force=True) or {}
+        platform = _resolve_platform(data.get("platform"))
+        name = _safe_profile_name((data.get("name") or "").strip())
+
+        prof_path = _profile_path(platform, name)
+        if not os.path.exists(prof_path):
+            return jsonify({"ok": False, "error": "Profile not found"}), 404
+
+        os.remove(prof_path)
+        return jsonify({"ok": True, "platform": platform, "profile": name})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+# ===========================
 # Static passthroughs & index
 # ===========================
 @app.route("/logo.png")
@@ -741,12 +956,14 @@ if __name__ == "__main__":
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 
-# Ensure backup folders exist for both PS1/PS2 and are writable
-sudo -u sinden mkdir -p /home/sinden/Lightgun/PS1/backups /home/sinden/Lightgun/PS2/backups
-sudo chown -R sinden:sinden /home/sinden/Lightgun/PS1 /home/sinden/Lightgun/PS2
+echo "=== Downloading clean UTF-8 index.html from GitHub ==="
+sudo wget -O /opt/lightgun-dashboard/index.html \
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
+sudo chown sinden:sinden /opt/lightgun-dashboard/index.html
 
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 
-echo "=== 5) Systemd unit for dashboard ==="
+echo "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
 [Unit]
 Description=Lightgun Dashboard (Flask + Gunicorn)
@@ -763,7 +980,7 @@ Restart=always
 WantedBy=multi-user.target
 UNIT_EOF
 
-echo "=== 6) Tight sudoers for required systemctl actions ==="
+echo "=== 7) Tight sudoers for required systemctl actions ==="
 sudo bash -c 'cat > /etc/sudoers.d/90-sinden-systemctl' <<'SUDO_EOF'
 Cmnd_Alias LIGHTGUN_CMDS = \
   /usr/bin/systemctl start lightgun.service, \
@@ -776,7 +993,7 @@ sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-echo "=== 7) Ensure PS1/PS2 config files exist & are writable ==="
+echo "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
   cfg="/home/${APP_USER}/Lightgun/${p}/LightgunMono.exe.config"
   if [ ! -f "$cfg" ]; then
@@ -790,13 +1007,20 @@ XML_EOF"
   sudo chmod 664 "$cfg"
 done
 
-echo "=== 8) Ensure Sinden log path/file exists ==="
+echo "=== 9) Ensure backup & profiles subfolders exist & are writable ==="
+for p in PS1 PS2; do
+  sudo -u "${APP_USER}" mkdir -p "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
+  sudo chown -R "${APP_USER}:${APP_GROUP}" "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
+  sudo chmod 775 "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
+done
+
+echo "=== 10) Ensure Sinden log path/file exists ==="
 sudo mkdir -p "${SINDEN_LOG_DIR}"
 sudo touch "${SINDEN_LOG_FILE}"
 sudo chown "${APP_USER}:${APP_GROUP}" "${SINDEN_LOG_FILE}"
 sudo chmod 644 "${SINDEN_LOG_FILE}"
 
-echo "=== 9) Nginx reverse proxy on :80 ==="
+echo "=== 11) Nginx reverse proxy on :80 ==="
 sudo bash -c 'cat > /etc/nginx/sites-available/lightgun-dashboard' <<'NGINX_EOF'
 server {
     listen 80;
@@ -818,23 +1042,19 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
-echo "=== 10) Deploy/refresh logo (if missing) ==="
+echo "=== 12) Deploy/refresh logo (if missing) ==="
 if [ ! -f "${APP_DIR}/logo.png" ]; then
   sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/logo.png" "${LOGO_URL}" || true
 fi
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
 
-
-sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/index.html" "${HTML_URL}" || true
-
-sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
-
-echo "=== 12) Enable & restart dashboard ==="
+echo "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
 
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
+
 
 
 # 7) restart services
