@@ -1008,6 +1008,25 @@ for p in PS1 PS2; do
   sudo chmod 775 "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
 done
 
+# Download profiles
+(
+  cd /home/sinden/Lightgun/PS1/Profiles
+  log "Downloading PS1 profiles."
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Default.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Low-Resolution.config"
+
+  chown sinden:sinden Default.config Low-Resolution.config
+  
+  cd /home/sinden/Lightgun/PS2/Profiles
+  log "Downloading PS2 profiles."
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Default.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Low-Resolution.config"
+  
+  chown sinden:sinden Default.config Low-Resolution.config
+)
+
 echo "=== 10) Ensure Sinden log path/file exists ==="
 sudo mkdir -p "${SINDEN_LOG_DIR}"
 sudo touch "${SINDEN_LOG_FILE}"
