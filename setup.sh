@@ -393,6 +393,7 @@ sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
 echo "=== 2) Ensure app directory and ownership ==="
 sudo mkdir -p "${APP_DIR}"
 sudo chown -R "${APP_USER}:${APP_GROUP}" "${APP_DIR}"
+sudo chown -R sinden:sinden /home/sinden/.cache
 
 echo "=== 3) Python venv & dependencies ==="
 if [ ! -d "${VENV_DIR}" ]; then
