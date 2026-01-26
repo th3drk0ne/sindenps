@@ -356,8 +356,9 @@ log "Assets deployment complete."
 # Step 7) config site
 #-----------------------------------------------------------
 
+
 #-----------------------------------------------------------
-# Lightgun Dashboard - Setup (Updated with Configuration tab & XML editor)
+# Lightgun Dashboard - Setup (PS1/PS2 Configuration support)
 #-----------------------------------------------------------
 #!/bin/bash
 set -e
@@ -371,7 +372,6 @@ sudo mkdir -p /opt/lightgun-dashboard
 sudo chown -R sinden:sinden /opt/lightgun-dashboard
 
 echo "=== Writing updated index.html to /opt/lightgun-dashboard ==="
-# We write the final file directly; you can also commit the same file to GitHub (see below).
 sudo bash -c 'cat > /opt/lightgun-dashboard/index.html' <<'INDEX_EOF'
 <!DOCTYPE html>
 <html>
@@ -399,16 +399,19 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 .log-box { width:99%; background:#000; border:1px solid red; margin-top:10px; padding:10px; display:none; max-height:300px; overflow-y:auto; }
 .log-content { white-space:pre-wrap; font-family:monospace; font-size:13px; color:#ccc; }
 
-/* Config tab inputs */
+/* Config tab */
+.config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 20px; }
+.config-toolbar label { color:#ccc; }
 .config-row { display:flex; align-items:center; gap:8px; margin:6px 0; }
 .config-row label { width:260px; color:#ccc; font-size:14px; }
 .config-row input { flex:1; padding:6px; background:#000; color:#fff; border:1px solid #444; }
+.config-path { color:#888; font-size:12px; margin-left:10px; }
 </style>
 </head>
 <body>
 <header>
   <div class="header-left">
-    <img src="logo.png" class="logo">
+    <img src="logo.png" class="logo" alt="logo">
     <div class="header-title">Lightgun Dashboard</div>
   </div>
   <nav class="tabs">
@@ -462,6 +465,16 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 <!-- CONFIGURATION PANEL -->
 <div id="tab-config" style="display:none; padding:10px;">
   <h2 class="panel-title">Configuration</h2>
+
+  <div class="config-toolbar">
+    <label for="platform-select">Platform:</label>
+    <select id="platform-select">
+      <option value="ps2" selected>PlayStation 2</option>
+      <option value="ps1">PlayStation 1</option>
+    </select>
+    <span id="config-file-path" class="config-path"></span>
+  </div>
+
   <div style="display:flex; gap:16px; flex-wrap:wrap;">
     <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
       <div class="service-name">Player 1</div>
@@ -474,7 +487,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
       <button id="save-p2" style="margin-top:10px;">Save Player 2</button>
     </div>
   </div>
-  <div style="margin-top:12px; display:flex; gap:10px;">
+  <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
     <button id="save-both">Save Both Players</button>
     <span id="config-status" style="color:#ccc;"></span>
   </div>
@@ -489,10 +502,13 @@ function showTab(name) {
   const cfg = document.getElementById("tab-config");
   if (cfg) cfg.style.display = name === "config" ? "block" : "none";
   if (name === "sindenlog") loadSindenLog();
-  if (name === "config") loadConfig().catch(err => {
-    const s = document.getElementById("config-status");
-    if (s) s.textContent = "Load error: " + err.message;
-  });
+  if (name === "config") {
+    const sel=document.getElementById("platform-select");
+    loadConfig(sel.value).catch(err => {
+      const s=document.getElementById("config-status");
+      if (s) s.textContent = "Load error: " + err.message;
+    });
+  }
 }
 
 async function refreshServices() {
@@ -537,10 +553,22 @@ async function loadSindenLog() {
   box.parentElement.scrollTop = box.parentElement.scrollHeight;
 }
 
-async function loadConfig() {
-  const res = await fetch("/api/config");
+/* === Config (PS1/PS2) === */
+document.addEventListener("DOMContentLoaded", () => {
+  const sel = document.getElementById("platform-select");
+  sel.addEventListener("change", () => {
+    loadConfig(sel.value).catch(err => {
+      const s=document.getElementById("config-status");
+      if (s) s.textContent = "Load error: " + err.message;
+    });
+  });
+});
+
+async function loadConfig(platform) {
+  const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "Failed to read config");
+  document.getElementById("config-file-path").textContent = data.path ? `File: ${data.path}` : "";
   buildConfigForm("p1-form", data.player1);
   buildConfigForm("p2-form", data.player2);
 }
@@ -560,34 +588,34 @@ function collectForm(containerId) {
     .forEach(i => out[i.dataset.key] = i.value);
   return out;
 }
-async function saveConfig(p1, p2) {
+async function saveConfig(platform, p1, p2) {
   const res = await fetch("/api/config/save", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ player1: p1, player2: p2 })
+    body: JSON.stringify({ platform, player1: p1, player2: p2 })
   });
   return await res.json();
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("config-status");
   const sp1 = document.getElementById("save-p1");
   const sp2 = document.getElementById("save-p2");
   const sb  = document.getElementById("save-both");
+  const sel = document.getElementById("platform-select");
 
   if (sp1) sp1.onclick = async () => {
     status.textContent = "Saving Player 1...";
-    const d = await saveConfig(collectForm("p1-form"), {});
+    const d = await saveConfig(sel.value, collectForm("p1-form"), {});
     status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
   };
   if (sp2) sp2.onclick = async () => {
     status.textContent = "Saving Player 2...";
-    const d = await saveConfig({}, collectForm("p2-form"));
+    const d = await saveConfig(sel.value, {}, collectForm("p2-form"));
     status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
   };
   if (sb) sb.onclick = async () => {
     status.textContent = "Saving both players...";
-    const d = await saveConfig(collectForm("p1-form"), collectForm("p2-form"));
+    const d = await saveConfig(sel.value, collectForm("p1-form"), collectForm("p2-form"));
     status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
   };
 });
@@ -625,7 +653,7 @@ echo "=== Installing Python dependencies ==="
 pip install --upgrade pip
 pip install flask gunicorn
 
-echo "=== Writing Flask app with Configuration API ==="
+echo "=== Writing Flask app with PS1/PS2 Configuration API ==="
 sudo bash -c 'cat > /opt/lightgun-dashboard/app.py' <<'APP_EOF'
 import os, time, subprocess
 import xml.etree.ElementTree as ET
@@ -640,7 +668,12 @@ SERVICES = [
 
 SYSTEMCTL = "/usr/bin/systemctl"
 SUDO = "/usr/bin/sudo"
-CONFIG_PATH = "/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
+
+CONFIG_PATHS = {
+    "ps2": "/home/sinden/Lightgun/PS2/LightgunMono.exe.config",
+    "ps1": "/home/sinden/Lightgun/PS1/LightgunMono.exe.config",
+}
+DEFAULT_PLATFORM = "ps2"
 
 def get_status(service):
     try:
@@ -696,10 +729,21 @@ def sinden_log():
     except Exception as e:
         return jsonify({"logs": f"Error reading log: {e}"})
 
-# ---------- Configuration API (LightgunMono.exe.config) ----------
-def _load_config_tree():
-    tree = ET.parse(CONFIG_PATH)
-    return tree
+# ---------- Configuration API (PS1/PS2) ----------
+def _resolve_platform(p):
+    p = (p or "").lower()
+    return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
+
+def _ensure_stub(path):
+    # Create minimal XML stub if file is missing
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write('<?xml version="1.0" encoding="utf-8"?>\n<configuration><appSettings></appSettings></configuration>\n')
+
+def _load_config_tree(path):
+    _ensure_stub(path)
+    return ET.parse(path)
 
 def _appsettings_root(tree):
     root = tree.getroot()
@@ -747,10 +791,12 @@ def _pretty_xml(tree):
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
     try:
-        tree = _load_config_tree()
+        platform = _resolve_platform(request.args.get("platform"))
+        path = CONFIG_PATHS[platform]
+        tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         p1, p2 = _split_by_player(appsettings)
-        return jsonify({"ok": True, "player1": p1, "player2": p2})
+        return jsonify({"ok": True, "platform": platform, "path": path, "player1": p1, "player2": p2})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -758,28 +804,30 @@ def api_config_get():
 def api_config_save():
     try:
         data = request.get_json(force=True) or {}
+        platform = _resolve_platform(data.get("platform"))
+        path = CONFIG_PATHS[platform]
         p1 = data.get("player1", {})
         p2 = data.get("player2", {})
 
         # backup
         ts = time.strftime("%Y%m%d-%H%M%S")
-        backup_path = f"{CONFIG_PATH}.{ts}.bak"
-        if os.path.exists(CONFIG_PATH):
-            try:
-                with open(CONFIG_PATH, "rb") as src, open(backup_path, "wb") as dst:
-                    dst.write(src.read())
-            except Exception as be:
-                return jsonify({"ok": False, "error": f"Backup failed: {be}"}), 500
+        backup_path = f"{path}.{ts}.bak"
+        os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+        if os.path.exists(path):
+            with open(path, "rb") as src, open(backup_path, "wb") as dst:
+                dst.write(src.read())
+        else:
+            _ensure_stub(path)
 
-        tree = _load_config_tree()
+        tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         _write_players_back(appsettings, p1, p2)
 
         xml_bytes = _pretty_xml(tree)
-        with open(CONFIG_PATH, "wb") as f:
+        with open(path, "wb") as f:
             f.write(xml_bytes)
 
-        return jsonify({"ok": True, "backup": backup_path})
+        return jsonify({"ok": True, "platform": platform, "path": path, "backup": backup_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 # ---------- End Configuration API ----------
@@ -820,9 +868,19 @@ echo "=== Adding sudoers rule for systemctl ==="
 sudo bash -c 'echo "sinden ALL=NOPASSWD: /usr/bin/systemctl" > /etc/sudoers.d/90-sinden-systemctl'
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-echo "=== Ensuring Sinden XML config is writable by service user ==="
-sudo chown sinden:sinden /home/sinden/Lightgun/PS2/LightgunMono.exe.config
-sudo chmod 664 /home/sinden/Lightgun/PS2/LightgunMono.exe.config
+echo "=== Ensuring XML configs are present & writable ==="
+# create stub files if missing so UI works out-of-the-box
+for p in PS1 PS2; do
+  if [ ! -f "/home/sinden/Lightgun/$p/LightgunMono.exe.config" ]; then
+    sudo mkdir -p "/home/sinden/Lightgun/$p"
+    sudo bash -c "cat > /home/sinden/Lightgun/$p/LightgunMono.exe.config" <<'XML_EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<configuration><appSettings></appSettings></configuration>
+XML_EOF
+  fi
+  sudo chown sinden:sinden "/home/sinden/Lightgun/$p/LightgunMono.exe.config"
+  sudo chmod 664 "/home/sinden/Lightgun/$p/LightgunMono.exe.config"
+done
 
 echo "=== Enabling dashboard service ==="
 sudo systemctl daemon-reload
