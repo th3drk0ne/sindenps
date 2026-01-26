@@ -30,6 +30,9 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 .config-row label { width:260px; color:#ccc; font-size:14px; }
 .config-row input { flex:0 0 50%; max-width:50%; padding:6px; background:#000; color:#fff; border:1px solid #444; }
 .config-path { color:#888; font-size:12px; margin-left:10px; }
+/* Toolbar action button & inline status */
+.config-toolbar .btn-save-restart { margin-left:auto; background:red; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
+.config-status-inline { color:#ccc; margin-left:10px; }
 </style>
 </head>
 <body>
@@ -87,13 +90,21 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 <!-- CONFIG -->
 <div id="tab-config" style="display:none; padding:10px;">
   <h2 class="panel-title">Sinden LightGun Driver Configuration</h2>
+
+  <!-- Toolbar row: Platform selector + Save & Restart + path/status -->
   <div class="config-toolbar">
     <label for="platform-select">Platform:</label>
     <select id="platform-select">
       <option value="ps2" selected>PlayStation 2</option>
       <option value="ps1">PlayStation 1</option>
     </select>
+
+    <!-- Button on the same row, right-aligned -->
+    <button id="save-restart" class="btn-save-restart">Save & Restart</button>
+
+    <!-- File path & inline status (wraps on small screens) -->
     <span id="config-file-path" class="config-path"></span>
+    <span id="config-status" class="config-status-inline"></span>
   </div>
 
   <div style="display:flex; gap:16px; flex-wrap:wrap;">
@@ -106,22 +117,14 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
       <div id="p2-form" class="config-form" style="margin-top:8px;"></div>
     </div>
   </div>
-
-  <!-- Single Save & Restart button -->
-  <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
-    <button id="save-restart" style="background:red; color:white; font-weight:bold;">Save & Restart</button>
-    <span id="config-status" style="color:#ccc;"></span>
-  </div>
 </div>
 
 <script>
 function showTab(name) {
-  document.getElementById("service-panel").style.display =
-    name === "services" ? "block" : "none";
-  document.getElementById("tab-sindenlog").style.display =
-    name === "sindenlog" ? "block" : "none";
+  document.getElementById("service-panel").style.display = (name === "services") ? "block" : "none";
+  document.getElementById("tab-sindenlog").style.display = (name === "sindenlog") ? "block" : "none";
   const cfg = document.getElementById("tab-config");
-  if (cfg) cfg.style.display = name === "config" ? "block" : "none";
+  if (cfg) cfg.style.display = (name === "config") ? "block" : "none";
   if (name === "sindenlog") loadSindenLog();
   if (name === "config") {
     const sel=document.getElementById("platform-select");
@@ -172,6 +175,7 @@ async function loadSindenLog() {
   box.textContent = data.logs;
   box.parentElement.scrollTop = box.parentElement.scrollHeight;
 }
+
 /* === Config (PS1/PS2), preserving XML order === */
 document.addEventListener("DOMContentLoaded", () => {
   const sel = document.getElementById("platform-select");
@@ -182,6 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
 async function loadConfig(platform) {
   const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
   const data = await res.json();
@@ -227,6 +232,7 @@ async function restartLightgunService() {
     return false;
   }
 }
+
 document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("config-status");
   const sel = document.getElementById("platform-select");
@@ -249,6 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 });
+
 setInterval(() => {
   ["lightgun.service", "lightgun-monitor.service"].forEach(s => {
     const box = document.getElementById("logs-" + s.replace(".service",""));
@@ -259,6 +266,7 @@ setInterval(() => {
   }
 }, 3000);
 setInterval(refreshServices, 3000);
+
 /* Default to Sinden Log on first load */
 showTab('sindenlog');
 refreshServices();

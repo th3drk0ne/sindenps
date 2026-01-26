@@ -356,26 +356,25 @@ log "Assets deployment complete."
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
 #-----------------------------------------------------------
 
+
 #!/bin/bash
 set -euo pipefail
 
 #========================================
-# Lightgun Dashboard - Setup (Updated)
-# - Fixes URL/escaping issues
-# - Installs Save & Restart front-end
-# - Hardens sudoers
-# - Idempotent
+# Lightgun Dashboard - Installer/Updater
+# - Places "Save & Restart" on same row as PS1/PS2 selector
+# - Idempotent, safe to re-run
 #========================================
 
 #----- Variables -----
-APP_DIR="/opt/lightgun-dashboard"
-VENV_DIR="$APP_DIR/venv"
 APP_USER="sinden"
 APP_GROUP="sinden"
-GUNICORN_BIND="0.0.0.0:5000"
+APP_DIR="/opt/lightgun-dashboard"
+VENV_DIR="${APP_DIR}/venv"
 PY_BIN="python3"
 SYSTEMCTL="/usr/bin/systemctl"
 SUDO="/usr/bin/sudo"
+GUNICORN_BIND="0.0.0.0:5000"
 
 # PS config files
 CFG_PS1="/home/${APP_USER}/Lightgun/PS1/LightgunMono.exe.config"
@@ -385,41 +384,28 @@ CFG_PS2="/home/${APP_USER}/Lightgun/PS2/LightgunMono.exe.config"
 SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
 SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 
-# Git raw URLs (correct canonical paths)
+# Upstream assets (keep for logo refresh if needed)
 INDEX_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/index.html"
 LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
 
-#----------------------------------------
-echo "=== 1) Installing system packages ==="
+echo "=== 1) Install OS packages ==="
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
 
-#----------------------------------------
-echo "=== 2) Creating dashboard directory ==="
-sudo mkdir -p "$APP_DIR"
-sudo chown -R "${APP_USER}:${APP_GROUP}" "$APP_DIR"
+echo "=== 2) Ensure app directory and ownership ==="
+sudo mkdir -p "${APP_DIR}"
+sudo chown -R "${APP_USER}:${APP_GROUP}" "${APP_DIR}"
 
-#----------------------------------------
-echo "=== 3) Deploying front-end assets (index.html + logo.png) ==="
-# Download base files
-sudo -u "$APP_USER" wget -q -O "${APP_DIR}/index.html" "$INDEX_URL" || true
-sudo -u "$APP_USER" wget -q -O "${APP_DIR}/logo.png"  "$LOGO_URL"  || true
-sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html" "${APP_DIR}/logo.png" || true
-
-#----------------------------------------
-echo "=== 4) Installing Python virtual environment & deps ==="
-if [ ! -d "$VENV_DIR" ]; then
-  $PY_BIN -m venv "$VENV_DIR"
+echo "=== 3) Python venv & dependencies ==="
+if [ ! -d "${VENV_DIR}" ]; then
+  ${PY_BIN} -m venv "${VENV_DIR}"
 fi
-# shellcheck source=/dev/null
-source "$VENV_DIR/bin/activate"
+# shellcheck disable=SC1091
+source "${VENV_DIR}/bin/activate"
 pip install --upgrade pip
-# Pin reasonable versions for reproducibility
 pip install "flask==3.*" "gunicorn==21.*"
 
-#----------------------------------------
-echo "=== 5) Writing Flask app (backend API) ==="
-# NOTE: Routes use real < > (no HTML entities)
+echo "=== 4) Backend: Flask app (app.py) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
 import os, time, subprocess
 import xml.etree.ElementTree as ET
@@ -495,13 +481,12 @@ def sinden_log():
     except Exception as e:
         return jsonify({"logs": f"Error reading log: {e}"})
 
-# ---------- Configuration API (PS1/PS2) with original XML order ----------
+# ---------- Configuration API (PS1/PS2) preserving XML order ----------
 def _resolve_platform(p):
     p = (p or "").lower()
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
 
 def _ensure_stub(path):
-    # Create minimal XML stub if file is missing
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
@@ -519,13 +504,10 @@ def _appsettings_root(tree):
     return appsettings
 
 def _kv_items(appsettings):
-    # Returns <add> elements in document order
     return [el for el in appsettings if el.tag == "add" and "key" in el.attrib]
 
 def _split_by_player(appsettings):
-    # Preserve document order in separate lists for P1 and P2
-    p1 = []
-    p2 = []
+    p1, p2 = [], []
     for el in _kv_items(appsettings):
         key = el.attrib["key"]
         val = el.attrib.get("value", "")
@@ -536,11 +518,9 @@ def _split_by_player(appsettings):
     return p1, p2
 
 def _write_players_back(appsettings, p1_list, p2_list):
-    # Remove only <add> elements; keep comments/other nodes intact
     for el in list(appsettings):
         if el.tag == "add":
             appsettings.remove(el)
-    # Recreate in order: all Player 1 in given order, then Player 2 in given order
     for item in p1_list:
         el = ET.SubElement(appsettings, "add")
         el.set("key", item["key"])
@@ -577,10 +557,8 @@ def api_config_save():
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         path = CONFIG_PATHS[platform]
-        p1_list = data.get("player1", [])  # ordered list of {key,value}
+        p1_list = data.get("player1", [])
         p2_list = data.get("player2", [])
-
-        # Backup
         ts = time.strftime("%Y%m%d-%H%M%S")
         backup_path = f"{path}.{ts}.bak"
         os.makedirs(os.path.dirname(backup_path), exist_ok=True)
@@ -589,15 +567,12 @@ def api_config_save():
                 dst.write(src.read())
         else:
             _ensure_stub(path)
-
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         _write_players_back(appsettings, p1_list, p2_list)
-
         xml_bytes = _pretty_xml(tree)
         with open(path, "wb") as f:
             f.write(xml_bytes)
-
         return jsonify({"ok": True, "platform": platform, "path": path, "backup": backup_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -618,9 +593,8 @@ if __name__ == "__main__":
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 
-#----------------------------------------
-echo "=== 6) Install systemd unit for the dashboard ==="
-sudo bash -c 'cat > /etc/systemd/system/lightgun-dashboard.service' <<UNIT_EOF
+echo "=== 5) Systemd unit for dashboard ==="
+sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
 [Unit]
 Description=Lightgun Dashboard (Flask + Gunicorn)
 After=network.target
@@ -636,8 +610,7 @@ Restart=always
 WantedBy=multi-user.target
 UNIT_EOF
 
-#----------------------------------------
-echo "=== 7) Tighten sudoers to only allow the needed systemctl commands ==="
+echo "=== 6) Tight sudoers for required systemctl actions ==="
 sudo bash -c 'cat > /etc/sudoers.d/90-sinden-systemctl' <<'SUDO_EOF'
 Cmnd_Alias LIGHTGUN_CMDS = \
   /usr/bin/systemctl start lightgun.service, \
@@ -650,8 +623,7 @@ sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-#----------------------------------------
-echo "=== 8) Ensure XML configs exist and are writable (PS1/PS2) ==="
+echo "=== 7) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
   cfg="/home/${APP_USER}/Lightgun/${p}/LightgunMono.exe.config"
   if [ ! -f "$cfg" ]; then
@@ -665,15 +637,13 @@ XML_EOF"
   sudo chmod 664 "$cfg"
 done
 
-#----------------------------------------
-echo "=== 9) Ensure Sinden log path/file exists and is readable by nginx ==="
-sudo mkdir -p "$SINDEN_LOG_DIR"
-sudo touch "$SINDEN_LOG_FILE"
-sudo chown "${APP_USER}:${APP_GROUP}" "$SINDEN_LOG_FILE"
-sudo chmod 644 "$SINDEN_LOG_FILE"
+echo "=== 8) Ensure Sinden log path/file exists ==="
+sudo mkdir -p "${SINDEN_LOG_DIR}"
+sudo touch "${SINDEN_LOG_FILE}"
+sudo chown "${APP_USER}:${APP_GROUP}" "${SINDEN_LOG_FILE}"
+sudo chmod 644 "${SINDEN_LOG_FILE}"
 
-#----------------------------------------
-echo "=== 10) Nginx reverse proxy on :80 (optionally restrict LAN/CIDR later) ==="
+echo "=== 9) Nginx reverse proxy on :80 ==="
 sudo bash -c 'cat > /etc/nginx/sites-available/lightgun-dashboard' <<'NGINX_EOF'
 server {
     listen 80;
@@ -683,35 +653,33 @@ server {
         proxy_pass http://127.0.0.1:5000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        # Optional: restrict by network (uncomment and set your LAN)
+        # Optional network restriction:
         # allow 192.168.0.0/16;
         # deny all;
     }
 }
 NGINX_EOF
-
 sudo ln -sf /etc/nginx/sites-available/lightgun-dashboard /etc/nginx/sites-enabled/lightgun-dashboard
-# Disable default site to avoid port 80 conflicts
 if [ -L /etc/nginx/sites-enabled/default ]; then
   sudo rm /etc/nginx/sites-enabled/default
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
+echo "=== 10) Deploy logo (if missing) ==="
+if [ ! -f "${APP_DIR}/logo.png" ]; then
+  sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/logo.png" "${LOGO_URL}" || true
+fi
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
 
-#----------------------------------------
-echo "=== 12) Enable & start dashboard service ==="
+
+echo "=== 12) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
 sudo systemctl status --no-pager lightgun-dashboard.service || true
 
-#----------------------------------------
-echo "=== 13) Optional: mDNS (sindenps.local) ==="
-# Uncomment to enable mDNS hostname access
-# sudo hostnamectl set-hostname sindenps
-# sudo apt install -y avahi-daemon libnss-mdns
+echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
 
-echo "=== Setup complete! Visit: http://<HOST-IP>/  (or http://sindenps.local/ if mDNS configured) ==="
 
 
 
