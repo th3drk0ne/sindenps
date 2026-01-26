@@ -405,8 +405,8 @@ else
   )
 fi
 
-download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_P_URLS[@]}"
-download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_P_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS1/Profiles" "${PS1_P_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS2/Profiles" "${PS2_P_URLS[@]}"
 
 
 cd 	${LIGHTGUN_DIR}/log
@@ -979,7 +979,7 @@ sudo systemctl restart lightgun-dashboard.service
 
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
 
-# Downlaod profiles
+# Download profiles
 if [[ "$VERSION" == "current" ]]; then
   # CURRENT (Latest) asset set
   PS1_P_URLS=(
