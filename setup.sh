@@ -608,7 +608,6 @@ def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
     Serialize XML without pretty-print reparsing.
     Using ElementTree's write() keeps ET.Comment nodes intact.
     """
-    # Ensure directory exists (should already from _ensure_stub/backup path creation)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tree.write(path, encoding="utf-8", xml_declaration=True)
 
@@ -649,7 +648,7 @@ def api_config_save():
         player2: [{key, value}, ...]
       }
     Behavior:
-      - Backs up the original file alongside as <file>.YYYYmmdd-HHMMSS.bak
+      - Backs up the original file under <config_dir>/backups/<filename>.<timestamp>.bak
       - Writes updated XML preserving comments and non-<add> siblings
     """
     try:
@@ -659,10 +658,14 @@ def api_config_save():
         p1_list = data.get("player1", [])  # ordered list of {key, value}
         p2_list = data.get("player2", [])
 
-        # ----- Backup original -----
+        # ----- Backup original into 'backups/' subfolder -----
         ts = time.strftime("%Y%m%d-%H%M%S")
-        backup_path = f"{path}.{ts}.bak"
-        os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+        cfg_dir = os.path.dirname(path)
+        cfg_base = os.path.basename(path)
+        backup_dir = os.path.join(cfg_dir, "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        backup_path = os.path.join(backup_dir, f"{cfg_base}.{ts}.bak")
+
         if os.path.exists(path):
             with open(path, "rb") as src, open(backup_path, "wb") as dst:
                 dst.write(src.read())
@@ -709,6 +712,11 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
+
+# Ensure backup folders exist for both PS1/PS2 and are writable
+sudo -u sinden mkdir -p /home/sinden/Lightgun/PS1/backups /home/sinden/Lightgun/PS2/backups
+sudo chown -R sinden:sinden /home/sinden/Lightgun/PS1 /home/sinden/Lightgun/PS2
+
 
 echo "=== 5) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
