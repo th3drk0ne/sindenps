@@ -373,9 +373,9 @@ sudo wget -O /opt/lightgun-dashboard/index.html \
 
 sudo chown sinden:sinden /opt/lightgun-dashboard/index.html
 
-echo "=== Downloading dashboard logo to /opt/lightgun-dashboard ==="
-sudo wget -O /opt/lightgun-dashboard/logo.png \ 
-https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/logo.png
+echo "=== Downloading dashboard logo from GitHub ==="
+sudo wget -O /opt/lightgun-dashboard/logo.png \
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/logo.png
 sudo chown sinden:sinden /opt/lightgun-dashboard/logo.png
 
 echo "=== Creating Python virtual environment ==="
