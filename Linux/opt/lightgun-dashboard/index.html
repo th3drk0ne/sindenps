@@ -1,135 +1,51 @@
+
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>Lightgun Dashboard</title>
 <style>
-body {
-  background-color: black;
-  color: white;
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-}
-header {
-  background-color: black;
-  padding: 20px;
-  border-bottom: 4px solid red;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-.logo {
-  height: 48px;
-  width: auto;
-}
-.header-title {
-  font-size: 32px;
-  font-weight: bold;
-}
-.tabs button {
-  background: #222;
-  color: white;
-  border: 1px solid red;
-  padding: 8px 16px;
-  margin-right: 10px;
-  cursor: pointer;
-}
-.tabs button:hover {
-  background: red;
-}
-.panel-title {
-  color: red;
-  font-size: 24px;
-  font-weight: bold;
-  text-align: center;
-  margin-top: 20px;
-}
-.service-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  background-color: #111;
-  margin: 10px 20px;
-  padding: 10px;
-  border-left: 6px solid red;
-}
-.service-name {
-  font-size: 20px;
-  font-weight: bold;
-}
-.service-status {
-  font-size: 16px;
-  color: lime;
-  margin: 5px 0;
-}
-.service-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-}
-.service-buttons button {
-  padding: 6px 12px;
-  font-size: 14px;
-  font-weight: bold;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.service-buttons button:nth-child(1) {
-  background-color: lightgray;
-  color: black;
-}
-.service-buttons button:nth-child(2) {
-  background-color: gold;
-  color: black;
-}
-.service-buttons button:nth-child(3) {
-  background-color: red;
-  color: white;
-}
-.log-toggle {
-  background-color: #333;
-  color: white;
-}
-.log-box {
-  width: 99%;
-  background-color: #000;
-  border: 1px solid red;
-  margin-top: 10px;
-  padding: 10px;
-  display: none;
-  max-height: 300px;
-  overflow-y: auto;
-}
-.log-content {
-  white-space: pre-wrap;
-  font-family: monospace;
-  font-size: 13px;
-  color: #ccc;
-}
+body { background-color:black; color:white; font-family:sans-serif; margin:0; padding:0; }
+header { background-color:black; padding:20px; border-bottom:4px solid red; display:flex; justify-content:space-between; align-items:center; }
+.header-left { display:flex; align-items:center; gap:15px; }
+.logo { height:48px; width:auto; }
+.header-title { font-size:32px; font-weight:bold; }
+.tabs button { background:#222; color:white; border:1px solid red; padding:8px 16px; margin-right:10px; cursor:pointer; }
+.tabs button:hover { background:red; }
+.panel-title { color:red; font-size:24px; font-weight:bold; text-align:center; margin-top:20px; }
+.service-row { display:flex; flex-direction:column; align-items:flex-start; background:#111; margin:10px 20px; padding:10px; border-left:6px solid red; }
+.service-name { font-size:20px; font-weight:bold; }
+.service-status { font-size:16px; color:lime; margin:5px 0; }
+.service-buttons { display:flex; gap:10px; margin-top:8px; }
+.service-buttons button { padding:6px 12px; font-size:14px; font-weight:bold; border:none; border-radius:4px; cursor:pointer; }
+.service-buttons button:nth-child(1) { background:lightgray; color:black; }
+.service-buttons button:nth-child(2) { background:gold; color:black; }
+.service-buttons button:nth-child(3) { background:red; color:white; }
+.log-toggle { background:#333; color:white; }
+.log-box { width:99%; background:#000; border:1px solid red; margin-top:10px; padding:10px; display:none; max-height:300px; overflow-y:auto; }
+.log-content { white-space:pre-wrap; font-family:monospace; font-size:13px; color:#ccc; }
+
+/* Config tab inputs */
+.config-row { display:flex; align-items:center; gap:8px; margin:6px 0; }
+.config-row label { width:260px; color:#ccc; font-size:14px; }
+.config-row input { flex:1; padding:6px; background:#000; color:#fff; border:1px solid #444; }
 </style>
 </head>
 <body>
-
 <header>
   <div class="header-left">
     <img src="logo.png" class="logo">
     <div class="header-title">Lightgun Dashboard</div>
   </div>
-
   <nav class="tabs">
     <button onclick="showTab('services')">Services</button>
     <button onclick="showTab('sindenlog')">Sinden Log</button>
+    <button onclick="showTab('config')">Configuration</button>
   </nav>
 </header>
 
-<div id="service-panel" style="display:none">
+<!-- SERVICES PANEL (hidden by default) -->
+<div id="service-panel" style="display:none;">
   <h2 class="panel-title">Service Monitor</h2>
 
   <div class="service-row" id="service-lightgun">
@@ -161,6 +77,7 @@ header {
   </div>
 </div>
 
+<!-- SINDEN LOG PANEL (visible by default) -->
 <div id="tab-sindenlog" style="display:block; padding:5px;">
   <h2 class="panel-title">LightGun.Service Log</h2>
   <div class="log-box" style="display:block; max-height:500px;">
@@ -168,21 +85,45 @@ header {
   </div>
 </div>
 
+<!-- CONFIGURATION PANEL -->
+<div id="tab-config" style="display:none; padding:10px;">
+  <h2 class="panel-title">Configuration</h2>
+  <div style="display:flex; gap:16px; flex-wrap:wrap;">
+    <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
+      <div class="service-name">Player 1</div>
+      <div id="p1-form" class="config-form" style="margin-top:8px;"></div>
+      <button id="save-p1" style="margin-top:10px;">Save Player 1</button>
+    </div>
+    <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
+      <div class="service-name">Player 2</div>
+      <div id="p2-form" class="config-form" style="margin-top:8px;"></div>
+      <button id="save-p2" style="margin-top:10px;">Save Player 2</button>
+    </div>
+  </div>
+  <div style="margin-top:12px; display:flex; gap:10px;">
+    <button id="save-both">Save Both Players</button>
+    <span id="config-status" style="color:#ccc;"></span>
+  </div>
+</div>
+
 <script>
 function showTab(name) {
   document.getElementById("service-panel").style.display =
     name === "services" ? "block" : "none";
-
   document.getElementById("tab-sindenlog").style.display =
     name === "sindenlog" ? "block" : "none";
-
+  const cfg = document.getElementById("tab-config");
+  if (cfg) cfg.style.display = name === "config" ? "block" : "none";
   if (name === "sindenlog") loadSindenLog();
+  if (name === "config") loadConfig().catch(err => {
+    const s = document.getElementById("config-status");
+    if (s) s.textContent = "Load error: " + err.message;
+  });
 }
 
 async function refreshServices() {
   const res = await fetch("/api/services");
   const data = await res.json();
-
   for (const [name, status] of Object.entries(data)) {
     const row = document.getElementById("service-" + name.replace(".service",""));
     if (!row) continue;
@@ -191,26 +132,20 @@ async function refreshServices() {
     statusEl.className = "service-status " + status;
   }
 }
-
 async function serviceAction(name, action) {
   await fetch(`/api/service/${name}/${action}`, { method: "POST" });
   refreshServices();
 }
-
 async function loadLogs(service) {
   const box = document.getElementById("logs-" + service.replace(".service",""));
   const content = box.querySelector(".log-content");
-
   const res = await fetch(`/api/logs/${service}`);
   const data = await res.json();
-
-  content.textContent = data.logs || "No logs available";
+  content.textContent = (data && data.logs) ? data.logs : "No logs available";
 }
-
 function toggleLogs(service) {
   const box = document.getElementById("logs-" + service.replace(".service",""));
   const btn = event.target;
-
   if (box.style.display === "block") {
     box.style.display = "none";
     btn.textContent = "Show Logs";
@@ -220,31 +155,83 @@ function toggleLogs(service) {
     loadLogs(service);
   }
 }
-
 async function loadSindenLog() {
   const res = await fetch("/api/sinden-log");
   const data = await res.json();
-
   const box = document.getElementById("sinden-log-content");
   box.textContent = data.logs;
-
   box.parentElement.scrollTop = box.parentElement.scrollHeight;
 }
+
+async function loadConfig() {
+  const res = await fetch("/api/config");
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "Failed to read config");
+  buildConfigForm("p1-form", data.player1);
+  buildConfigForm("p2-form", data.player2);
+}
+function buildConfigForm(containerId, kv) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  Object.keys(kv).sort().forEach(k => {
+    const row = document.createElement("div"); row.className = "config-row";
+    const label = document.createElement("label"); label.textContent = k;
+    const input = document.createElement("input"); input.value = kv[k] ?? ""; input.dataset.key = k;
+    row.appendChild(label); row.appendChild(input); container.appendChild(row);
+  });
+}
+function collectForm(containerId) {
+  const out = {};
+  [...document.getElementById(containerId).querySelectorAll("input[data-key]")]
+    .forEach(i => out[i.dataset.key] = i.value);
+  return out;
+}
+async function saveConfig(p1, p2) {
+  const res = await fetch("/api/config/save", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ player1: p1, player2: p2 })
+  });
+  return await res.json();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const status = document.getElementById("config-status");
+  const sp1 = document.getElementById("save-p1");
+  const sp2 = document.getElementById("save-p2");
+  const sb  = document.getElementById("save-both");
+
+  if (sp1) sp1.onclick = async () => {
+    status.textContent = "Saving Player 1...";
+    const d = await saveConfig(collectForm("p1-form"), {});
+    status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
+  };
+  if (sp2) sp2.onclick = async () => {
+    status.textContent = "Saving Player 2...";
+    const d = await saveConfig({}, collectForm("p2-form"));
+    status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
+  };
+  if (sb) sb.onclick = async () => {
+    status.textContent = "Saving both players...";
+    const d = await saveConfig(collectForm("p1-form"), collectForm("p2-form"));
+    status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
+  };
+});
 
 setInterval(() => {
   ["lightgun.service", "lightgun-monitor.service"].forEach(s => {
     const box = document.getElementById("logs-" + s.replace(".service",""));
-    if (box.style.display === "block") loadLogs(s);
+    if (box && box.style.display === "block") loadLogs(s);
   });
-
   if (document.getElementById("tab-sindenlog").style.display === "block") {
     loadSindenLog();
   }
 }, 3000);
-
 setInterval(refreshServices, 3000);
+
+/* Default to Sinden Log on first load */
+showTab('sindenlog');
 refreshServices();
 </script>
-
 </body>
 </html>

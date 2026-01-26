@@ -355,6 +355,10 @@ log "Assets deployment complete."
 #-----------------------------------------------------------
 # Step 7) config site
 #-----------------------------------------------------------
+
+#-----------------------------------------------------------
+# Lightgun Dashboard - Setup (Updated with Configuration tab & XML editor)
+#-----------------------------------------------------------
 #!/bin/bash
 set -e
 
@@ -366,9 +370,246 @@ echo "=== Creating dashboard directory ==="
 sudo mkdir -p /opt/lightgun-dashboard
 sudo chown -R sinden:sinden /opt/lightgun-dashboard
 
-echo "=== Downloading clean UTF-8 index.html from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/index.html \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
+echo "=== Writing updated index.html to /opt/lightgun-dashboard ==="
+# We write the final file directly; you can also commit the same file to GitHub (see below).
+sudo bash -c 'cat > /opt/lightgun-dashboard/index.html' <<'INDEX_EOF'
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Lightgun Dashboard</title>
+<style>
+body { background-color:black; color:white; font-family:sans-serif; margin:0; padding:0; }
+header { background-color:black; padding:20px; border-bottom:4px solid red; display:flex; justify-content:space-between; align-items:center; }
+.header-left { display:flex; align-items:center; gap:15px; }
+.logo { height:48px; width:auto; }
+.header-title { font-size:32px; font-weight:bold; }
+.tabs button { background:#222; color:white; border:1px solid red; padding:8px 16px; margin-right:10px; cursor:pointer; }
+.tabs button:hover { background:red; }
+.panel-title { color:red; font-size:24px; font-weight:bold; text-align:center; margin-top:20px; }
+.service-row { display:flex; flex-direction:column; align-items:flex-start; background:#111; margin:10px 20px; padding:10px; border-left:6px solid red; }
+.service-name { font-size:20px; font-weight:bold; }
+.service-status { font-size:16px; color:lime; margin:5px 0; }
+.service-buttons { display:flex; gap:10px; margin-top:8px; }
+.service-buttons button { padding:6px 12px; font-size:14px; font-weight:bold; border:none; border-radius:4px; cursor:pointer; }
+.service-buttons button:nth-child(1) { background:lightgray; color:black; }
+.service-buttons button:nth-child(2) { background:gold; color:black; }
+.service-buttons button:nth-child(3) { background:red; color:white; }
+.log-toggle { background:#333; color:white; }
+.log-box { width:99%; background:#000; border:1px solid red; margin-top:10px; padding:10px; display:none; max-height:300px; overflow-y:auto; }
+.log-content { white-space:pre-wrap; font-family:monospace; font-size:13px; color:#ccc; }
+
+/* Config tab inputs */
+.config-row { display:flex; align-items:center; gap:8px; margin:6px 0; }
+.config-row label { width:260px; color:#ccc; font-size:14px; }
+.config-row input { flex:1; padding:6px; background:#000; color:#fff; border:1px solid #444; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <img src="logo.png" class="logo">
+    <div class="header-title">Lightgun Dashboard</div>
+  </div>
+  <nav class="tabs">
+    <button onclick="showTab('services')">Services</button>
+    <button onclick="showTab('sindenlog')">Sinden Log</button>
+    <button onclick="showTab('config')">Configuration</button>
+  </nav>
+</header>
+
+<!-- SERVICES PANEL (hidden by default; default is Sinden Log) -->
+<div id="service-panel" style="display:none;">
+  <h2 class="panel-title">Service Monitor</h2>
+
+  <div class="service-row" id="service-lightgun">
+    <span class="service-name">lightgun.service</span>
+    <span class="service-status">loading…</span>
+    <div class="service-buttons">
+      <button onclick="serviceAction('lightgun.service','start')">Start</button>
+      <button onclick="serviceAction('lightgun.service','stop')">Stop</button>
+      <button onclick="serviceAction('lightgun.service','restart')">Restart</button>
+      <button class="log-toggle" onclick="toggleLogs('lightgun.service')">Show Logs</button>
+    </div>
+    <div class="log-box" id="logs-lightgun">
+      <pre class="log-content">Loading…</pre>
+    </div>
+  </div>
+
+  <div class="service-row" id="service-lightgun-monitor">
+    <span class="service-name">lightgun-monitor.service</span>
+    <span class="service-status">loading…</span>
+    <div class="service-buttons">
+      <button onclick="serviceAction('lightgun-monitor.service','start')">Start</button>
+      <button onclick="serviceAction('lightgun-monitor.service','stop')">Stop</button>
+      <button onclick="serviceAction('lightgun-monitor.service','restart')">Restart</button>
+      <button class="log-toggle" onclick="toggleLogs('lightgun-monitor.service')">Show Logs</button>
+    </div>
+    <div class="log-box" id="logs-lightgun-monitor">
+      <pre class="log-content">Loading…</pre>
+    </div>
+  </div>
+</div>
+
+<!-- SINDEN LOG PANEL (visible by default) -->
+<div id="tab-sindenlog" style="display:block; padding:5px;">
+  <h2 class="panel-title">LightGun.Service Log</h2>
+  <div class="log-box" style="display:block; max-height:500px;">
+    <pre id="sinden-log-content" class="log-content">Loading…</pre>
+  </div>
+</div>
+
+<!-- CONFIGURATION PANEL -->
+<div id="tab-config" style="display:none; padding:10px;">
+  <h2 class="panel-title">Configuration</h2>
+  <div style="display:flex; gap:16px; flex-wrap:wrap;">
+    <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
+      <div class="service-name">Player 1</div>
+      <div id="p1-form" class="config-form" style="margin-top:8px;"></div>
+      <button id="save-p1" style="margin-top:10px;">Save Player 1</button>
+    </div>
+    <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
+      <div class="service-name">Player 2</div>
+      <div id="p2-form" class="config-form" style="margin-top:8px;"></div>
+      <button id="save-p2" style="margin-top:10px;">Save Player 2</button>
+    </div>
+  </div>
+  <div style="margin-top:12px; display:flex; gap:10px;">
+    <button id="save-both">Save Both Players</button>
+    <span id="config-status" style="color:#ccc;"></span>
+  </div>
+</div>
+
+<script>
+function showTab(name) {
+  document.getElementById("service-panel").style.display =
+    name === "services" ? "block" : "none";
+  document.getElementById("tab-sindenlog").style.display =
+    name === "sindenlog" ? "block" : "none";
+  const cfg = document.getElementById("tab-config");
+  if (cfg) cfg.style.display = name === "config" ? "block" : "none";
+  if (name === "sindenlog") loadSindenLog();
+  if (name === "config") loadConfig().catch(err => {
+    const s = document.getElementById("config-status");
+    if (s) s.textContent = "Load error: " + err.message;
+  });
+}
+
+async function refreshServices() {
+  const res = await fetch("/api/services");
+  const data = await res.json();
+  for (const [name, status] of Object.entries(data)) {
+    const row = document.getElementById("service-" + name.replace(".service",""));
+    if (!row) continue;
+    const statusEl = row.querySelector(".service-status");
+    statusEl.textContent = status;
+    statusEl.className = "service-status " + status;
+  }
+}
+async function serviceAction(name, action) {
+  await fetch(`/api/service/${name}/${action}`, { method: "POST" });
+  refreshServices();
+}
+async function loadLogs(service) {
+  const box = document.getElementById("logs-" + service.replace(".service",""));
+  const content = box.querySelector(".log-content");
+  const res = await fetch(`/api/logs/${service}`);
+  const data = await res.json();
+  content.textContent = (data && data.logs) ? data.logs : "No logs available";
+}
+function toggleLogs(service) {
+  const box = document.getElementById("logs-" + service.replace(".service",""));
+  const btn = event.target;
+  if (box.style.display === "block") {
+    box.style.display = "none";
+    btn.textContent = "Show Logs";
+  } else {
+    box.style.display = "block";
+    btn.textContent = "Hide Logs";
+    loadLogs(service);
+  }
+}
+async function loadSindenLog() {
+  const res = await fetch("/api/sinden-log");
+  const data = await res.json();
+  const box = document.getElementById("sinden-log-content");
+  box.textContent = data.logs;
+  box.parentElement.scrollTop = box.parentElement.scrollHeight;
+}
+
+async function loadConfig() {
+  const res = await fetch("/api/config");
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "Failed to read config");
+  buildConfigForm("p1-form", data.player1);
+  buildConfigForm("p2-form", data.player2);
+}
+function buildConfigForm(containerId, kv) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  Object.keys(kv).sort().forEach(k => {
+    const row = document.createElement("div"); row.className = "config-row";
+    const label = document.createElement("label"); label.textContent = k;
+    const input = document.createElement("input"); input.value = kv[k] ?? ""; input.dataset.key = k;
+    row.appendChild(label); row.appendChild(input); container.appendChild(row);
+  });
+}
+function collectForm(containerId) {
+  const out = {};
+  [...document.getElementById(containerId).querySelectorAll("input[data-key]")]
+    .forEach(i => out[i.dataset.key] = i.value);
+  return out;
+}
+async function saveConfig(p1, p2) {
+  const res = await fetch("/api/config/save", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ player1: p1, player2: p2 })
+  });
+  return await res.json();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const status = document.getElementById("config-status");
+  const sp1 = document.getElementById("save-p1");
+  const sp2 = document.getElementById("save-p2");
+  const sb  = document.getElementById("save-both");
+
+  if (sp1) sp1.onclick = async () => {
+    status.textContent = "Saving Player 1...";
+    const d = await saveConfig(collectForm("p1-form"), {});
+    status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
+  };
+  if (sp2) sp2.onclick = async () => {
+    status.textContent = "Saving Player 2...";
+    const d = await saveConfig({}, collectForm("p2-form"));
+    status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
+  };
+  if (sb) sb.onclick = async () => {
+    status.textContent = "Saving both players...";
+    const d = await saveConfig(collectForm("p1-form"), collectForm("p2-form"));
+    status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
+  };
+});
+
+setInterval(() => {
+  ["lightgun.service", "lightgun-monitor.service"].forEach(s => {
+    const box = document.getElementById("logs-" + s.replace(".service",""));
+    if (box && box.style.display === "block") loadLogs(s);
+  });
+  if (document.getElementById("tab-sindenlog").style.display === "block") {
+    loadSindenLog();
+  }
+}, 3000);
+setInterval(refreshServices, 3000);
+
+/* Default to Sinden Log on first load */
+showTab('sindenlog');
+refreshServices();
+</script>
+</body>
+</html>
+INDEX_EOF
 sudo chown sinden:sinden /opt/lightgun-dashboard/index.html
 
 echo "=== Downloading dashboard logo from GitHub ==="
@@ -384,10 +625,11 @@ echo "=== Installing Python dependencies ==="
 pip install --upgrade pip
 pip install flask gunicorn
 
-echo "=== Writing Flask app ==="
-cat << 'EOF' > /opt/lightgun-dashboard/app.py
-import subprocess
-from flask import Flask, jsonify, render_template_string, send_from_directory
+echo "=== Writing Flask app with Configuration API ==="
+sudo bash -c 'cat > /opt/lightgun-dashboard/app.py' <<'APP_EOF'
+import os, time, subprocess
+import xml.etree.ElementTree as ET
+from flask import Flask, jsonify, render_template_string, send_from_directory, request
 
 app = Flask(__name__)
 
@@ -398,7 +640,7 @@ SERVICES = [
 
 SYSTEMCTL = "/usr/bin/systemctl"
 SUDO = "/usr/bin/sudo"
-
+CONFIG_PATH = "/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
 
 def get_status(service):
     try:
@@ -410,23 +652,17 @@ def get_status(service):
     except subprocess.CalledProcessError:
         return "unknown"
 
-
 def control_service(service, action):
     try:
-        subprocess.check_output(
-            [SUDO, SYSTEMCTL, action, service],
-            stderr=subprocess.STDOUT
-        )
+        subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
         return True
     except subprocess.CalledProcessError as e:
         print("CONTROL ERROR:", e.output.decode())
         return False
 
-
 @app.route("/api/services")
 def list_services():
     return jsonify({s: get_status(s) for s in SERVICES})
-
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
@@ -436,7 +672,6 @@ def service_action(name, action):
         return jsonify({"error": "invalid action"}), 400
     ok = control_service(name, action)
     return jsonify({"success": ok, "status": get_status(name)})
-
 
 @app.route("/api/logs/<service>")
 def service_logs(service):
@@ -451,7 +686,6 @@ def service_logs(service):
     except subprocess.CalledProcessError as e:
         return jsonify({"logs": e.output.decode()})
 
-
 @app.route("/api/sinden-log")
 def sinden_log():
     LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
@@ -462,11 +696,97 @@ def sinden_log():
     except Exception as e:
         return jsonify({"logs": f"Error reading log: {e}"})
 
+# ---------- Configuration API (LightgunMono.exe.config) ----------
+def _load_config_tree():
+    tree = ET.parse(CONFIG_PATH)
+    return tree
+
+def _appsettings_root(tree):
+    root = tree.getroot()
+    appsettings = root.find("appSettings")
+    if appsettings is None:
+        appsettings = ET.SubElement(root, "appSettings")
+    return appsettings
+
+def _kv_items(appsettings):
+    return [el for el in appsettings.findall("add") if "key" in el.attrib]
+
+def _split_by_player(appsettings):
+    p1, p2 = {}, {}
+    for el in _kv_items(appsettings):
+        k = el.attrib["key"]
+        v = el.attrib.get("value", "")
+        if k.endswith("P2"):
+            base = k[:-2]
+            p2[base] = v
+        else:
+            p1[k] = v
+    return p1, p2
+
+def _ensure_key(appsettings, key):
+    node = next((el for el in _kv_items(appsettings) if el.attrib["key"] == key), None)
+    if node is None:
+        node = ET.SubElement(appsettings, "add", {"key": key, "value": ""})
+    return node
+
+def _write_players_back(appsettings, p1_data, p2_data):
+    for k, v in p1_data.items():
+        _ensure_key(appsettings, k).set("value", str(v))
+    for k, v in p2_data.items():
+        _ensure_key(appsettings, f"{k}P2").set("value", str(v))
+
+def _pretty_xml(tree):
+    try:
+        import xml.dom.minidom as minidom
+        rough = ET.tostring(tree.getroot(), encoding="utf-8")
+        reparsed = minidom.parseString(rough)
+        return reparsed.toprettyxml(indent="  ", encoding="utf-8")
+    except Exception:
+        return ET.tostring(tree.getroot(), encoding="utf-8")
+
+@app.route("/api/config", methods=["GET"])
+def api_config_get():
+    try:
+        tree = _load_config_tree()
+        appsettings = _appsettings_root(tree)
+        p1, p2 = _split_by_player(appsettings)
+        return jsonify({"ok": True, "player1": p1, "player2": p2})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/config/save", methods=["POST"])
+def api_config_save():
+    try:
+        data = request.get_json(force=True) or {}
+        p1 = data.get("player1", {})
+        p2 = data.get("player2", {})
+
+        # backup
+        ts = time.strftime("%Y%m%d-%H%M%S")
+        backup_path = f"{CONFIG_PATH}.{ts}.bak"
+        if os.path.exists(CONFIG_PATH):
+            try:
+                with open(CONFIG_PATH, "rb") as src, open(backup_path, "wb") as dst:
+                    dst.write(src.read())
+            except Exception as be:
+                return jsonify({"ok": False, "error": f"Backup failed: {be}"}), 500
+
+        tree = _load_config_tree()
+        appsettings = _appsettings_root(tree)
+        _write_players_back(appsettings, p1, p2)
+
+        xml_bytes = _pretty_xml(tree)
+        with open(CONFIG_PATH, "wb") as f:
+            f.write(xml_bytes)
+
+        return jsonify({"ok": True, "backup": backup_path})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+# ---------- End Configuration API ----------
 
 @app.route("/logo.png")
 def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
-
 
 @app.route("/")
 def index():
@@ -474,15 +794,13 @@ def index():
         html = f.read()
     return render_template_string(html)
 
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-EOF
-
+APP_EOF
 sudo chown sinden:sinden /opt/lightgun-dashboard/app.py
 
 echo "=== Writing lightgun-dashboard systemd service ==="
-sudo bash -c 'cat << EOF > /etc/systemd/system/lightgun-dashboard.service
+sudo bash -c 'cat > /etc/systemd/system/lightgun-dashboard.service' <<'UNIT_EOF'
 [Unit]
 Description=Lightgun Dashboard (Flask + Gunicorn)
 After=network.target
@@ -496,11 +814,15 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
-EOF'
+UNIT_EOF
 
 echo "=== Adding sudoers rule for systemctl ==="
 sudo bash -c 'echo "sinden ALL=NOPASSWD: /usr/bin/systemctl" > /etc/sudoers.d/90-sinden-systemctl'
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
+
+echo "=== Ensuring Sinden XML config is writable by service user ==="
+sudo chown sinden:sinden /home/sinden/Lightgun/PS2/LightgunMono.exe.config
+sudo chmod 664 /home/sinden/Lightgun/PS2/LightgunMono.exe.config
 
 echo "=== Enabling dashboard service ==="
 sudo systemctl daemon-reload
@@ -508,18 +830,18 @@ sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
 
 echo "=== Configuring Nginx reverse proxy on port 80 ==="
-sudo bash -c 'cat << EOF > /etc/nginx/sites-available/lightgun-dashboard
+sudo bash -c 'cat > /etc/nginx/sites-available/lightgun-dashboard' <<'NGINX_EOF'
 server {
     listen 80;
     server_name _;
 
     location / {
         proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
     }
 }
-EOF'
+NGINX_EOF
 
 sudo ln -sf /etc/nginx/sites-available/lightgun-dashboard /etc/nginx/sites-enabled/lightgun-dashboard
 
@@ -528,7 +850,6 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
   sudo rm /etc/nginx/sites-enabled/default
 fi
 
-
 # File permissions (readable to nginx)
 sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
 sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
@@ -536,6 +857,7 @@ sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
 sudo nginx -t && sudo systemctl restart nginx
 
 echo "=== Setup complete! Dashboard running at http://sindenps.local/ ==="
+
 
 # 7) restart services
 sudo systemctl restart lightgun.service
