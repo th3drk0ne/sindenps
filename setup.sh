@@ -393,6 +393,10 @@ log "Assets deployment complete."
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
 #-----------------------------------------------------------
 
+#-----------------------------------------------------------
+# Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
+#-----------------------------------------------------------
+
 #!/bin/bash
 set -euo pipefail
 
@@ -445,7 +449,6 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 echo "=== 4) Backend: Flask app (app.py) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
-
 #!/usr/bin/env python3
 import os
 import time
@@ -480,7 +483,6 @@ DEFAULT_PLATFORM = "ps2"
 # Systemd helpers
 # ===========================
 def get_status(service: str) -> str:
-    """Return 'active', 'inactive', 'failed', 'unknown', etc."""
     try:
         output = subprocess.check_output(
             [SYSTEMCTL, "is-active", service],
@@ -492,7 +494,6 @@ def get_status(service: str) -> str:
 
 
 def control_service(service: str, action: str) -> bool:
-    """Run sudo systemctl <action> <service>. Returns True on success."""
     try:
         subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
         return True
@@ -551,13 +552,11 @@ def sinden_log():
 # XML config helpers (PS1/PS2)
 # ===========================
 def _resolve_platform(p: str) -> str:
-    """Normalize/validate platform key."""
     p = (p or "").lower()
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
 
 
 def _ensure_stub(path: str):
-    """Create minimal XML stub if file is missing."""
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
@@ -566,19 +565,13 @@ def _ensure_stub(path: str):
 
 
 def _load_config_tree(path: str) -> ET.ElementTree:
-    """
-    Load XML tree, ensuring a stub exists.
-    Use a parser that preserves comments and processing instructions.
-    """
     _ensure_stub(path)
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
     return ET.parse(path, parser=parser)
 
 
 def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
-    """Return/create the <appSettings> element under <configuration>."""
     root = tree.getroot()
-    # Direct child in .NET/Mono config
     appsettings = root.find("appSettings")
     if appsettings is None:
         appsettings = ET.SubElement(root, "appSettings")
@@ -586,17 +579,10 @@ def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
 
 
 def _kv_items(appsettings: ET.Element):
-    """
-    Return existing <add> elements (key/value pairs) in document order.
-    """
     return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
 
 
 def _split_by_player(appsettings: ET.Element):
-    """
-    Produce two ordered lists representing Player 1 and Player 2 keys.
-    Player 2 keys are recognized by a 'P2' suffix; we strip it for UI editing.
-    """
     p1 = []
     p2 = []
     for el in _kv_items(appsettings):
@@ -609,74 +595,52 @@ def _split_by_player(appsettings: ET.Element):
     return p1, p2
 
 
-def _build_add_elements(parent: ET.Element, p1_list, p2_list):
+# ============================================================
+# FIXED VERSION — PRESERVES ALL COMMENTS AND ORDERING
+# ============================================================
+def _write_players_back_in_place(appsettings, p1_list, p2_list):
     """
-    Create new <add> elements (not attached yet) for both players,
-    preserving the provided order.
+    Update <add> nodes in place while preserving ALL comments,
+    whitespace, and non-<add> nodes exactly where they were.
     """
-    new_elems = []
+
+    # Build desired key/value map
+    desired = {}
     for item in p1_list:
-        el = ET.Element("add")
-        el.set("key", item["key"])
-        el.set("value", item.get("value", ""))
-        new_elems.append(el)
+        desired[item["key"]] = item.get("value", "")
     for item in p2_list:
-        el = ET.Element("add")
-        el.set("key", item["key"] + "P2")
-        el.set("value", item.get("value", ""))
-        new_elems.append(el)
-    return new_elems
+        desired[item["key"] + "P2"] = item.get("value", "")
 
+    seen = set()
 
-def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
-    """
-    Rebuild <add> nodes under <appSettings> *in place*:
+    # Update existing <add> nodes
+    for node in list(appsettings):
+        if node.tag == "add" and "key" in node.attrib:
+            key = node.attrib["key"]
+            if key in desired:
+                node.attrib["value"] = desired[key]
+                seen.add(key)
 
-      • Find the first <add> node among appsettings children.
-      • Insert the *new* sequence at that exact position (once).
-      • Skip all original <add> nodes that follow.
-      • Preserve every non-<add> node (comments, PIs, etc.) exactly
-        where it was (including those interleaved between keys).
-
-    If no <add> exists, append at the end.
-    """
-    children = list(appsettings)  # snapshot (includes ET.Comment, etc.)
-
-    # Prepare new <add> nodes
-    new_adds = _build_add_elements(appsettings, p1_list, p2_list)
-
-    new_children = []
-    inserted = False
-
-    for node in children:
+    # Find insertion point (after last <add>)
+    last_add_index = None
+    for i, node in enumerate(list(appsettings)):
         if node.tag == "add":
-            if not inserted:
-                # Insert the full rebuilt block at the position of the first <add>
-                new_children.extend(new_adds)
-                inserted = True
-            # Skip this and any subsequent original <add> nodes
-            continue
-        else:
-            # Keep comments/other nodes as-is
-            new_children.append(node)
+            last_add_index = i
 
-    if not inserted:
-        # No existing <add>; append the rebuilt block at the end
-        new_children.extend(new_adds)
+    insert_pos = (last_add_index + 1) if last_add_index is not None else len(appsettings)
 
-    # Clear and reattach in the precise new order
-    appsettings.clear()
-    for node in new_children:
-        appsettings.append(node)
+    # Insert missing keys
+    for key, value in desired.items():
+        if key not in seen:
+            new_el = ET.Element("add")
+            new_el.set("key", key)
+            new_el.set("value", value)
+            appsettings.insert(insert_pos, new_el)
+            insert_pos += 1
 
 
 def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
-    """
-    Serialize without pretty-print reparsing.
-    Comments and PIs are preserved (due to parser setup).
-    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    # Keep default serialization; do not pretty-print to avoid whitespace churn
     tree.write(path, encoding="utf-8", xml_declaration=True)
 
 
@@ -685,16 +649,6 @@ def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
 # ===========================
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
-    """
-    Returns:
-      {
-        ok: True,
-        platform: "ps1"|"ps2",
-        path: "<absolute file path>",
-        player1: [{key, value}, ...],
-        player2: [{key, value}, ...]
-      }
-    """
     try:
         platform = _resolve_platform(request.args.get("platform"))
         path = CONFIG_PATHS[platform]
@@ -708,26 +662,13 @@ def api_config_get():
 
 @app.route("/api/config/save", methods=["POST"])
 def api_config_save():
-    """
-    Body:
-      {
-        platform: "ps1"|"ps2",
-        player1: [{key, value}, ...],
-        player2: [{key, value}, ...]
-      }
-    Behavior:
-      - Backs up the original file under <config_dir>/backups/<filename>.<timestamp>.bak
-      - Writes updated XML preserving comments and the relative placement
-        of non-<add> nodes within <appSettings>.
-    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         path = CONFIG_PATHS[platform]
-        p1_list = data.get("player1", [])  # ordered list of {key, value}
+        p1_list = data.get("player1", [])
         p2_list = data.get("player2", [])
 
-        # ----- Backup original into 'backups/' subfolder -----
         ts = time.strftime("%Y%m%d-%H%M%S")
         cfg_dir = os.path.dirname(path)
         cfg_base = os.path.basename(path)
@@ -741,7 +682,6 @@ def api_config_save():
         else:
             _ensure_stub(path)
 
-        # ----- Load, modify, and write while preserving comments and positions -----
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         _write_players_back_in_place(appsettings, p1_list, p2_list)
@@ -767,7 +707,6 @@ def index():
     return render_template_string(html)
 
 
-# Optional health endpoint (useful for monitors)
 @app.route("/healthz")
 def healthz():
     return jsonify({"ok": True}), 200
@@ -777,7 +716,6 @@ def healthz():
 # Local dev entrypoint
 # ===========================
 if __name__ == "__main__":
-    # For production the systemd unit runs gunicorn; this is just for local testing.
     app.run(host="0.0.0.0", port=5000)
 
 APP_EOF
