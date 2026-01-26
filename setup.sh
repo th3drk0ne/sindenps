@@ -342,8 +342,8 @@ install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
 download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
 download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
 cd ${LIGHTGUN_DIR}
-install -d -o sinden -g sinden "PS1/backup"
-install -d -o sinden -g sinden "PS2/backup"
+install -d -o sinden -g sinden "PS1/backups"
+install -d -o sinden -g sinden "PS2/backups"
 
 
 cd 	${LIGHTGUN_DIR}/log
