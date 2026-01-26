@@ -956,6 +956,29 @@ sudo systemctl restart lightgun-dashboard.service
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
 
 
+#Profiles
+if [[ "$VERSION" == "current" ]]; then
+  # CURRENT (Latest) asset set
+  PS1_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+  )
+  PS2_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+  )
+else
+  # PSILOC (Legacy) asset set — UPDATED with your URLs
+  PS1_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+  )
+  PS2_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+  )
+fi
+
 
 # 7) restart services
 sudo systemctl restart lightgun.service
