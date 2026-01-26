@@ -30,6 +30,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 .config-row label { width:260px; color:#ccc; font-size:14px; }
 .config-row input { flex:0 0 50%; max-width:50%; padding:6px; background:#000; color:#fff; border:1px solid #444; }
 .config-path { color:#888; font-size:12px; margin-left:10px; }
+
 /* Toolbar action button & inline status */
 .config-toolbar .btn-save-restart { margin-left:auto; background:red; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
 .config-status-inline { color:#ccc; margin-left:10px; }
@@ -38,7 +39,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 <body>
 <header>
   <div class="header-left">
-    <img src="logo.png" class="logo" alt="logo">
+    logo.png
     <div class="header-title">Dashboard</div>
   </div>
   <nav class="tabs">
@@ -91,7 +92,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 <div id="tab-config" style="display:none; padding:10px;">
   <h2 class="panel-title">Sinden LightGun Driver Configuration</h2>
 
-  <!-- Toolbar row: Platform selector + Save & Restart + path/status -->
+  <!-- Toolbar row: Platform -> File path -> Save & Restart -->
   <div class="config-toolbar">
     <label for="platform-select">Platform:</label>
     <select id="platform-select">
@@ -99,11 +100,13 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
       <option value="ps1">PlayStation 1</option>
     </select>
 
-    <!-- Button on the same row, right-aligned -->
+    <!-- File path (middle of the row) -->
+    <span id="config-file-path" class="config-path"></span>
+
+    <!-- Button on the same row, right-aligned via margin-left:auto -->
     <button id="save-restart" class="btn-save-restart">Save & Restart</button>
 
-    <!-- File path & inline status (wraps on small screens) -->
-    <span id="config-file-path" class="config-path"></span>
+    <!-- Inline status (wraps to next line on small screens) -->
     <span id="config-status" class="config-status-inline"></span>
   </div>
 

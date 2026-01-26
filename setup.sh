@@ -356,14 +356,12 @@ log "Assets deployment complete."
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
 #-----------------------------------------------------------
 
-
 #!/bin/bash
 set -euo pipefail
 
 #========================================
 # Lightgun Dashboard - Installer/Updater
-# - Places "Save & Restart" on same row as PS1/PS2 selector
-# - Idempotent, safe to re-run
+# Toolbar order: Platform selector -> File path -> Save & Restart (right-aligned)
 #========================================
 
 #----- Variables -----
@@ -384,9 +382,9 @@ CFG_PS2="/home/${APP_USER}/Lightgun/PS2/LightgunMono.exe.config"
 SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
 SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 
-# Upstream assets (keep for logo refresh if needed)
-INDEX_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/index.html"
+# Upstream assets (kept in case you want to refresh logo)
 LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
+HTML_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/index.html"
 
 echo "=== 1) Install OS packages ==="
 sudo apt update
@@ -665,37 +663,38 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
-echo "=== 10) Deploy logo (if missing) ==="
+echo "=== 10) Deploy/refresh logo (if missing) ==="
 if [ ! -f "${APP_DIR}/logo.png" ]; then
   sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/logo.png" "${LOGO_URL}" || true
 fi
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
 
 if [ ! -f "${APP_DIR}/index.html" ]; then
-  sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/index.html" "${INDEX_URL}" || true
+  sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/index.html" "${HTML_URL}" || true
 fi
-sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html" || true
-
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 
 echo "=== 12) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
+sudo systemctl status --no-pager lightgun-dashboard.service || true
 
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
+
 
 # 7) restart services
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
-# 8) install configuration editor
+# 8) install configuration editor (deprecated for the dashboard)
 
-cd 	/usr/local/bin
- sudo wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux//usr/local/bin/lightgun-setup"
- chmod +x /usr/local/bin/lightgun-setup
+#cd 	/usr/local/bin
+# sudo wget --quiet --show-progress --https-only --timestamping \
+#    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux//usr/local/bin/lightgun-setup"
+# chmod +x /usr/local/bin/lightgun-setup
 
-log "configuration tool installed"
+#log "configuration tool installed"
 
 #-----------------------------------------------------------
 # Step 8) GCON2 UDEV Rules Pi4 and Pi5
