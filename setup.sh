@@ -957,6 +957,22 @@ echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenp
 
 
 #Profiles
+# Helper: download a set of URLs into a destination, fix perms and exe bit
+download_profiles() {
+  local dest="$1"; shift
+  install -d -o sinden -g sinden "$dest"
+  (
+    cd "$dest"
+    if [[ $# -gt 0 ]]; then
+      log "Downloading $(($#)) profiles into ${dest}."
+      wget --quiet --show-progress --https-only --timestamping "$@"
+    else
+      warn "No asset URLs provided for ${dest}."
+    fi
+    chown -R sinden:sinden "$dest"
+  )
+}
+
 if [[ "$VERSION" == "current" ]]; then
   # CURRENT (Latest) asset set
   PS1_P_URLS=(
@@ -979,8 +995,8 @@ else
   )
 fi
 
-#download_assets "${LIGHTGUN_DIR}/PS1/profiles" "${PS1_P_URLS[@]}"
-#download_assets "${LIGHTGUN_DIR}/PS2/profiles" "${PS2_P_URLS[@]}"
+download_profiles "${LIGHTGUN_DIR}/PS1/profiles" "${PS1_P_URLS[@]}"
+download_profiles "${LIGHTGUN_DIR}/PS2/profiles" "${PS2_P_URLS[@]}"
 
 
 # 7) restart services
