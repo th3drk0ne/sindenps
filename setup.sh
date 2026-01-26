@@ -669,16 +669,15 @@ if [ ! -f "${APP_DIR}/logo.png" ]; then
 fi
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
 
-if [ ! -f "${APP_DIR}/index.html" ]; then
-  sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/index.html" "${HTML_URL}" || true
-fi
+
+sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/index.html" "${HTML_URL}" || true
+
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 
 echo "=== 12) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
-sudo systemctl status --no-pager lightgun-dashboard.service || true
 
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
 
