@@ -383,6 +383,32 @@ echo "Backup complete."
 download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
 download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
 
+if [[ "$VERSION" == "current" ]]; then
+  # CURRENT (Latest) asset set
+  PS1_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+  )
+  PS2_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Low-Resolution.config"
+  )
+else
+  # PSILOC (Legacy) asset set — UPDATED with your URLs
+  PS1_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Low-Resolution.config"
+  )
+  PS2_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profile/Low-Resolution.config"
+  )
+fi
+
+download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_P_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_P_URLS[@]}"
+
+
 cd 	${LIGHTGUN_DIR}/log
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
@@ -953,7 +979,31 @@ sudo systemctl restart lightgun-dashboard.service
 
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
 
+# Downlaod profiles
+if [[ "$VERSION" == "current" ]]; then
+  # CURRENT (Latest) asset set
+  PS1_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profile/Low-Resolution.config"
+  )
+  PS2_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profile/Low-Resolution.config"
+  )
+else
+  # PSILOC (Legacy) asset set — UPDATED with your URLs
+  PS1_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profile/Low-Resolution.config"
+  )
+  PS2_P_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profile/Default.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profile/Low-Resolution.config"
+  )
+fi
 
+download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_P_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_P_URLS[@]}"
 
 # 7) restart services
 sudo systemctl restart lightgun.service
