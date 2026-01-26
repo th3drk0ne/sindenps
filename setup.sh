@@ -356,9 +356,8 @@ log "Assets deployment complete."
 # Step 7) config site
 #-----------------------------------------------------------
 
-
 #-----------------------------------------------------------
-# Lightgun Dashboard - Setup (PS1/PS2 Configuration support)
+# Lightgun Dashboard - Setup (PS1/PS2 + XML Order Support)
 #-----------------------------------------------------------
 #!/bin/bash
 set -e
@@ -553,7 +552,7 @@ async function loadSindenLog() {
   box.parentElement.scrollTop = box.parentElement.scrollHeight;
 }
 
-/* === Config (PS1/PS2) === */
+/* === Config (PS1/PS2), preserving XML order === */
 document.addEventListener("DOMContentLoaded", () => {
   const sel = document.getElementById("platform-select");
   sel.addEventListener("change", () => {
@@ -572,30 +571,38 @@ async function loadConfig(platform) {
   buildConfigForm("p1-form", data.player1);
   buildConfigForm("p2-form", data.player2);
 }
-function buildConfigForm(containerId, kv) {
+
+function buildConfigForm(containerId, kvList) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
-  Object.keys(kv).sort().forEach(k => {
-    const row = document.createElement("div"); row.className = "config-row";
-    const label = document.createElement("label"); label.textContent = k;
-    const input = document.createElement("input"); input.value = kv[k] ?? ""; input.dataset.key = k;
-    row.appendChild(label); row.appendChild(input); container.appendChild(row);
+  kvList.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "config-row";
+    const label = document.createElement("label");
+    label.textContent = item.key;
+    const input = document.createElement("input");
+    input.value = item.value ?? "";
+    input.dataset.key = item.key;
+    row.appendChild(label);
+    row.appendChild(input);
+    container.appendChild(row);
   });
 }
+
 function collectForm(containerId) {
-  const out = {};
-  [...document.getElementById(containerId).querySelectorAll("input[data-key]")]
-    .forEach(i => out[i.dataset.key] = i.value);
-  return out;
+  return [...document.getElementById(containerId).querySelectorAll("input[data-key]")]
+    .map(i => ({ key: i.dataset.key, value: i.value }));
 }
-async function saveConfig(platform, p1, p2) {
+
+async function saveConfig(platform, p1List, p2List) {
   const res = await fetch("/api/config/save", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ platform, player1: p1, player2: p2 })
+    body: JSON.stringify({ platform, player1: p1List, player2: p2List })
   });
   return await res.json();
 }
+
 document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("config-status");
   const sp1 = document.getElementById("save-p1");
@@ -605,12 +612,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (sp1) sp1.onclick = async () => {
     status.textContent = "Saving Player 1...";
-    const d = await saveConfig(sel.value, collectForm("p1-form"), {});
+    const d = await saveConfig(sel.value, collectForm("p1-form"), []);
     status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
   };
   if (sp2) sp2.onclick = async () => {
     status.textContent = "Saving Player 2...";
-    const d = await saveConfig(sel.value, {}, collectForm("p2-form"));
+    const d = await saveConfig(sel.value, [], collectForm("p2-form"));
     status.textContent = d.ok ? `Saved. Backup: ${d.backup || "n/a"}` : `Error: ${d.error}`;
   };
   if (sb) sb.onclick = async () => {
@@ -653,7 +660,7 @@ echo "=== Installing Python dependencies ==="
 pip install --upgrade pip
 pip install flask gunicorn
 
-echo "=== Writing Flask app with PS1/PS2 Configuration API ==="
+echo "=== Writing Flask app (PS1/PS2 + XML order preserved) ==="
 sudo bash -c 'cat > /opt/lightgun-dashboard/app.py' <<'APP_EOF'
 import os, time, subprocess
 import xml.etree.ElementTree as ET
@@ -729,7 +736,7 @@ def sinden_log():
     except Exception as e:
         return jsonify({"logs": f"Error reading log: {e}"})
 
-# ---------- Configuration API (PS1/PS2) ----------
+# ---------- Configuration API (PS1/PS2) with original XML order ----------
 def _resolve_platform(p):
     p = (p or "").lower()
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
@@ -753,31 +760,36 @@ def _appsettings_root(tree):
     return appsettings
 
 def _kv_items(appsettings):
-    return [el for el in appsettings.findall("add") if "key" in el.attrib]
+    # Returns <add> elements in document order
+    return [el for el in appsettings if el.tag == "add" and "key" in el.attrib]
 
 def _split_by_player(appsettings):
-    p1, p2 = {}, {}
+    # Preserve document order in separate lists for P1 and P2
+    p1 = []
+    p2 = []
     for el in _kv_items(appsettings):
-        k = el.attrib["key"]
-        v = el.attrib.get("value", "")
-        if k.endswith("P2"):
-            base = k[:-2]
-            p2[base] = v
+        key = el.attrib["key"]
+        val = el.attrib.get("value", "")
+        if key.endswith("P2"):
+            p2.append({"key": key[:-2], "value": val})
         else:
-            p1[k] = v
+            p1.append({"key": key, "value": val})
     return p1, p2
 
-def _ensure_key(appsettings, key):
-    node = next((el for el in _kv_items(appsettings) if el.attrib["key"] == key), None)
-    if node is None:
-        node = ET.SubElement(appsettings, "add", {"key": key, "value": ""})
-    return node
-
-def _write_players_back(appsettings, p1_data, p2_data):
-    for k, v in p1_data.items():
-        _ensure_key(appsettings, k).set("value", str(v))
-    for k, v in p2_data.items():
-        _ensure_key(appsettings, f"{k}P2").set("value", str(v))
+def _write_players_back(appsettings, p1_list, p2_list):
+    # Remove only <add> elements; keep comments/other nodes intact
+    for el in list(appsettings):
+        if el.tag == "add":
+            appsettings.remove(el)
+    # Recreate in order: all Player 1 in given order, then Player 2 in given order
+    for item in p1_list:
+        el = ET.SubElement(appsettings, "add")
+        el.set("key", item["key"])
+        el.set("value", item.get("value", ""))
+    for item in p2_list:
+        el = ET.SubElement(appsettings, "add")
+        el.set("key", item["key"] + "P2")
+        el.set("value", item.get("value", ""))
 
 def _pretty_xml(tree):
     try:
@@ -806,10 +818,10 @@ def api_config_save():
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         path = CONFIG_PATHS[platform]
-        p1 = data.get("player1", {})
-        p2 = data.get("player2", {})
+        p1_list = data.get("player1", [])  # ordered list of {key,value}
+        p2_list = data.get("player2", [])
 
-        # backup
+        # Backup
         ts = time.strftime("%Y%m%d-%H%M%S")
         backup_path = f"{path}.{ts}.bak"
         os.makedirs(os.path.dirname(backup_path), exist_ok=True)
@@ -821,7 +833,7 @@ def api_config_save():
 
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
-        _write_players_back(appsettings, p1, p2)
+        _write_players_back(appsettings, p1_list, p2_list)
 
         xml_bytes = _pretty_xml(tree)
         with open(path, "wb") as f:
@@ -868,8 +880,7 @@ echo "=== Adding sudoers rule for systemctl ==="
 sudo bash -c 'echo "sinden ALL=NOPASSWD: /usr/bin/systemctl" > /etc/sudoers.d/90-sinden-systemctl'
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-echo "=== Ensuring XML configs are present & writable ==="
-# create stub files if missing so UI works out-of-the-box
+echo "=== Ensuring XML configs are present & writable (PS1/PS2) ==="
 for p in PS1 PS2; do
   if [ ! -f "/home/sinden/Lightgun/$p/LightgunMono.exe.config" ]; then
     sudo mkdir -p "/home/sinden/Lightgun/$p"
@@ -915,6 +926,7 @@ sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
 sudo nginx -t && sudo systemctl restart nginx
 
 echo "=== Setup complete! Dashboard running at http://sindenps.local/ ==="
+
 
 
 # 7) restart services
