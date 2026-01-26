@@ -712,6 +712,7 @@ main() {
   echo "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
   echo "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   echo "  • Check:   gcon2_serial_status"
+  echo "  • Dashboard: Running at http://sindenps.local/"
   prompt_reboot
 }
 main
