@@ -357,37 +357,70 @@ log "Assets deployment complete."
 #-----------------------------------------------------------
 
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "=== Installing system packages ==="
+#========================================
+# Lightgun Dashboard - Setup (Updated)
+# - Fixes URL/escaping issues
+# - Installs Save & Restart front-end
+# - Hardens sudoers
+# - Idempotent
+#========================================
+
+#----- Variables -----
+APP_DIR="/opt/lightgun-dashboard"
+VENV_DIR="$APP_DIR/venv"
+APP_USER="sinden"
+APP_GROUP="sinden"
+GUNICORN_BIND="0.0.0.0:5000"
+PY_BIN="python3"
+SYSTEMCTL="/usr/bin/systemctl"
+SUDO="/usr/bin/sudo"
+
+# PS config files
+CFG_PS1="/home/${APP_USER}/Lightgun/PS1/LightgunMono.exe.config"
+CFG_PS2="/home/${APP_USER}/Lightgun/PS2/LightgunMono.exe.config"
+
+# Sinden log file
+SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
+SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
+
+# Git raw URLs (correct canonical paths)
+INDEX_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/index.html"
+LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
+
+#----------------------------------------
+echo "=== 1) Installing system packages ==="
 sudo apt update
-sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof
+sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
 
-echo "=== Creating dashboard directory ==="
-sudo mkdir -p /opt/lightgun-dashboard
-sudo chown -R sinden:sinden /opt/lightgun-dashboard
+#----------------------------------------
+echo "=== 2) Creating dashboard directory ==="
+sudo mkdir -p "$APP_DIR"
+sudo chown -R "${APP_USER}:${APP_GROUP}" "$APP_DIR"
 
-echo "=== Downloading index.html to /opt/lightgun-dashboard ==="
-sudo wget -O /opt/lightgun-dashboard/index.html \
- https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
+#----------------------------------------
+echo "=== 3) Deploying front-end assets (index.html + logo.png) ==="
+# Download base files
+sudo -u "$APP_USER" wget -q -O "${APP_DIR}/index.html" "$INDEX_URL" || true
+sudo -u "$APP_USER" wget -q -O "${APP_DIR}/logo.png"  "$LOGO_URL"  || true
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html" "${APP_DIR}/logo.png" || true
 
-sudo chown sinden:sinden /opt/lightgun-dashboard/index.html
-
-echo "=== Downloading dashboard logo from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/logo.png \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/opt/lightgun-dashboard/logo.png
-sudo chown sinden:sinden /opt/lightgun-dashboard/logo.png
-
-echo "=== Creating Python virtual environment ==="
-python3 -m venv /opt/lightgun-dashboard/venv
-source /opt/lightgun-dashboard/venv/bin/activate
-
-echo "=== Installing Python dependencies ==="
+#----------------------------------------
+echo "=== 4) Installing Python virtual environment & deps ==="
+if [ ! -d "$VENV_DIR" ]; then
+  $PY_BIN -m venv "$VENV_DIR"
+fi
+# shellcheck source=/dev/null
+source "$VENV_DIR/bin/activate"
 pip install --upgrade pip
-pip install flask gunicorn
+# Pin reasonable versions for reproducibility
+pip install "flask==3.*" "gunicorn==21.*"
 
-echo "=== Writing Flask app (PS1/PS2 + XML order preserved) ==="
-sudo bash -c 'cat > /opt/lightgun-dashboard/app.py' <<'APP_EOF'
+#----------------------------------------
+echo "=== 5) Writing Flask app (backend API) ==="
+# NOTE: Routes use real < > (no HTML entities)
+sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
 import os, time, subprocess
 import xml.etree.ElementTree as ET
 from flask import Flask, jsonify, render_template_string, send_from_directory, request
@@ -583,48 +616,64 @@ def index():
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 APP_EOF
-sudo chown sinden:sinden /opt/lightgun-dashboard/app.py
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 
-echo "=== Writing lightgun-dashboard systemd service ==="
-sudo bash -c 'cat > /etc/systemd/system/lightgun-dashboard.service' <<'UNIT_EOF'
+#----------------------------------------
+echo "=== 6) Install systemd unit for the dashboard ==="
+sudo bash -c 'cat > /etc/systemd/system/lightgun-dashboard.service' <<UNIT_EOF
 [Unit]
 Description=Lightgun Dashboard (Flask + Gunicorn)
 After=network.target
 
 [Service]
-User=sinden
-WorkingDirectory=/opt/lightgun-dashboard
-Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/lightgun-dashboard/venv/bin"
-ExecStart=/opt/lightgun-dashboard/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 app:app
+User=${APP_USER}
+WorkingDirectory=${APP_DIR}
+Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin:${VENV_DIR}/bin"
+ExecStart=${VENV_DIR}/bin/gunicorn -w 2 -b ${GUNICORN_BIND} app:app
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 UNIT_EOF
 
-echo "=== Adding sudoers rule for systemctl ==="
-sudo bash -c 'echo "sinden ALL=NOPASSWD: /usr/bin/systemctl" > /etc/sudoers.d/90-sinden-systemctl'
+#----------------------------------------
+echo "=== 7) Tighten sudoers to only allow the needed systemctl commands ==="
+sudo bash -c 'cat > /etc/sudoers.d/90-sinden-systemctl' <<'SUDO_EOF'
+Cmnd_Alias LIGHTGUN_CMDS = \
+  /usr/bin/systemctl start lightgun.service, \
+  /usr/bin/systemctl stop lightgun.service, \
+  /usr/bin/systemctl restart lightgun.service, \
+  /usr/bin/systemctl start lightgun-monitor.service, \
+  /usr/bin/systemctl stop lightgun-monitor.service, \
+  /usr/bin/systemctl restart lightgun-monitor.service
+sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
+SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-echo "=== Ensuring XML configs are present & writable (PS1/PS2) ==="
+#----------------------------------------
+echo "=== 8) Ensure XML configs exist and are writable (PS1/PS2) ==="
 for p in PS1 PS2; do
-  if [ ! -f "/home/sinden/Lightgun/$p/LightgunMono.exe.config" ]; then
-    sudo mkdir -p "/home/sinden/Lightgun/$p"
-    sudo bash -c "cat > /home/sinden/Lightgun/$p/LightgunMono.exe.config" <<'XML_EOF'
+  cfg="/home/${APP_USER}/Lightgun/${p}/LightgunMono.exe.config"
+  if [ ! -f "$cfg" ]; then
+    sudo mkdir -p "/home/${APP_USER}/Lightgun/${p}"
+    sudo bash -c "cat > '$cfg' <<'XML_EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <configuration><appSettings></appSettings></configuration>
-XML_EOF
+XML_EOF"
   fi
-  sudo chown sinden:sinden "/home/sinden/Lightgun/$p/LightgunMono.exe.config"
-  sudo chmod 664 "/home/sinden/Lightgun/$p/LightgunMono.exe.config"
+  sudo chown "${APP_USER}:${APP_GROUP}" "$cfg"
+  sudo chmod 664 "$cfg"
 done
 
-echo "=== Enabling dashboard service ==="
-sudo systemctl daemon-reload
-sudo systemctl enable lightgun-dashboard.service
-sudo systemctl restart lightgun-dashboard.service
+#----------------------------------------
+echo "=== 9) Ensure Sinden log path/file exists and is readable by nginx ==="
+sudo mkdir -p "$SINDEN_LOG_DIR"
+sudo touch "$SINDEN_LOG_FILE"
+sudo chown "${APP_USER}:${APP_GROUP}" "$SINDEN_LOG_FILE"
+sudo chmod 644 "$SINDEN_LOG_FILE"
 
-echo "=== Configuring Nginx reverse proxy on port 80 ==="
+#----------------------------------------
+echo "=== 10) Nginx reverse proxy on :80 (optionally restrict LAN/CIDR later) ==="
 sudo bash -c 'cat > /etc/nginx/sites-available/lightgun-dashboard' <<'NGINX_EOF'
 server {
     listen 80;
@@ -634,24 +683,36 @@ server {
         proxy_pass http://127.0.0.1:5000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        # Optional: restrict by network (uncomment and set your LAN)
+        # allow 192.168.0.0/16;
+        # deny all;
     }
 }
 NGINX_EOF
 
 sudo ln -sf /etc/nginx/sites-available/lightgun-dashboard /etc/nginx/sites-enabled/lightgun-dashboard
-
 # Disable default site to avoid port 80 conflicts
 if [ -L /etc/nginx/sites-enabled/default ]; then
   sudo rm /etc/nginx/sites-enabled/default
 fi
-
-# File permissions (readable to nginx)
-sudo chown sinden:www-data /home/sinden/Lightgun/log/sinden.log
-sudo chmod 644 /home/sinden/Lightgun/log/sinden.log
-
 sudo nginx -t && sudo systemctl restart nginx
 
-echo "=== Setup complete! Dashboard running at http://sindenps.local/ ==="
+
+#----------------------------------------
+echo "=== 12) Enable & start dashboard service ==="
+sudo systemctl daemon-reload
+sudo systemctl enable lightgun-dashboard.service
+sudo systemctl restart lightgun-dashboard.service
+sudo systemctl status --no-pager lightgun-dashboard.service || true
+
+#----------------------------------------
+echo "=== 13) Optional: mDNS (sindenps.local) ==="
+# Uncomment to enable mDNS hostname access
+# sudo hostnamectl set-hostname sindenps
+# sudo apt install -y avahi-daemon libnss-mdns
+
+echo "=== Setup complete! Visit: http://<HOST-IP>/  (or http://sindenps.local/ if mDNS configured) ==="
+
 
 
 
