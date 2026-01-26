@@ -383,8 +383,6 @@ echo "Backup complete."
 download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
 download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
 
-
-
 cd 	${LIGHTGUN_DIR}/log
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
@@ -447,7 +445,6 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 echo "=== 4) Backend: Flask app (app.py, with Profiles feature) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
-
 #!/usr/bin/env python3
 import os
 import time
@@ -484,6 +481,7 @@ DEFAULT_PLATFORM = "ps2"
 # Systemd helpers
 # ===========================
 def get_status(service: str) -> str:
+    """Return 'active', 'inactive', 'failed', 'unknown', etc."""
     try:
         output = subprocess.check_output(
             [SYSTEMCTL, "is-active", service],
@@ -495,6 +493,7 @@ def get_status(service: str) -> str:
 
 
 def control_service(service: str, action: str) -> bool:
+    """Run sudo systemctl <action> <service>. Returns True on success."""
     try:
         subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
         return True
@@ -550,14 +549,16 @@ def sinden_log():
 
 
 # ===========================
-# XML config helpers
+# XML config helpers (PS1/PS2)
 # ===========================
 def _resolve_platform(p: str) -> str:
+    """Normalize/validate platform key."""
     p = (p or "").lower()
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
 
 
 def _ensure_stub(path: str):
+    """Create minimal XML stub if file is missing."""
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
@@ -566,12 +567,17 @@ def _ensure_stub(path: str):
 
 
 def _load_config_tree(path: str) -> ET.ElementTree:
+    """
+    Load XML tree, ensuring a stub exists.
+    Use a parser that preserves comments and processing instructions.
+    """
     _ensure_stub(path)
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
     return ET.parse(path, parser=parser)
 
 
 def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
+    """Return/create the <appSettings> element under <configuration>."""
     root = tree.getroot()
     appsettings = root.find("appSettings")
     if appsettings is None:
@@ -580,10 +586,15 @@ def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
 
 
 def _kv_items(appsettings: ET.Element):
+    """Return existing <add> elements (key/value pairs) in document order."""
     return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
 
 
 def _split_by_player(appsettings: ET.Element):
+    """
+    Produce two ordered lists representing Player 1 and Player 2 keys.
+    Player 2 keys are recognized by a 'P2' suffix; we strip it for UI editing.
+    """
     p1 = []
     p2 = []
     for el in _kv_items(appsettings):
@@ -597,6 +608,10 @@ def _split_by_player(appsettings: ET.Element):
 
 
 def _build_add_elements(parent: ET.Element, p1_list, p2_list):
+    """
+    Create new <add> elements (not attached yet) for both players,
+    preserving the provided order.
+    """
     new_elems = []
     for item in p1_list:
         el = ET.Element("add")
@@ -612,10 +627,20 @@ def _build_add_elements(parent: ET.Element, p1_list, p2_list):
 
 
 def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
-    children = list(appsettings)
+    """
+    Rebuild <add> nodes under <appSettings> *in place*:
+      • Insert the rebuilt block at the position of the first <add>
+      • Skip all original <add> nodes that follow
+      • Preserve every non-<add> node (comments, PIs, etc.) where it was
+    If no <add> exists, append at the end.
+    """
+    children = list(appsettings)  # snapshot
+
     new_adds = _build_add_elements(appsettings, p1_list, p2_list)
+
     new_children = []
     inserted = False
+
     for node in children:
         if node.tag == "add":
             if not inserted:
@@ -624,14 +649,17 @@ def _write_players_back_in_place(appsettings: ET.Element, p1_list, p2_list):
             continue
         else:
             new_children.append(node)
+
     if not inserted:
         new_children.extend(new_adds)
+
     appsettings.clear()
     for node in new_children:
         appsettings.append(node)
 
 
 def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
+    """Serialize without pretty-print reparsing. Comments/PIs preserved."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tree.write(path, encoding="utf-8", xml_declaration=True)
 
@@ -642,12 +670,14 @@ def _write_tree_preserving_comments(tree: ET.ElementTree, path: str):
 PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,60}$")
 
 def _profiles_dir_for(path: str) -> str:
+    """Return the profiles subfolder for a given config file path."""
     base_dir = os.path.dirname(path)
     pdir = os.path.join(base_dir, "profiles")
     os.makedirs(pdir, exist_ok=True)
     return pdir
 
 def _safe_profile_name(name: str) -> str:
+    """Validate a safe profile name (no traversal, no spaces)."""
     if not name:
         raise ValueError("Profile name is required")
     if not PROFILE_NAME_RE.match(name):
@@ -655,12 +685,17 @@ def _safe_profile_name(name: str) -> str:
     return name
 
 def _profile_path(platform: str, name: str) -> str:
+    """
+    Build a profile file path for the given platform/name.
+    Store as <profiles>/<name>.config
+    """
     platform = _resolve_platform(platform)
     live_cfg = CONFIG_PATHS[platform]
     pdir = _profiles_dir_for(live_cfg)
     return os.path.join(pdir, f"{_safe_profile_name(name)}.config")
 
 def _list_profiles(platform: str) -> List[Dict[str, str]]:
+    """Enumerate profiles for a platform, sorted by mtime desc."""
     platform = _resolve_platform(platform)
     live_cfg = CONFIG_PATHS[platform]
     pdir = _profiles_dir_for(live_cfg)
@@ -673,7 +708,7 @@ def _list_profiles(platform: str) -> List[Dict[str, str]]:
             try:
                 st = os.stat(full)
                 items.append({
-                    "name": fname[:-len(".config")],  # FIXED dynamic strip
+                    "name": fname[:-8],  # strip ".config"
                     "path": full,
                     "mtime": int(st.st_mtime)
                 })
@@ -688,15 +723,30 @@ def _list_profiles(platform: str) -> List[Dict[str, str]]:
 # ===========================
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
+    """
+    Optional query params:
+      platform: ps1|ps2 (default ps2)
+      profile: <profileName>  (if present, reads that profile file, not the live file)
+
+    Returns:
+      {
+        ok: True,
+        platform, path, player1, player2,
+        source: "live"|"profile",
+        profile: "<name or ''>"
+      }
+    """
     try:
         platform = _resolve_platform(request.args.get("platform"))
         profile_name = (request.args.get("profile") or "").strip()
+
         if profile_name:
             path = _profile_path(platform, profile_name)
             source = "profile"
         else:
             path = CONFIG_PATHS[platform]
             source = "live"
+
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         p1, p2 = _split_by_player(appsettings)
@@ -715,27 +765,38 @@ def api_config_get():
 
 @app.route("/api/config/save", methods=["POST"])
 def api_config_save():
+    """
+    Body:
+      { platform: "ps1"|"ps2", player1: [...], player2: [...] }
+    Behavior:
+      - Backs up the original file under <config_dir>/backups/<filename>.<timestamp>.bak
+      - Writes updated XML preserving comments and the placement of non-<add> nodes.
+    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         path = CONFIG_PATHS[platform]
         p1_list = data.get("player1", [])
         p2_list = data.get("player2", [])
+
         ts = time.strftime("%Y%m%d-%H%M%S")
         cfg_dir = os.path.dirname(path)
         cfg_base = os.path.basename(path)
         backup_dir = os.path.join(cfg_dir, "backups")
         os.makedirs(backup_dir, exist_ok=True)
         backup_path = os.path.join(backup_dir, f"{cfg_base}.{ts}.bak")
+
         if os.path.exists(path):
             with open(path, "rb") as src, open(backup_path, "wb") as dst:
                 dst.write(src.read())
         else:
             _ensure_stub(path)
+
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         _write_players_back_in_place(appsettings, p1_list, p2_list)
         _write_tree_preserving_comments(tree, path)
+
         return jsonify({"ok": True, "platform": platform, "path": path, "backup": backup_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -746,6 +807,12 @@ def api_config_save():
 # ===========================
 @app.route("/api/config/profiles", methods=["GET"])
 def api_profiles_list():
+    """
+    Query:
+      platform: ps1|ps2
+    Returns:
+      { ok: True, platform, profiles: [{name, path, mtime}, ...] }
+    """
     try:
         platform = _resolve_platform(request.args.get("platform"))
         items = _list_profiles(platform)
@@ -757,27 +824,35 @@ def api_profiles_list():
 @app.route("/api/config/profile/save", methods=["POST"])
 def api_profile_save():
     """
-    Save profile with form data instead of copying live config.
+    Body:
+      { platform: "ps1"|"ps2", name: "<profileName>", overwrite?: bool }
+    Behavior:
+      - Copies CURRENT LIVE config to profiles/<name>.config.
+      - Respects overwrite flag (default False).
     """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         name = _safe_profile_name((data.get("name") or "").strip())
         overwrite = bool(data.get("overwrite", False))
-        p1_list = data.get("player1", [])
-        p2_list = data.get("player2", [])
 
+        live_path = CONFIG_PATHS[platform]
         prof_path = _profile_path(platform, name)
+
+        if not os.path.exists(live_path):
+            _ensure_stub(live_path)
 
         if os.path.exists(prof_path) and not overwrite:
             return jsonify({"ok": False, "error": "Profile already exists"}), 409
 
-        # Create XML tree and write form data
-        tree = _load_config_tree(CONFIG_PATHS[platform])
-        appsettings = _appsettings_root(tree)
-        _write_players_back_in_place(appsettings, p1_list, p2_list)
-        _write_tree_preserving_comments(tree, prof_path)
+        os.makedirs(os.path.dirname(prof_path), exist_ok=True)
+        with open(live_path, "rb") as src, open(prof_path, "wb") as dst:
+            dst.write(src.read())
 
+        try:
+            os.chown(prof_path, os.getuid(), os.getgid())
+        except Exception:
+            pass
         os.chmod(prof_path, 0o664)
 
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": prof_path})
@@ -787,28 +862,46 @@ def api_profile_save():
 
 @app.route("/api/config/profile/load", methods=["POST"])
 def api_profile_load():
+    """
+    Body:
+      { platform: "ps1"|"ps2", name: "<profileName>" }
+    Behavior:
+      - Backs up current LIVE config.
+      - Overwrites LIVE config with selected profile file.
+    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         name = _safe_profile_name((data.get("name") or "").strip())
+
         live_path = CONFIG_PATHS[platform]
         prof_path = _profile_path(platform, name)
+
         if not os.path.exists(prof_path):
             return jsonify({"ok": False, "error": "Profile not found"}), 404
+
         ts = time.strftime("%Y%m%d-%H%M%S")
         cfg_dir = os.path.dirname(live_path)
         cfg_base = os.path.basename(live_path)
         backup_dir = os.path.join(cfg_dir, "backups")
         os.makedirs(backup_dir, exist_ok=True)
         backup_path = os.path.join(backup_dir, f"{cfg_base}.{ts}.bak")
+
         if os.path.exists(live_path):
             with open(live_path, "rb") as src, open(backup_path, "wb") as dst:
                 dst.write(src.read())
         else:
             _ensure_stub(live_path)
+
         with open(prof_path, "rb") as src, open(live_path, "wb") as dst:
             dst.write(src.read())
+
+        try:
+            os.chown(live_path, os.getuid(), os.getgid())
+        except Exception:
+            pass
         os.chmod(live_path, 0o664)
+
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": live_path, "backup": backup_path})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
@@ -816,13 +909,19 @@ def api_profile_load():
 
 @app.route("/api/config/profile/delete", methods=["POST"])
 def api_profile_delete():
+    """
+    Body:
+      { platform: "ps1"|"ps2", name: "<profileName>" }
+    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         name = _safe_profile_name((data.get("name") or "").strip())
+
         prof_path = _profile_path(platform, name)
         if not os.path.exists(prof_path):
             return jsonify({"ok": False, "error": "Profile not found"}), 404
+
         os.remove(prof_path)
         return jsonify({"ok": True, "platform": platform, "profile": name})
     except Exception as e:
@@ -849,10 +948,11 @@ def healthz():
     return jsonify({"ok": True}), 200
 
 
+# ===========================
+# Local dev entrypoint
+# ===========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 
@@ -955,48 +1055,6 @@ sudo systemctl restart lightgun-dashboard.service
 
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
 
-
-#Profiles
-# Helper: download a set of URLs into a destination
-download_profiles() {
-  local dest="$1"; shift
-  install -d -o sinden -g sinden "$dest"
-  (
-    cd "$dest"
-    if [[ $# -gt 0 ]]; then
-      log "Downloading $(($#)) profiles into ${dest}."
-      wget --quiet --show-progress --https-only --timestamping "$@"
-    else
-      warn "No asset URLs provided for ${dest}."
-    fi
-    chown -R sinden:sinden "$dest"
-  )
-}
-
-if [[ "$VERSION" == "current" ]]; then
-  # CURRENT (Latest) asset set
-  PS1_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profiles/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/profiles/Low-Resolution.config"
-  )
-  PS2_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profiles/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/profiles/Low-Resolution.config"
-  )
-else
-  # PSILOC (Legacy) asset set — UPDATED with your URLs
-  PS1_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profiles/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profiles/Low-Resolution.config"
-  )
-  PS2_P_URLS=(
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/profiles/Default.config"
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/profiles/Low-Resolution.config"
-  )
-fi
-
-download_profiles "/home/sinden/Lightgun/PS1/profiles" "${PS1_P_URLS[@]}"
-download_profiles "/home/sinden/Lightgun/PS2/profiles" "${PS2_P_URLS[@]}"
 
 
 # 7) restart services
