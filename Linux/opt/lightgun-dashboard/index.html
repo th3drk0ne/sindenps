@@ -15,7 +15,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 .service-row { display:flex; flex-direction:column; align-items:flex-start; background:#111; margin:10px 20px; padding:10px; border-left:6px solid red; }
 .service-name { font-size:20px; font-weight:bold; }
 .service-status { font-size:16px; color:lime; margin:5px 0; }
-.service-buttons { display:flex; gap:10px; margin-top:8px; }
+.service-buttons { display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
 .service-buttons button { padding:6px 12px; font-size:14px; font-weight:bold; border:none; border-radius:4px; cursor:pointer; }
 .service-buttons button:nth-child(1) { background:lightgray; color:black; }
 .service-buttons button:nth-child(2) { background:gold; color:black; }
@@ -43,7 +43,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 <header>
   <div class="header-left">
     <img src="/logo.png" class="logo" alt="logo">
-    <div class="header-title">Lightgun Dashboard</div>
+    <div class="header-title">Dashboard</div>
   </div>
   <nav class="tabs">
     <button onclick="showTab('sindenlog')">Sinden Log</button>
@@ -55,6 +55,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 <!-- SERVICES -->
 <div id="service-panel" style="display:none;">
   <h2 class="panel-title">Service Monitor</h2>
+
   <div class="service-row" id="service-lightgun">
     <span class="service-name">lightgun.service</span>
     <span class="service-status">loading…</span>
@@ -62,12 +63,13 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
       <button onclick="serviceAction('lightgun.service','start')">Start</button>
       <button onclick="serviceAction('lightgun.service','stop')">Stop</button>
       <button onclick="serviceAction('lightgun.service','restart')">Restart</button>
-      <button class="log-toggle" onclick="toggleLogs('lightgun.service')">Show Logs</button>
+      <button class="log-toggle" onclick="toggleLogs(event,'lightgun.service')">Show Logs</button>
     </div>
     <div class="log-box" id="logs-lightgun">
       <pre class="log-content">Loading…</pre>
     </div>
   </div>
+
   <div class="service-row" id="service-lightgun-monitor">
     <span class="service-name">lightgun-monitor.service</span>
     <span class="service-status">loading…</span>
@@ -75,7 +77,7 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
       <button onclick="serviceAction('lightgun-monitor.service','start')">Start</button>
       <button onclick="serviceAction('lightgun-monitor.service','stop')">Stop</button>
       <button onclick="serviceAction('lightgun-monitor.service','restart')">Restart</button>
-      <button class="log-toggle" onclick="toggleLogs('lightgun-monitor.service')">Show Logs</button>
+      <button class="log-toggle" onclick="toggleLogs(event,'lightgun-monitor.service')">Show Logs</button>
     </div>
     <div class="log-box" id="logs-lightgun-monitor">
       <pre class="log-content">Loading…</pre>
@@ -95,7 +97,6 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 <div id="tab-config" style="display:none; padding:10px;">
   <h2 class="panel-title">Sinden LightGun Driver Configuration</h2>
 
-  <!-- Toolbar row: Platform -> Profiles -> File path -> Save & Restart -->
   <div class="config-toolbar">
     <label for="platform-select">Platform:</label>
     <select id="platform-select">
@@ -103,7 +104,6 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
       <option value="ps1">PlayStation 1</option>
     </select>
 
-    <!-- Profiles -->
     <label for="profile-select">Profile:</label>
     <select id="profile-select">
       <option value="">(none)</option>
@@ -112,13 +112,9 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
     <button id="btn-load-into-form" class="btn-tertiary">Load into Form</button>
     <button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
 
-    <!-- File path (middle of the row) -->
     <span id="config-file-path" class="config-path"></span>
 
-    <!-- Button on the same row, right-aligned via margin-left:auto -->
     <button id="save-restart" class="btn-save-restart">Save &amp; Restart</button>
-
-    <!-- Inline status -->
     <span id="config-status" class="config-status-inline"></span>
   </div>
 
@@ -142,39 +138,43 @@ function showTab(name) {
   if (cfg) cfg.style.display = (name === "config") ? "block" : "none";
   if (name === "sindenlog") loadSindenLog();
   if (name === "config") {
-    const sel=document.getElementById("platform-select");
+    const sel = document.getElementById("platform-select");
     loadConfig(sel.value).catch(err => {
-      const s=document.getElementById("config-status");
+      const s = document.getElementById("config-status");
       if (s) s.textContent = "Load error: " + err.message;
     });
     refreshProfilesUI(sel.value);
   }
 }
+
 async function refreshServices() {
   const res = await fetch("/api/services");
   const data = await res.json();
   for (const [name, status] of Object.entries(data)) {
-    const row = document.getElementById("service-" + name.replace(".service",""));
+    const row = document.getElementById("service-" + name.replace(".service", ""));
     if (!row) continue;
     const statusEl = row.querySelector(".service-status");
     statusEl.textContent = status;
     statusEl.className = "service-status " + status;
   }
 }
+
 async function serviceAction(name, action) {
   await fetch(`/api/service/${name}/${action}`, { method: "POST" });
   refreshServices();
 }
+
 async function loadLogs(service) {
-  const box = document.getElementById("logs-" + service.replace(".service",""));
+  const box = document.getElementById("logs-" + service.replace(".service", ""));
   const content = box.querySelector(".log-content");
   const res = await fetch(`/api/logs/${service}`);
   const data = await res.json();
   content.textContent = (data && data.logs) ? data.logs : "No logs available";
 }
-function toggleLogs(service) {
-  const box = document.getElementById("logs-" + service.replace(".service",""));
-  const btn = event.target;
+
+function toggleLogs(evt, service) {
+  const box = document.getElementById("logs-" + service.replace(".service", ""));
+  const btn = evt.target;
   if (box.style.display === "block") {
     box.style.display = "none";
     btn.textContent = "Show Logs";
@@ -184,6 +184,7 @@ function toggleLogs(service) {
     loadLogs(service);
   }
 }
+
 async function loadSindenLog() {
   const res = await fetch("/api/sinden-log");
   const data = await res.json();
@@ -192,12 +193,12 @@ async function loadSindenLog() {
   box.parentElement.scrollTop = box.parentElement.scrollHeight;
 }
 
-/* === Config (PS1/PS2), preserving XML order === */
+/* === Config (PS1/PS2) === */
 document.addEventListener("DOMContentLoaded", () => {
   const sel = document.getElementById("platform-select");
   sel.addEventListener("change", () => {
     loadConfig(sel.value).catch(err => {
-      const s=document.getElementById("config-status");
+      const s = document.getElementById("config-status");
       if (s) s.textContent = "Load error: " + err.message;
     });
     refreshProfilesUI(sel.value);
@@ -214,26 +215,29 @@ async function loadConfig(platform) {
   buildConfigForm("p1-form", data.player1);
   buildConfigForm("p2-form", data.player2);
 }
+
 function buildConfigForm(containerId, kvList) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
-  kvList.forEach(item => {
+  (kvList || []).forEach(item => {
     const row = document.createElement("div");
     row.className = "config-row";
     const label = document.createElement("label");
     label.textContent = item.key;
     const input = document.createElement("input");
-    input.value = item.value ?? "";
+    input.value = (item.value ?? "");
     input.dataset.key = item.key;
     row.appendChild(label);
     row.appendChild(input);
     container.appendChild(row);
   });
 }
+
 function collectForm(containerId) {
   return [...document.getElementById(containerId).querySelectorAll("input[data-key]")]
     .map(i => ({ key: i.dataset.key, value: i.value }));
 }
+
 async function saveConfig(platform, p1List, p2List) {
   const res = await fetch("/api/config/save", {
     method: "POST",
@@ -242,6 +246,7 @@ async function saveConfig(platform, p1List, p2List) {
   });
   return await res.json();
 }
+
 async function restartLightgunService() {
   try {
     const res = await fetch('/api/service/lightgun.service/restart', { method: 'POST' });
@@ -282,15 +287,17 @@ async function listProfiles(platform) {
   if (!data.ok) throw new Error(data.error || "Failed to list profiles");
   return data.profiles || [];
 }
+
 function populateProfileSelect(items) {
   const sel = document.getElementById("profile-select");
   sel.innerHTML = "";
+
   const optNone = document.createElement("option");
   optNone.value = "";
   optNone.textContent = "(none)";
   sel.appendChild(optNone);
 
-  items.forEach(p => {
+  (items || []).forEach(p => {
     const opt = document.createElement("option");
     opt.value = p.name;
     const dt = new Date((p.mtime || 0) * 1000);
@@ -299,6 +306,7 @@ function populateProfileSelect(items) {
     sel.appendChild(opt);
   });
 }
+
 async function refreshProfilesUI(platform) {
   try {
     const profiles = await listProfiles(platform);
@@ -308,13 +316,14 @@ async function refreshProfilesUI(platform) {
     if (s) s.textContent = "Profiles load error: " + e.message;
   }
 }
+
 async function saveCurrentAsProfile(platform) {
   const name = prompt("Enter a profile name (letters, digits, _ or -, max 60 chars):");
   if (!name) return;
   const res = await fetch("/api/config/profile/save", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ platform, name }) // overwrite: false by default
+    body: JSON.stringify({ platform, name })
   });
   const data = await res.json();
   if (!data.ok) {
@@ -322,9 +331,9 @@ async function saveCurrentAsProfile(platform) {
     return;
   }
   await refreshProfilesUI(platform);
-  const sel = document.getElementById("profile-select");
-  sel.value = name;
+  document.getElementById("profile-select").value = name;
 }
+
 async function loadProfileIntoForm(platform, name) {
   if (!name) { alert("Select a profile first."); return; }
   const s = document.getElementById("config-status");
@@ -340,13 +349,13 @@ async function loadProfileIntoForm(platform, name) {
     if (s) s.textContent = "Load error: " + e.message;
   }
 }
+
 async function activateProfile(platform, name) {
   if (!name) { alert("Select a profile first."); return; }
   const confirmMsg = `Activate profile "${name}"?\nThis will overwrite the live config (a backup will be created) and restart the service.`;
   if (!confirm(confirmMsg)) return;
 
   const s = document.getElementById("config-status");
-  const btnSaveRestart = document.getElementById("save-restart");
   try {
     if (s) s.textContent = "Applying profile...";
     const res = await fetch("/api/config/profile/load", {
@@ -365,10 +374,9 @@ async function activateProfile(platform, name) {
     if (s) s.textContent = ok ? "Profile applied and service restarted." : "Profile applied. Restart failed.";
     refreshServices();
 
-    // Reload live config into form:
     await loadConfig(platform);
-  } finally {
-    if (btnSaveRestart) btnSaveRestart.disabled = false;
+  } catch (e) {
+    if (s) s.textContent = "Apply error: " + e.message;
   }
 }
 
@@ -377,7 +385,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const selPlatform = document.getElementById("platform-select");
   const selProfile  = document.getElementById("profile-select");
 
-  // Load initial content
   loadConfig(selPlatform.value).catch(err => {
     if (status) status.textContent = "Load error: " + err.message;
   });
@@ -396,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* Polling: refresh open logs and sinden log */
 setInterval(() => {
   ["lightgun.service", "lightgun-monitor.service"].forEach(s => {
-    const box = document.getElementById("logs-" + s.replace(".service",""));
+    const box = document.getElementById("logs-" + s.replace(".service", ""));
     if (box && box.style.display === "block") loadLogs(s);
   });
   if (document.getElementById("tab-sindenlog").style.display === "block") {
