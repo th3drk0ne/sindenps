@@ -138,6 +138,15 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 </div>
 
 <script>
+
+// Dynamic button label
+const chkRestore = document.getElementById("chk-restore-mode");
+const btnActivate = document.getElementById("btn-activate-profile");
+chkRestore.addEventListener("change", () => {
+  btnActivate.textContent = chkRestore.checked ? "Restore Backup" : "Activate Profile";
+});
+
+
 function showTab(name){
  document.getElementById("service-panel").style.display = (name === "services") ? "block" : "none";
  document.getElementById("tab-sindenlog").style.display = (name === "sindenlog") ? "block" : "none";
