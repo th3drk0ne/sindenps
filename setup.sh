@@ -994,10 +994,8 @@ def api_backup_restore():
         if not os.path.exists(live_path):
             _ensure_stub(live_path)
 
-        # Safety backup of current live
+        # Safety backup of current live (fixed f-string)
         ts = time.strftime("%Y%m%d-%H%M%S")
-        safety_backup = os.path.join(backup_dir, f"{cfg_base}.{ts}.restore.bak}")
-        # fix typo in fstring bracket
         safety_backup = os.path.join(backup_dir, f"{cfg_base}.{ts}.restore.bak")
         with open(live_path, "rb") as src, open(safety_backup, "wb") as dst:
             dst.write(src.read())
