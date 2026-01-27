@@ -309,12 +309,17 @@ function populateProfileSelect(items) {
 async function refreshProfilesUI(platform) {
   try {
     const profiles = await listProfiles(platform);
+
+    // 🔥 NEW: Sort profiles alphabetically by name (case-insensitive)
+    profiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
     populateProfileSelect(profiles);
   } catch (e) {
     const s = document.getElementById("config-status");
     if (s) s.textContent = "Profiles load error: " + e.message;
   }
 }
+
 
 async function saveCurrentAsProfile(platform) {
   const name = prompt("Enter a profile name (letters, digits, _ or -, max 60 chars):");
