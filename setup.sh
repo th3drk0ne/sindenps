@@ -1014,17 +1014,29 @@ done
   log "Downloading PS1 profiles."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Default.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Low-Resolution.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Low-Resolution.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Light.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Strong.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-MachineGun.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Shotgun.config"\
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Soft.config"
 
-  chown sinden:sinden Default.config Low-Resolution.config
+  chown sinden:sinden Default.config Low-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config
+  
+  
   
   cd /home/sinden/Lightgun/PS2/profiles
   log "Downloading PS2 profiles."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Default.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Low-Resolution.config"
-  
-  chown sinden:sinden Default.config Low-Resolution.config
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Low-Resolution.config"  \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Light.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Strong.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-MachineGun.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Shotgun.config"\
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Soft.config"
+	
+  chown sinden:sinden Default.config Low-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config
 )
 
 echo "=== 10) Ensure Sinden log path/file exists ==="
