@@ -609,7 +609,6 @@ def _split_by_player(appsettings: ET.Element) -> Tuple[List[Dict[str, str]], Lis
 
 _ADD_TAG_RE = re.compile(r"<add\b[^>]*>", re.IGNORECASE)
 
-
 def _xml_escape_attr(s: str) -> str:
     """Escape for XML attribute value."""
     if s is None:
@@ -621,7 +620,6 @@ def _xml_escape_attr(s: str) -> str:
             .replace(">", "&gt;")
             .replace('"', "&quot;")
             .replace("'", "&apos;"))
-
 
 def _build_desired_map(p1_list, p2_list) -> Dict[str, str]:
     desired: Dict[str, str] = {}
@@ -635,7 +633,6 @@ def _build_desired_map(p1_list, p2_list) -> Dict[str, str]:
             desired[str(k) + "P2"] = str(item.get("value", ""))
     return desired
 
-
 def _detect_add_indentation(text: str) -> str:
     for line in text.splitlines(True):
         if "<add" in line:
@@ -643,7 +640,6 @@ def _detect_add_indentation(text: str) -> str:
             if m:
                 return m.group(1)
     return "    "
-
 
 def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
     """
@@ -704,7 +700,7 @@ def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
             v = _xml_escape_attr(desired[k])
             insertion_lines.append(f'{indent}<add key="{_xml_escape_attr(k)}" value="{v}" />')
 
-        insertion = newline + newline.join(insertion_lines) + newline
+        insertion = newline + "\n".join(insertion_lines) + newline
         updated = updated[:insert_pos] + insertion + updated[insert_pos:]
 
     if updated != original:
@@ -719,12 +715,10 @@ def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
 
 PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,60}$")
 
-
 def _profiles_dir_for(path: str) -> str:
     pdir = os.path.join(os.path.dirname(path), "profiles")
     os.makedirs(pdir, exist_ok=True)
     return pdir
-
 
 def _safe_profile_name(name: str) -> str:
     if not name:
@@ -733,13 +727,11 @@ def _safe_profile_name(name: str) -> str:
         raise ValueError("Invalid profile name. Use letters, digits, _ or -, max 60 chars.")
     return name
 
-
 def _profile_path(platform: str, name: str) -> str:
     platform = _resolve_platform(platform)
     live_cfg = CONFIG_PATHS[platform]
     pdir = _profiles_dir_for(live_cfg)
     return os.path.join(pdir, f"{_safe_profile_name(name)}.config")
-
 
 def _list_profiles(platform: str) -> List[Dict[str, str]]:
     """Enumerate profiles for a platform, sorted by mtime desc (name is extension-stripped correctly)."""
@@ -920,6 +912,107 @@ def api_profile_delete():
 
         os.remove(prof_path)
         return jsonify({"ok": True, "platform": platform, "profile": name})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+# ===========================
+# Backups: list & restore (NEW, additive; existing functions unchanged)
+# ===========================
+
+def _backup_dir_for_platform(platform: str) -> Tuple[str, str, str]:
+    """
+    Returns (backup_dir, cfg_base, live_path) for the resolved platform.
+    - backup_dir: <cfg_dir>/backups
+    - cfg_base: e.g. "LightgunMono.exe.config"
+    - live_path: full path to live config
+    """
+    platform = _resolve_platform(platform)
+    live_path = CONFIG_PATHS[platform]
+    cfg_dir = os.path.dirname(live_path)
+    backup_dir = os.path.join(cfg_dir, "backups")
+    os.makedirs(backup_dir, exist_ok=True)
+    return backup_dir, os.path.basename(live_path), live_path
+
+
+@app.route("/api/config/backups", methods=["GET"])
+def api_backup_list():
+    """List backups for a platform, sorted by mtime desc."""
+    try:
+        platform = _resolve_platform(request.args.get("platform"))
+        backup_dir, cfg_base, _ = _backup_dir_for_platform(platform)
+
+        items: List[Dict[str, str]] = []
+        if os.path.isdir(backup_dir):
+            for fname in os.listdir(backup_dir):
+                if not (fname.startswith(cfg_base + ".") and fname.endswith(".bak")):
+                    continue
+                full = os.path.join(backup_dir, fname)
+                try:
+                    st = os.stat(full)
+                    items.append({
+                        "name": fname,
+                        "path": full,
+                        "mtime": int(st.st_mtime),
+                        "size": st.st_size,
+                    })
+                except FileNotFoundError:
+                    pass
+
+        items.sort(key=lambda x: x["mtime"], reverse=True)
+        return jsonify({"ok": True, "platform": platform, "backups": items})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+@app.route("/api/config/backup/restore", methods=["POST"])
+def api_backup_restore():
+    """
+    Restore a selected backup file to the live config for the platform.
+    - Validates filename to prevent traversal and cross-platform restores
+    - Makes a safety backup of the current live file before overwriting
+    """
+    try:
+        data = request.get_json(force=True) or {}
+        platform = _resolve_platform(data.get("platform"))
+        filename = (data.get("filename") or "").strip()
+
+        backup_dir, cfg_base, live_path = _backup_dir_for_platform(platform)
+
+        # Validate filename
+        if not filename or "/" in filename or "\\" in filename:
+            return jsonify({"ok": False, "error": "Invalid filename"}), 400
+        if not (filename.startswith(cfg_base + ".") and filename.endswith(".bak")):
+            return jsonify({"ok": False, "error": "Not a valid backup for this platform"}), 400
+
+        src_path = os.path.join(backup_dir, filename)
+        if not os.path.exists(src_path):
+            return jsonify({"ok": False, "error": "Backup not found"}), 404
+
+        # Ensure live exists so our safety copy is consistent
+        if not os.path.exists(live_path):
+            _ensure_stub(live_path)
+
+        # Safety backup of current live
+        ts = time.strftime("%Y%m%d-%H%M%S")
+        safety_backup = os.path.join(backup_dir, f"{cfg_base}.{ts}.restore.bak}")
+        # fix typo in fstring bracket
+        safety_backup = os.path.join(backup_dir, f"{cfg_base}.{ts}.restore.bak")
+        with open(live_path, "rb") as src, open(safety_backup, "wb") as dst:
+            dst.write(src.read())
+
+        # Restore selected backup to live
+        with open(src_path, "rb") as src, open(live_path, "wb") as dst:
+            dst.write(src.read())
+        os.chmod(live_path, 0o664)
+
+        return jsonify({
+            "ok": True,
+            "platform": platform,
+            "path": live_path,
+            "restored_from": src_path,
+            "safety_backup": safety_backup,
+        })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 

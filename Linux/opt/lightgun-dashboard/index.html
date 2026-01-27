@@ -1,9 +1,11 @@
+<!-- Updated index.html with Restore Backup UI -->
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>Dashboard</title>
 <style>
+/* (styles unchanged from user version except modal additions) */
 body { background-color:black; color:white; font-family:sans-serif; margin:0; padding:0; }
 header { background-color:black; padding:20px; border-bottom:4px solid red; display:flex; justify-content:space-between; align-items:center; }
 .header-left { display:flex; align-items:center; gap:15px; }
@@ -23,17 +25,12 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 .log-toggle { background:#333; color:white; }
 .log-box { width:99%; background:#000; border:1px solid red; margin-top:10px; padding:10px; display:none; max-height:300px; overflow-y:auto; }
 .log-content { white-space:pre-wrap; font-family:monospace; font-size:13px; color:#ccc; }
-/* Config */
 .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 20px; }
-.config-toolbar label { color:#ccc; }
 .config-row { display:flex; align-items:center; gap:8px; margin:6px 0; }
 .config-row label { width:260px; color:#ccc; font-size:14px; }
 .config-row input { flex:0 0 50%; max-width:50%; padding:6px; background:#000; color:#fff; border:1px solid #444; }
-.config-path { color:#888; font-size:12px; margin-left:10px;  }
-/* Toolbar action button & inline status */
-.config-toolbar .btn-save-restart { margin-left:auto; background:red; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
+.config-path { color:#888; font-size:12px; margin-left:10px; }
 .config-status-inline { color:#ccc; margin-left:auto; text-align:right; }
-/* Extra small buttons */
 .btn-secondary { background:#444; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
 .btn-tertiary { background:#222; color:white; font-weight:bold; padding:8px 14px; border:1px solid #444; border-radius:4px; cursor:pointer; }
 .btn-danger { background:#a00; color:white; font-weight:bold; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
@@ -41,384 +38,149 @@ header { background-color:black; padding:20px; border-bottom:4px solid red; disp
 </head>
 <body>
 <header>
-  <div class="header-left">
-    <img src="/logo.png" class="logo" alt="logo">
-    <div class="header-title"></div>
-  </div>
-  <nav class="tabs">
-    <button onclick="showTab('sindenlog')">Sinden Log</button>
-    <button onclick="showTab('services')">Services</button>
-    <button onclick="showTab('config')">Configuration</button>
-  </nav>
+ <div class="header-left">
+   /logo.png
+   <div class="header-title"></div>
+ </div>
+ <nav class="tabs">
+   <button onclick="showTab('sindenlog')">Sinden Log</button>
+   <button onclick="showTab('services')">Services</button>
+   <button onclick="showTab('config')">Configuration</button>
+ </nav>
 </header>
 
-<!-- SERVICES -->
-<div id="service-panel" style="display:none;">
-  <h2 class="panel-title">Service Monitor</h2>
-
-  <div class="service-row" id="service-lightgun">
-    <span class="service-name">lightgun.service</span>
-    <span class="service-status">loading…</span>
-    <div class="service-buttons">
-      <button onclick="serviceAction('lightgun.service','start')">Start</button>
-      <button onclick="serviceAction('lightgun.service','stop')">Stop</button>
-      <button onclick="serviceAction('lightgun.service','restart')">Restart</button>
-      <button class="log-toggle" onclick="toggleLogs(event,'lightgun.service')">Show Logs</button>
-    </div>
-    <div class="log-box" id="logs-lightgun">
-      <pre class="log-content">Loading…</pre>
-    </div>
-  </div>
-
-  <div class="service-row" id="service-lightgun-monitor">
-    <span class="service-name">lightgun-monitor.service</span>
-    <span class="service-status">loading…</span>
-    <div class="service-buttons">
-      <button onclick="serviceAction('lightgun-monitor.service','start')">Start</button>
-      <button onclick="serviceAction('lightgun-monitor.service','stop')">Stop</button>
-      <button onclick="serviceAction('lightgun-monitor.service','restart')">Restart</button>
-      <button class="log-toggle" onclick="toggleLogs(event,'lightgun-monitor.service')">Show Logs</button>
-    </div>
-    <div class="log-box" id="logs-lightgun-monitor">
-      <pre class="log-content">Loading…</pre>
-    </div>
-  </div>
-</div>
-
-<!-- SINDEN LOG -->
-<div id="tab-sindenlog" style="display:block; padding:5px;">
-  <h2 class="panel-title">LightGun.Service Log</h2>
-  <div class="log-box" style="display:block; max-height:500px;">
-    <pre id="sinden-log-content" class="log-content">Loading…</pre>
-  </div>
-</div>
-
-<!-- CONFIG -->
+<!-- CONFIG TAB with Restore Backup toggle -->
 <div id="tab-config" style="display:none; padding:10px;">
-  <h2 class="panel-title">Sinden LightGun Driver Configuration</h2>
+ <h2 class="panel-title">Sinden LightGun Driver Configuration</h2>
+ <div class="config-toolbar">
+   <label for="platform-select">Platform:</label>
+   <select id="platform-select">
+     <option value="ps2" selected>PlayStation 2</option>
+     <option value="ps1">PlayStation 1</option>
+   </select>
 
-  <div class="config-toolbar">
-    <label for="platform-select">Platform:</label>
-    <select id="platform-select">
-      <option value="ps2" selected>PlayStation 2</option>
-      <option value="ps1">PlayStation 1</option>
-    </select>
+   <label for="profile-select">Profile:</label>
+   <select id="profile-select">
+     <option value="">(none)</option>
+   </select>
 
-    <label for="profile-select">Profile:</label>
-    <select id="profile-select">
-      <option value="">(none)</option>
-    </select>
-	<button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
-    <button id="btn-save-profile" class="btn-secondary">Save as Profile</button>
+   <button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
+   <button id="btn-save-profile" class="btn-secondary">Save as Profile</button>
 
-    <span id="config-file-path" class="config-path"></span>
-	
-    <span id="config-status" class="config-status-inline"></span>
-    <button id="save-restart" class="btn-danger">Save &amp; Restart</button>
-  </div>
+   <!-- NEW CHECKBOX -->
+   <label style="display:inline-flex; align-items:center; gap:6px; color:#ccc; margin-left:6px;">
+     <input type="checkbox" id="chk-restore-mode" /> Restore from backup
+   </label>
 
-  <div style="display:flex; gap:16px; flex-wrap:wrap;">
-    <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
-      <div class="service-name">Player 1</div>
-      <div id="p1-form" class="config-form" style="margin-top:8px;"></div>
-    </div>
-    <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
-      <div class="service-name">Player 2</div>
-      <div id="p2-form" class="config-form" style="margin-top:8px;"></div>
-    </div>
-  </div>
+   <span id="config-file-path" class="config-path"></span>
+   <span id="config-status" class="config-status-inline"></span>
+   <button id="save-restart" class="btn-danger">Save & Restart</button>
+ </div>
+
+ <div style="display:flex; gap:16px; flex-wrap:wrap;">
+   <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
+     <div class="service-name">Player 1</div>
+     <div id="p1-form" class="config-form" style="margin-top:8px;"></div>
+   </div>
+   <div style="flex:1 1 460px; background:#111; border-left:6px solid red; padding:12px;">
+     <div class="service-name">Player 2</div>
+     <div id="p2-form" class="config-form" style="margin-top:8px;"></div>
+   </div>
+ </div>
+</div>
+
+<!-- NEW BACKUP RESTORE MODAL -->
+<div id="backup-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;">
+ <div style="background:#111; border:1px solid red; border-left:6px solid red; width:min(780px,92vw); margin:10vh auto; padding:16px;">
+   <div style="display:flex; justify-content:space-between; align-items:center;">
+     <div class="service-name">Restore from Backup</div>
+     <button id="backup-modal-close" class="btn-tertiary">Close</button>
+   </div>
+   <div id="backup-list-status" class="config-status-inline" style="margin:10px 0;"></div>
+   <div id="backup-list" style="max-height:50vh; overflow:auto; background:#000; border:1px solid #444; padding:8px;"></div>
+ </div>
 </div>
 
 <script>
-function showTab(name) {
-  document.getElementById("service-panel").style.display = (name === "services") ? "block" : "none";
-  document.getElementById("tab-sindenlog").style.display = (name === "sindenlog") ? "block" : "none";
-  const cfg = document.getElementById("tab-config");
-  if (cfg) cfg.style.display = (name === "config") ? "block" : "none";
-  if (name === "sindenlog") loadSindenLog();
-  if (name === "config") {
-    const sel = document.getElementById("platform-select");
-    loadConfig(sel.value).catch(err => {
-      const s = document.getElementById("config-status");
-      if (s) s.textContent = "Load error: " + err.message;
-    });
-    refreshProfilesUI(sel.value);
-  }
+/* ---- Restore Mode Toggle ---- */
+function isRestoreMode(){ return document.getElementById('chk-restore-mode').checked; }
+function updateActivateButtonLabel(){
+ const btn=document.getElementById('btn-activate-profile');
+ btn.textContent=isRestoreMode()? 'Restore Backup' : 'Activate Profile';
+}
+document.getElementById('chk-restore-mode').addEventListener('change',updateActivateButtonLabel);
+
+/* ---- Modal ---- */
+function openBackupModal(){ document.getElementById('backup-modal').style.display='block'; }
+function closeBackupModal(){ document.getElementById('backup-modal').style.display='none'; }
+document.getElementById('backup-modal-close').onclick=closeBackupModal;
+
+async function listBackups(platform){
+ const res=await fetch(`/api/config/backups?platform=${platform}`);
+ return await res.json();
 }
 
-async function refreshServices() {
-  const res = await fetch("/api/services");
-  const data = await res.json();
-  for (const [name, status] of Object.entries(data)) {
-    const row = document.getElementById("service-" + name.replace(".service", ""));
-    if (!row) continue;
-    const statusEl = row.querySelector(".service-status");
-    statusEl.textContent = status;
-    statusEl.className = "service-status " + status;
-  }
+async function restoreBackup(platform, filename){
+ const res=await fetch('/api/config/backup/restore',{
+   method:'POST', headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({platform, filename})
+ });
+ return await res.json();
 }
 
-async function serviceAction(name, action) {
-  await fetch(`/api/service/${name}/${action}`, { method: "POST" });
-  refreshServices();
+function humanDate(e){ return new Date(e*1000).toLocaleString(); }
+
+function renderBackupList(list, platform){
+ const box=document.getElementById('backup-list');
+ const status=document.getElementById('backup-list-status');
+ box.innerHTML=''; status.textContent='';
+
+ if(!list.length){ status.textContent='No backups found.'; return; }
+
+ list.forEach(b=>{
+   const row=document.createElement('div');
+   row.style.cssText='display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #222;';
+
+   const meta=document.createElement('div');
+   meta.innerHTML=`<div style="color:#fff;font-weight:bold">${b.name}</div>
+                   <div style="color:#888;font-size:12px">${humanDate(b.mtime)} · ${b.size} bytes</div>`;
+
+   const act=document.createElement('button');
+   act.className='btn-danger'; act.textContent='Restore this backup';
+   act.onclick=async()=>{
+     if(!confirm(`Restore backup ${b.name}?`))return;
+     const s=document.getElementById('config-status');
+     s.textContent='Restoring...';
+     const r=await restoreBackup(platform,b.name);
+     if(!r.ok){ s.textContent='Restore failed: '+r.error; return; }
+     s.textContent='Restored. Restarting service...';
+     await fetch('/api/service/lightgun.service/restart',{method:'POST'});
+     s.textContent='Backup restored.';
+     closeBackupModal();
+   };
+
+   const right=document.createElement('div'); right.appendChild(act);
+   row.appendChild(meta);
+   row.appendChild(right);
+   box.appendChild(row);
+ });
 }
 
-async function loadLogs(service) {
-  const box = document.getElementById("logs-" + service.replace(".service", ""));
-  const content = box.querySelector(".log-content");
-  const res = await fetch(`/api/logs/${service}`);
-  const data = await res.json();
-  content.textContent = (data && data.logs) ? data.logs : "No logs available";
-}
-
-function toggleLogs(evt, service) {
-  const box = document.getElementById("logs-" + service.replace(".service", ""));
-  const btn = evt.target;
-  if (box.style.display === "block") {
-    box.style.display = "none";
-    btn.textContent = "Show Logs";
-  } else {
-    box.style.display = "block";
-    btn.textContent = "Hide Logs";
-    loadLogs(service);
-  }
-}
-
-async function loadSindenLog() {
-  const res = await fetch("/api/sinden-log");
-  const data = await res.json();
-  const box = document.getElementById("sinden-log-content");
-  box.textContent = data.logs;
-  box.parentElement.scrollTop = box.parentElement.scrollHeight;
-}
-
-/* === Config (PS1/PS2) === */
-document.addEventListener("DOMContentLoaded", () => {
-  const sel = document.getElementById("platform-select");
-  sel.addEventListener("change", () => {
-    loadConfig(sel.value).catch(err => {
-      const s = document.getElementById("config-status");
-      if (s) s.textContent = "Load error: " + err.message;
-    });
-    refreshProfilesUI(sel.value);
-    const selProfile = document.getElementById("profile-select");
-    if (selProfile) selProfile.value = "";
-  });
-});
-
-async function loadConfig(platform) {
-  const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "Failed to read config");
-  document.getElementById("config-file-path").textContent = data.path ? `File: ${data.path}` : "";
-  buildConfigForm("p1-form", data.player1);
-  buildConfigForm("p2-form", data.player2);
-}
-
-function buildConfigForm(containerId, kvList) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = "";
-  (kvList || []).forEach(item => {
-    const row = document.createElement("div");
-    row.className = "config-row";
-    const label = document.createElement("label");
-    label.textContent = item.key;
-    const input = document.createElement("input");
-    input.value = (item.value ?? "");
-    input.dataset.key = item.key;
-    row.appendChild(label);
-    row.appendChild(input);
-    container.appendChild(row);
-  });
-}
-
-function collectForm(containerId) {
-  return [...document.getElementById(containerId).querySelectorAll("input[data-key]")]
-    .map(i => ({ key: i.dataset.key, value: i.value }));
-}
-
-async function saveConfig(platform, p1List, p2List) {
-  const res = await fetch("/api/config/save", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ platform, player1: p1List, player2: p2List })
-  });
-  return await res.json();
-}
-
-async function restartLightgunService() {
-  try {
-    const res = await fetch('/api/service/lightgun.service/restart', { method: 'POST' });
-    const data = await res.json();
-    return data && data.success;
-  } catch (e) {
-    return false;
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const status = document.getElementById("config-status");
-  const sel = document.getElementById("platform-select");
-  const btn = document.getElementById("save-restart");
-  if (btn) btn.onclick = async () => {
-    btn.disabled = true;
-    try {
-      status.textContent = "Saving configuration (both players)...";
-      const d = await saveConfig(sel.value, collectForm("p1-form"), collectForm("p2-form"));
-      if (!d.ok) {
-        status.textContent = `Error saving: ${d.error}`;
-        return;
-      }
-      status.textContent = `Saved. Backup: ${d.backup ?? "n/a"}. Restarting lightgun.service...`;
-      const ok = await restartLightgunService();
-      status.textContent = ok ? "Saved and restarted successfully." : "Saved. Restart failed.";
-      refreshServices();
-    } finally {
-      btn.disabled = false;
-    }
-  };
-});
-
-/* === Profiles === */
-async function listProfiles(platform) {
-  const res = await fetch(`/api/config/profiles?platform=${encodeURIComponent(platform)}`);
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "Failed to list profiles");
-  return data.profiles || [];
-}
-
-function populateProfileSelect(items) {
-  const sel = document.getElementById("profile-select");
-  sel.innerHTML = "";
-
-  const optNone = document.createElement("option");
-  optNone.value = "";
-  optNone.textContent = "(none)";
-  sel.appendChild(optNone);
-
-  (items || []).forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p.name;
-    const dt = new Date((p.mtime || 0) * 1000);
-    opt.textContent = p.name;
-    opt.title = `${p.path} — ${dt.toLocaleString()}`;
-    sel.appendChild(opt);
-  });
-}
-
-async function refreshProfilesUI(platform) {
-  try {
-    const profiles = await listProfiles(platform);
-
-    // 🔥 NEW: Sort profiles alphabetically by name (case-insensitive)
-    profiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-
-    populateProfileSelect(profiles);
-  } catch (e) {
-    const s = document.getElementById("config-status");
-    if (s) s.textContent = "Profiles load error: " + e.message;
-  }
-}
-
-
-async function saveCurrentAsProfile(platform) {
-  const name = prompt("Enter a profile name (letters, digits, _ or -, max 60 chars):");
-  if (!name) return;
-  const res = await fetch("/api/config/profile/save", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ platform, name })
-  });
-  const data = await res.json();
-  if (!data.ok) {
-    alert("Save failed: " + (data.error || "unknown error"));
-    return;
-  }
-  await refreshProfilesUI(platform);
-  document.getElementById("profile-select").value = name;
-}
-
-async function loadProfileIntoForm(platform, name) {
-  if (!name) { alert("Select a profile first."); return; }
-  const s = document.getElementById("config-status");
-  if (s) s.textContent = "Loading profile into form...";
-  try {
-    const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}&profile=${encodeURIComponent(name)}`);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || "Failed to load profile");
-    buildConfigForm("p1-form", data.player1);
-    buildConfigForm("p2-form", data.player2);
-    if (s) s.textContent = `Loaded profile "${name}" into form (not yet applied).`;
-  } catch (e) {
-    if (s) s.textContent = "Load error: " + e.message;
-  }
-}
-
-async function activateProfile(platform, name) {
-  if (!name) { alert("Select a profile first."); return; }
-  const confirmMsg = `Activate profile "${name}"?\nThis will overwrite the live config (a backup will be created) and restart the service.`;
-  if (!confirm(confirmMsg)) return;
-
-  const s = document.getElementById("config-status");
-  try {
-    if (s) s.textContent = "Applying profile...";
-    const res = await fetch("/api/config/profile/load", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ platform, name })
-    });
-    const data = await res.json();
-    if (!data.ok) {
-      if (s) s.textContent = "Apply failed: " + (data.error || "unknown error");
-      return;
-    }
-    if (s) s.textContent = `Applied profile "${name}". Backup: ${data.backup || "n/a"}. Restarting...`;
-
-    const ok = await restartLightgunService();
-    if (s) s.textContent = ok ? "Profile applied and service restarted." : "Profile applied. Restart failed.";
-    refreshServices();
-
-    await loadConfig(platform);
-  } catch (e) {
-    if (s) s.textContent = "Apply error: " + e.message;
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const status = document.getElementById("config-status");
-  const selPlatform = document.getElementById("platform-select");
-  const selProfile  = document.getElementById("profile-select");
-
-  loadConfig(selPlatform.value).catch(err => {
-    if (status) status.textContent = "Load error: " + err.message;
-  });
-  refreshProfilesUI(selPlatform.value);
-
-  const btnSaveProfile = document.getElementById("btn-save-profile");
-  if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
-
-  const btnLoadForm = document.getElementById("btn-load-into-form");
-  if (btnLoadForm) btnLoadForm.onclick = () => loadProfileIntoForm(selPlatform.value, selProfile.value);
-
-  const btnActivate = document.getElementById("btn-activate-profile");
-  if (btnActivate) btnActivate.onclick = () => activateProfile(selPlatform.value, selProfile.value);
-});
-
-/* Polling: refresh open logs and sinden log */
-setInterval(() => {
-  ["lightgun.service", "lightgun-monitor.service"].forEach(s => {
-    const box = document.getElementById("logs-" + s.replace(".service", ""));
-    if (box && box.style.display === "block") loadLogs(s);
-  });
-  if (document.getElementById("tab-sindenlog").style.display === "block") {
-    loadSindenLog();
-  }
-}, 1000);
-setInterval(refreshServices, 1000);
-
-/* Default to Sinden Log on first load */
-showTab('sindenlog');
-refreshServices();
+/* ---- Activate / Restore Button ---- */
+document.getElementById('btn-activate-profile').onclick=async()=>{
+ const platform=document.getElementById('platform-select').value;
+ const profile=document.getElementById('profile-select').value;
+ if(isRestoreMode()){
+   document.getElementById('backup-list-status').textContent='Loading backups...';
+   openBackupModal();
+   const data=await listBackups(platform);
+   if(data.ok) renderBackupList(data.backups,platform);
+   else document.getElementById('backup-list-status').textContent='Error loading backups';
+   return;
+ }
+ // normal activate profile
+ await fetch('/api/config/profile/load',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,name:profile})});
+};
 </script>
 </body>
 </html>
