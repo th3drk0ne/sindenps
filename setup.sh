@@ -359,7 +359,7 @@ echo "Starting backup..."
 if [[ -f "$PS1_SOURCE" ]]; then
     mkdir -p "$PS1_BACKUP_DIR"
     BASENAME=$(basename "$PS1_SOURCE")
-    DEST="$PS1_BACKUP_DIR/upgrade-${BASENAME}.${TIMESTAMP}.bak"
+    DEST="$PS1_BACKUP_DIR/${BASENAME}.${TIMESTAMP}-upgrade.bak"
     cp "$PS1_SOURCE" "$DEST"
     echo "PS1 config backed up to: $DEST"
 else
@@ -370,7 +370,7 @@ fi
 if [[ -f "$PS2_SOURCE" ]]; then
     mkdir -p "$PS2_BACKUP_DIR"
     BASENAME=$(basename "$PS2_SOURCE")
-    DEST="$PS2_BACKUP_DIR/upgrade-${BASENAME}.${TIMESTAMP}.bak"
+    DEST="$PS2_BACKUP_DIR/${BASENAME}.${TIMESTAMP}-upgrade.bak"
     cp "$PS2_SOURCE" "$DEST"
     echo "PS2 config backed up to: $DEST"
 else
