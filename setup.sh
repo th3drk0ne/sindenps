@@ -445,6 +445,7 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 echo "=== 4) Backend: Flask app (app.py, with Profiles feature) ==="
 sudo bash -c "cat > ${APP_DIR}/app.py" <<'APP_EOF'
+
 #!/usr/bin/env python3
 import os
 import re
@@ -1039,7 +1040,7 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
+	
 APP_EOF
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 
