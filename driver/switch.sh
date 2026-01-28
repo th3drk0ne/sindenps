@@ -4,10 +4,25 @@
 #
 set -euo pipefail
 
-log()  { echo "[INFO] $*"; }
-warn() { echo "[WARN] $*" >&2; }
-err()  { echo "[ERROR] $*" >&2; }
+LOGF="/var/log/sindenps-update.log"
+log()  { echo "[INFO] $*"  | tee -a "$LOGF"; }
+warn() { echo "[WARN] $*"  | tee -a "$LOGF" >&2; }
+err()  { echo "[ERROR] $*" | tee -a "$LOGF" >&2; }
 
+# ensure log file dir exists
+install -d -m 0755 /var/log
+touch "$LOGF" && chmod 0644 "$LOGF"
+
+# --- after successful downloads and before restarts, write a VERSION marker ---
+VERSION_FILE="/home/sinden/Lightgun/VERSION"
+echo "$VERSION" > "$VERSION_FILE"
+chmod 0644 "$VERSION_FILE"
+
+# --- service restarts (already present) ---
+sudo systemctl restart lightgun.service
+sudo systemctl restart lightgun-monitor.service
+
+log "Update completed for channel: $VERSION"
 #-----------------------------------------------------------
 # Step 1) Check if root
 #-----------------------------------------------------------
@@ -271,3 +286,14 @@ download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
 # 7) restart services
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
+
+
+VERSION_FILE="/home/sinden/Lightgun/VERSION"
+echo "$VERSION" > "$VERSION_FILE"
+chmod 0644 "$VERSION_FILE"
+
+# --- service restarts (already present) ---
+sudo systemctl restart lightgun.service
+sudo systemctl restart lightgun-monitor.service
+
+log "Update completed for channel: $VERSION"
