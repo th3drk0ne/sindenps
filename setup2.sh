@@ -352,7 +352,15 @@ download_dir_from_repo() {
 }
 
 
+PS1_SOURCE="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
+PS1_BACKUP_DIR="/home/sinden/Lightgun/PS1/backups"
 
+PS2_SOURCE="/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
+PS2_BACKUP_DIR="/home/sinden/Lightgun/PS2/backups"
+
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+echo "Starting backup..."
 
 echo "Starting backup..."
 
