@@ -221,8 +221,6 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 echo "Starting backup..."
 
-echo "Starting backup..."
-
 # --- PS1 BACKUP ---
 if [[ -f "$PS1_SOURCE" ]]; then
     mkdir -p "$PS1_BACKUP_DIR"
