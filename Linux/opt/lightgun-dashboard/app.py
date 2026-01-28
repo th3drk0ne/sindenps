@@ -953,11 +953,10 @@ def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
 
 
+# app.py — restore your original index route
 @app.route("/")
 def index():
-    # Serve our local index.html (created below) by default.
-    # If you continue to maintain /opt/lightgun-dashboard/index.html, switch to reading that file.
-    with open("index.html", "r", encoding="utf-8") as f:
+    with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
 
 
