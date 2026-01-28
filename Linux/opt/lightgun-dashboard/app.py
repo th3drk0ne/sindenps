@@ -59,6 +59,24 @@ def control_service(service: str, action: str) -> bool:
         print("CONTROL ERROR:", e.output.decode(errors="replace"))
         return False
 
+# ===========================
+# System power actions
+# ===========================
+
+def system_power_action(action: str) -> bool:
+    """
+    action: 'reboot' or 'shutdown'
+    Uses: sudo systemctl reboot|poweroff
+    """
+    if action not in ("reboot", "shutdown"):
+        return False
+    try:
+        cmd = [SUDO, SYSTEMCTL, "reboot" if action == "reboot" else "poweroff"]
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        return True
+    except subprocess.CalledProcessError as e:
+        print("POWER ACTION ERROR:", e.output.decode(errors="replace"))
+        return False
 
 # ===========================
 # Flask routes: services
@@ -375,6 +393,13 @@ def api_config_save():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
+@app.route("/api/system/<action>", methods=["POST"])
+def api_system_action(action):
+    if action not in ("reboot", "shutdown"):
+        return jsonify({"ok": False, "error": "invalid action"}), 400
+    ok = system_power_action(action)
+    # NOTE: Response may not be delivered if system goes down quickly—this is normal.
+    return jsonify({"ok": ok})
 
 # ===========================
 # Profiles API
@@ -591,4 +616,3 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-	
