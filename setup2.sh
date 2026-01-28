@@ -448,11 +448,22 @@ fi
 echo "Backup complete."
 
 # Use it:
+# Map VERSION -> repo folder name under driver/version/<folder>/{PS1,PS2}
+map_version_to_repo_folder() {
+  case "$VERSION" in
+    latest)   echo "latest"   ;;
+    psiloc)   echo "psiloc"   ;;
+    beta)     echo "beta"     ;;
+    previous) echo "previous" ;;
+    *)        err "VERSION '$VERSION' has no matching repo folder"; exit 1 ;;
+  esac
+}
+REPO_VERSION_FOLDER="$(map_version_to_repo_folder)"
 
 PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
 PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
 download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
-download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2
+download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
 
 
 ############################################################################################################################################################
