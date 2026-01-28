@@ -448,10 +448,12 @@ fi
 echo "Backup complete."
 
 # Use it:
-PS1_REMOTE="driver/version/${VERSION}/PS1"
-PS2_REMOTE="driver/version/${VERSION}/PS2"
+
+PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
+PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
 download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
-download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
+download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2
+
 
 ############################################################################################################################################################
 
