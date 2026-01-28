@@ -1,8 +1,7 @@
-
 #!/usr/bin/env bash
 #
 # Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
-# Downloads different PS1/PS2 assets based on VERSION ("current" or "psiloc")
+# Downloads different PS1/PS2 assets based on VERSION 
 # Tested on Debian/Ubuntu/Raspberry Pi OS variants using /boot/firmware layout
 #
 
@@ -77,6 +76,13 @@ else
   fi
 fi
 
+# Optional tag for branching (e.g., URLs/flags)
+if [[ "$VERSION" == "latest" ]]; then
+  VERSION_TAG="v2"
+else
+  VERSION_TAG="v1"
+fi
+log "Version selected: ${VERSION} (${VERSION_TAG})"
 
 #-----------------------------------------------------------
 # Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18
@@ -92,20 +98,17 @@ fi
 if [[ ! -f "$CONFIG_FILE" ]]; then
   err "Cannot find ${CONFIG_FILE}. Aborting."
   #exit 1
-  else
-   
-log "Updating ${CONFIG_FILE} (backup will be created)."
-cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
-  
-if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
-  echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
-  log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
 else
-  log "dtoverlay=gpio-fan,gpiopin=18,temp=60000 already present."
-fi
-  
-fi
+  log "Updating ${CONFIG_FILE} (backup will be created)."
+  cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
 
+  if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
+    echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
+    log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
+  else
+    log "dtoverlay=gpio-fan,gpiopin=18,temp=60000 already present."
+  fi
+fi
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
@@ -113,14 +116,13 @@ fi
 if ! id -u sinden &>/dev/null; then
   log "Creating user 'sinden' with password."
   useradd -m -s /bin/bash sinden
-  
+
   read -s -p "Enter password for sinden: " PASSWORD
   echo
   echo "sinden:${PASSWORD}" | chpasswd
 else
   log "User 'sinden' already exists."
 fi
-
 
 # Optionally add device-access groups (uncomment if needed)
 # usermod -aG video,plugdev,dialout sinden
@@ -246,7 +248,7 @@ install -d -o sinden -g sinden /opt/sinden
   log "Downloading lightgun scripts to /opt/sinden."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" 
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh"
 
   chmod +x lightgun.sh lightgun-monitor.sh
   chown sinden:sinden lightgun.sh lightgun-monitor.sh
@@ -274,7 +276,6 @@ download_assets() {
     chown -R sinden:sinden "$dest"
   )
 }
-
 
 ################################################################################################################################################################
 # --- Dynamic asset sync from repo paths (wget-only, strict) ---
@@ -447,8 +448,8 @@ fi
 
 echo "Backup complete."
 
-# Use it:
-# Map VERSION -> repo folder name under driver/version/<folder>/{PS1,PS2}
+# --- Map VERSION -> repo folder name under driver/version/<folder>/{PS1,PS2}
+# Supported: latest, psiloc, beta, previous
 map_version_to_repo_folder() {
   case "$VERSION" in
     latest)   echo "latest"   ;;
@@ -460,25 +461,26 @@ map_version_to_repo_folder() {
 }
 REPO_VERSION_FOLDER="$(map_version_to_repo_folder)"
 
+# Build remote paths from mapped folder (keeps download module unchanged)
 PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
 PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
+
+# Download both PS1 and PS2 assets
 download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
 download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
-
 
 ############################################################################################################################################################
 
 # Create PS1/PS2 and download according to version
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
 
-cd ${LIGHTGUN_DIR}
+cd "${LIGHTGUN_DIR}"
 install -d -o sinden -g sinden "PS1/backups"
 install -d -o sinden -g sinden "PS2/backups"
 
-
-cd 	${LIGHTGUN_DIR}/log
-  wget --quiet --show-progress --https-only --timestamping \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
+cd "${LIGHTGUN_DIR}/log"
+wget --quiet --show-progress --https-only --timestamping \
+  "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
 
 log "Assets deployment complete."
 
@@ -536,7 +538,6 @@ source "${VENV_DIR}/bin/activate"
 pip install --upgrade pip
 pip install "flask==3.*" "gunicorn==21.*"
 
-
 echo "=== 4) Backend: Flask app  ==="
 sudo wget -O ${APP_DIR}/app.py \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/app.py
@@ -548,7 +549,6 @@ sudo wget -O /opt/lightgun-dashboard/index.html \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
-
 
 echo "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
@@ -611,13 +611,11 @@ done
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Light.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Strong.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-MachineGun.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Shotgun.config"\
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Shotgun.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Soft.config"
 
   chown sinden:sinden Default.config Low-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config
-  
-  
-  
+
   cd /home/sinden/Lightgun/PS2/profiles
   log "Downloading PS2 profiles."
   wget --quiet --show-progress --https-only --timestamping \
@@ -626,9 +624,9 @@ done
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Light.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Strong.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-MachineGun.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Shotgun.config"\
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Shotgun.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Soft.config"
-	
+
   chown sinden:sinden Default.config Low-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config
 )
 
@@ -673,15 +671,13 @@ sudo systemctl restart lightgun-dashboard.service
 
 echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
 
-
-
 # 7) restart services
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
 # 8) install configuration editor (deprecated for the dashboard)
 
-#cd 	/usr/local/bin
+#cd  /usr/local/bin
 # sudo wget --quiet --show-progress --https-only --timestamping \
 #    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux//usr/local/bin/lightgun-setup"
 # chmod +x /usr/local/bin/lightgun-setup
@@ -702,7 +698,6 @@ sudo systemctl restart lightgun-monitor.service
 #   ttyGCON2S_1
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
-
 
 set -euo pipefail
 
@@ -731,8 +726,8 @@ detect_model() {
   else
     banner "Assuming Raspberry Pi 4 or earlier: primary alias uses ttyS0, secondary alias uses ttyAMA5."
     IS_PI5=0
-    PRIMARY_KERNELS=("ttyS0")              # Default
-    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")    # UART5
+    PRIMARY_KERNELS=("ttyS0")                 # Default
+    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")     # UART5
     OVERLAYS=("dtoverlay=uart5")
   fi
 }
@@ -758,14 +753,12 @@ enable_overlays_and_mini_uart() {
   banner "Ensuring overlays and UART settings in $CONFIG_FILE"
   cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
 
-
-
   if [[ $IS_PI5 -eq 1 ]]; then
     # Pi 5 specific settings
     grep -q "^enable_uart=" "$CONFIG_FILE" && sed -i 's/^enable_uart=.*/enable_uart=0/' "$CONFIG_FILE" || echo "enable_uart=0" >> "$CONFIG_FILE"
     grep -q "^dtoverlay=uart0-pi5" "$CONFIG_FILE" || echo "dtoverlay=uart0-pi5" >> "$CONFIG_FILE"
-    grep -q "^dtoverlay=uart4" "$CONFIG_FILE" || echo "dtoverlay=uart4" >> "$CONFIG_FILE"
-	grep -q "^dtoverlay=disable-bt" "$CONFIG_FILE" || echo "dtoverlay=disable-bt" >> "$CONFIG_FILE"
+    grep -q "^dtoverlay=uart4" "$CONFIG_FILE"     || echo "dtoverlay=uart4"     >> "$CONFIG_FILE"
+    grep -q "^dtoverlay=disable-bt" "$CONFIG_FILE"|| echo "dtoverlay=disable-bt" >> "$CONFIG_FILE"
   else
     # Pi 4 and earlier
     grep -q "^enable_uart=1" "$CONFIG_FILE" || echo "enable_uart=1" >> "$CONFIG_FILE"
