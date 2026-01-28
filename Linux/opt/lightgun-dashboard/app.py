@@ -11,7 +11,6 @@ from flask import Flask, jsonify, render_template_string, send_from_directory, r
 
 app = Flask(__name__)
 
-
 # ---------------------------
 # Services & system utilities
 # ---------------------------
@@ -36,6 +35,7 @@ DEFAULT_PLATFORM = "ps2"
 # Sinden log
 # ---------------------------
 SINDEN_LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
+
 
 # ===========================
 # Systemd helpers
@@ -78,112 +78,6 @@ def system_power_action(action: str) -> bool:
         print("POWER ACTION ERROR:", e.output.decode(errors="replace"))
         return False
 
-# ===========================
-# Software Update (Bash-script wrapper)
-# ===========================
-import os, time, subprocess
-from flask import jsonify, request
-
-# --- use your chosen script path ---
-UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"        # <<< YOUR SCRIPT PATH
-UPDATE_LOGF   = "/var/log/sindenps-update.log"        # optional if your script writes logs
-VERSION_FILE  = "/home/sinden/Lightgun/VERSION"       # written by the script (channel marker)
-
-def _read_version_marker():
-    try:
-        with open(VERSION_FILE, "r", encoding="utf-8") as f:
-            return (f.read().strip() or "")
-    except Exception:
-        return ""
-
-UPDATE_STATE = {
-    "ok": True,
-    "state": "idle",
-    "installed": {"version": _read_version_marker()},
-    "latest": None,
-    "message": ""
-}
-UPDATE_LOG_RING = []  # ring buffer populated from subprocess output
-def _append_log(lines: str):
-    if not lines: return
-    for ln in lines.splitlines():
-        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        UPDATE_LOG_RING.append(f"{stamp} {ln}")
-        if len(UPDATE_LOG_RING) > 2000:
-            UPDATE_LOG_RING.pop(0)
-
-def _set_state(st, msg=""):
-    UPDATE_STATE["state"] = st
-    UPDATE_STATE["message"] = msg
-
-@app.route("/api/update/status")
-def api_update_status():
-    UPDATE_STATE["installed"]["version"] = _read_version_marker()
-    return jsonify({"ok": True, **UPDATE_STATE})
-
-@app.route("/api/update/check")
-def api_update_check():
-    # Your script uses channels; surface the chosen one as "latest"
-    channel = (request.args.get("channel") or "latest").lower()
-    allowed = {"latest","psiloc","beta","previous"}
-    if channel not in allowed:
-        _set_state("error", f"unsupported channel: {channel}")
-        return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
-    UPDATE_STATE["latest"] = {"version": channel, "notesUrl": "", "asset": None}
-    _set_state("idle", f"channel {channel} ready")
-    return jsonify({"ok": True, "latest": UPDATE_STATE["latest"]})
-
-@app.route("/api/update/apply", methods=["POST"])
-def api_update_apply():
-    data = request.get_json(force=True) or {}
-    channel = (data.get("channel") or "latest").lower()
-    allowed = {"latest","psiloc","beta","previous"}
-    if channel not in allowed:
-        _set_state("error", f"unsupported channel: {channel}")
-        return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
-
-    env = os.environ.copy()
-    env["VERSION"] = channel  # pass VERSION to your script
-    # Optional: OWNER/REPO/BRANCH can be passed if you want to override defaults
-    # env["OWNER"] = "th3drk0ne"; env["REPO"] = "sindenps"; env["BRANCH"] = "main"
-
-    try:
-        _set_state("applying", f"running {UPDATE_SCRIPT} for {channel}")
-        env["VERSION"] = channel
-        proc = subprocess.run(
-            [SUDO, "-n", UPDATE_SCRIPT],
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            timeout=1800,
-        )
-        _append_log(proc.stdout)  # capture script output into ring buffer
-
-        if proc.returncode != 0:
-            _set_state("error", "update script failed")
-            return jsonify({"ok": False, "error": "update script failed"}), 500
-
-        UPDATE_STATE["installed"]["version"] = _read_version_marker() or channel
-        _set_state("idle", "updated successfully")
-        return jsonify({"ok": True})
-    except subprocess.TimeoutExpired:
-        _set_state("error", "update timed out")
-        return jsonify({"ok": False, "error": "update timed out"}), 504
-    except Exception as e:
-        _set_state("error", str(e))
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-@app.route("/api/update/logs")
-def api_update_logs():
-    # Prefer the ring buffer; fall back to file if present
-    if UPDATE_LOG_RING:
-        return jsonify({"logs": "\n".join(UPDATE_LOG_RING)})
-    try:
-        with open(UPDATE_LOGF, "r", encoding="utf-8", errors="replace") as f:
-            return jsonify({"logs": f.read()})
-    except Exception as e:
-        return jsonify({"logs": f"Logs unavailable: {e}"})
 # ===========================
 # Flask routes: services
 # ===========================
