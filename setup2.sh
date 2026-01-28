@@ -253,7 +253,6 @@ install -d -o sinden -g sinden /opt/sinden
 
   chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh
   chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh
-
 )
 
 USER_HOME="/home/sinden"
