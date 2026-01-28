@@ -274,21 +274,51 @@ download_assets() {
 
 
 ################################################################################################################################################################
-# --- Dynamic asset sync from repo paths ---
-# Derives: https://raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>
-# Path base: driver/version/${VERSION}/{PS1,PS2}
-OWNER="${OWNER:-th3drk0ne}"      # set explicitly or infer from git
+# --- Dynamic asset sync from repo paths (wget-only, strict) ---
+OWNER="${OWNER:-th3drk0ne}"
 REPO="${REPO:-sindenps}"
-BRANCH="${BRANCH:-main}"         # prefer 'main'
+BRANCH="${BRANCH:-main}"   # MUST be plain branch name like 'main' or 'master'
 
 RAW_BASE="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}"
 
-# Build URLs dynamically by listing the repo tree via GitHub API (no hardcoding)
+# List files in a repo folder via GitHub API (returns .path values)
 list_repo_files() {
   local remote_path="$1"  # e.g., driver/version/current/PS1
-  curl -fsSL -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/${OWNER}/${REPO}/contents/${remote_path}?ref=${BRANCH}" \
-  | jq -r '.[] | select(.type=="file") | .path'
+  local api="https://api.github.com/repos/${OWNER}/${REPO}/contents/${remote_path}?ref=${BRANCH}"
+
+  # Fetch JSON; capture status code
+  local status json
+  status=$(wget -q --server-response -O- --header="Accept: application/vnd.github+json" "$api" 2>&1 \
+            | awk '/^  HTTP\/|^HTTP\// {code=$2} END{print code}')
+  # Re-fetch body separately (wget prints headers to stderr, body to stdout)
+  json=$(wget -q -O- --header="Accept: application/vnd.github+json" "$api" || true)
+
+  if [[ -z "$status" ]]; then
+    err "GitHub API did not return a status for: $api"
+    return 2
+  fi
+
+  case "$status" in
+    200) ;;
+    404)
+      err "404 Not Found: ${remote_path} (branch=${BRANCH}). Check repo structure/branch."
+      return 4
+      ;;
+    403)
+      warn "403 Forbidden (rate-limited?). Consider setting GITHUB_TOKEN to increase limits."
+      ;;
+    *)
+      warn "GitHub API returned HTTP ${status} for: $api"
+      ;;
+  esac
+
+  # Need jq for robust JSON parsing
+  if ! command -v jq >/dev/null 2>&1; then
+    err "jq is required for dynamic discovery. Install jq or pre-populate URLs."
+    return 3
+  fi
+
+  printf '%s' "$json" | jq -r '.[] | select(.type=="file") | .path'
 }
 
 download_dir_from_repo() {
@@ -297,13 +327,11 @@ download_dir_from_repo() {
 
   install -d -o sinden -g sinden "$dest_dir"
 
-  # If jq is unavailable, bail out to prevent brittle parsing
-  if ! command -v jq >/dev/null 2>&1; then
-    err "jq is required for dynamic discovery. Install jq or pre-populate URLs."
+  mapfile -t files < <(list_repo_files "$remote_dir") || {
+    err "Failed to list ${remote_dir}"
     return 1
-  fi
+  }
 
-  mapfile -t files < <(list_repo_files "$remote_dir")
   if [[ ${#files[@]} -eq 0 ]]; then
     warn "No files found in ${remote_dir}"
     return 0
@@ -323,13 +351,8 @@ download_dir_from_repo() {
   chown -R sinden:sinden "$dest_dir"
 }
 
-PS1_SOURCE="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
-PS1_BACKUP_DIR="/home/sinden/Lightgun/PS1/backups"
 
-PS2_SOURCE="/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
-PS2_BACKUP_DIR="/home/sinden/Lightgun/PS2/backups"
 
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 echo "Starting backup..."
 
@@ -357,11 +380,11 @@ fi
 
 echo "Backup complete."
 
-# --- Use dynamic downloader for PS1/PS2 based on VERSION ---
+# Use it:
 PS1_REMOTE="driver/version/${VERSION}/PS1"
 PS2_REMOTE="driver/version/${VERSION}/PS2"
 download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
-download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
+
 ############################################################################################################################################################
 
 # Create PS1/PS2 and download according to version
