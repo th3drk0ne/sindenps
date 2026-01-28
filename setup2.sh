@@ -381,7 +381,7 @@ download_dir_from_repo() {
     return 0
   fi
 
-  log "Downloading ${#files[@]} from ${VERSION} asset(s) from ${VERSION} into ${dest_dir}."
+  log "Downloading ${#files[@]} asset(s) from ${VERSION} into ${dest_dir}."
 
   # Save current error setting; temporarily disable -e inside the loop
   set +e
