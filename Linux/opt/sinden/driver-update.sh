@@ -13,10 +13,7 @@ err()  { echo "[ERROR] $*" | tee -a "$LOGF" >&2; }
 install -d -m 0755 /var/log
 touch "$LOGF" && chmod 0644 "$LOGF"
 
-# --- after successful downloads and before restarts, write a VERSION marker ---
-VERSION_FILE="/home/sinden/Lightgun/VERSION"
-echo "$VERSION" > "$VERSION_FILE"
-chmod 0644 "$VERSION_FILE"
+
 
 # --- service restarts (already present) ---
 sudo systemctl restart lightgun.service
@@ -87,6 +84,11 @@ else
     done
   fi
 fi
+
+# --- after successful downloads and before restarts, write a VERSION marker ---
+VERSION_FILE="/home/sinden/Lightgun/VERSION"
+echo "$VERSION" > "$VERSION_FILE"
+chmod 0644 "$VERSION_FILE"
 
 USER_HOME="/home/sinden"
 LIGHTGUN_DIR="${USER_HOME}/Lightgun"
