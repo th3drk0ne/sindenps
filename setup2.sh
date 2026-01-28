@@ -253,9 +253,6 @@ install -d -o sinden -g sinden /opt/sinden
 
   chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh
   chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh
-  sudo touch /var/log/sindenps-update.log
-  sudo chown root:root /var/log/sindenps-update.log
-  sudo chmod 0644 /var/log/sindenps-update.log
 
 )
 
@@ -605,10 +602,6 @@ for p in PS1 PS2; do
   sudo chown -R "${APP_USER}:${APP_GROUP}" "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
   sudo chmod 775 "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
 done
-
-#VERSION_FILE="/home/sinden/Lightgun/VERSION"
-#echo "$VERSION" > "$VERSION_FILE"
-#chmod 0644 "$VERSION_FILE"
 
 # Download profiles
 (
