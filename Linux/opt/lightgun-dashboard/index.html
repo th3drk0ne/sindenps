@@ -4,38 +4,66 @@
 <head>
 <meta charset="UTF-8">
 <title>Lightgun Dashboard</title>
-<style>
-  body { background:#000; color:#fff; font-family:sans-serif; margin:0; }
-  header { background:#000; padding:20px; border-bottom:4px solid #c00; display:flex; justify-content:space-between; align-items:center; }
-  .header-left { display:flex; align-items:center; gap:12px; }
-  .logo { height:40px; width:auto; display:block; }
-  .header-title { font-size:28px; font-weight:700; }
-  .tabs { display:flex; gap:10px; }
-  .tabs button { background:#222; color:#fff; border:1px solid #c00; padding:8px 14px; cursor:pointer; }
-  .tabs button:hover { background:#c00; }
-  .panel-title { color:#f33; font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
-  .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 20px; padding:12px; border-left:6px solid #c00; }
-  .service-name { font-size:18px; font-weight:700; }
-  .service-status { font-size:14px; color:#9f9; }
-  .service-buttons { display:flex; gap:8px; flex-wrap:wrap; }
-  .service-buttons button { padding:6px 12px; font-size:14px; font-weight:700; border:none; border-radius:4px; cursor:pointer; }
-  .service-buttons button:nth-child(1) { background:#ccc; color:#000; }
-  .service-buttons button:nth-child(2) { background:#fc0; color:#000; }
-  .service-buttons button:nth-child(3) { background:#a00; color:#fff; }
-  .log-toggle { background:#333; color:#fff !important; }
-  .log-box { width:99%; background:#000; border:1px solid #c00; padding:10px; display:none; max-height:300px; overflow:auto; }
-  .log-content { white-space:pre-wrap; font-family:monospace; font-size:13px; color:#ccc; }
 
-  /* Config */
-  .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 20px; }
-  .config-row { display:flex; align-items:center; gap:8px; margin:6px 0; }
-  .config-row label { width:260px; color:#ccc; font-size:14px; }
-  .config-row input { flex:0 0 50%; max-width:50%; padding:6px; background:#000; color:#fff; border:1px solid #444; }
-  .config-path { color:#888; font-size:12px; margin-left:10px; }
-  .config-status-inline { color:#ccc; font-size:12px; margin-left:auto; text-align:right; }
-  .btn-secondary { background:#444; color:#fff; font-weight:700; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
-  .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:8px 14px; border:1px solid #444; border-radius:4px; cursor:pointer; }
-  .btn-danger { background:#a00; color:#fff; font-weight:700; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
+<style>
+ body { background:#000; color:#fff; font-family:sans-serif; margin:0; }
+ header { background:#000; padding:20px; border-bottom:4px solid #c00; display:flex; justify-content:space-between; align-items:center; }
+ .header-left { display:flex; align-items:center; gap:12px; }
+ .logo { height:40px; width:auto; display:block; }
+ .header-title { font-size:28px; font-weight:700; }
+ .tabs { display:flex; gap:10px; }
+ .tabs button { background:#222; color:#fff; border:1px solid #c00; padding:8px 14px; cursor:pointer; }
+ .tabs button:hover { background:#c00; }
+ .panel-title { color:#f33; font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
+ .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 20px; padding:12px; border-left:6px solid #c00; }
+ .service-name { font-size:18px; font-weight:700; }
+ .service-status { font-size:14px; color:#9f9; }
+ .service-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+ .service-buttons button { padding:6px 12px; font-size:14px; font-weight:700; border:none; border-radius:4px; cursor:pointer; }
+ .service-buttons button:nth-child(1) { background:#ccc; color:#000; }
+ .service-buttons button:nth-child(2) { background:#fc0; color:#000; }
+ .service-buttons button:nth-child(3) { background:#a00; color:#fff; }
+ .log-toggle { background:#333; color:#fff !important; }
+ .log-box { width:99%; background:#000; border:1px solid #c00; padding:10px; display:none; max-height:300px; overflow:auto; }
+ .log-content { white-space:pre-wrap; font-family:monospace; font-size:13px; color:#ccc; }
+
+ .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 20px; }
+ .config-row { display:flex; align-items:center; gap:8px; margin:6px 0; }
+ .config-row label { width:260px; color:#ccc; font-size:14px; }
+ .config-row input { flex:0 0 50%; max-width:50%; padding:6px; background:#000; color:#fff; border:1px solid #444; }
+ .config-path { color:#888; font-size:12px; margin-left:10px; }
+ .config-status-inline { color:#ccc; font-size:12px; margin-left:auto; text-align:right; }
+ .btn-secondary { background:#444; color:#fff; font-weight:700; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
+ .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:8px 14px; border:1px solid #444; border-radius:4px; cursor:pointer; }
+ .btn-danger { background:#a00; color:#fff; font-weight:700; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
+
+ /* MOBILE RESPONSIVE FIXES */
+ @media (max-width: 768px) {
+     header { flex-direction: column; align-items: flex-start; padding: 12px; gap: 10px; }
+     .header-title { font-size: 22px; text-align: left; }
+     .tabs { flex-wrap: wrap; width: 100%; gap: 6px; }
+     .tabs button { flex: 1 1 auto; text-align: center; padding: 10px; }
+
+     body { padding: 0; margin: 0; overflow-x: hidden; }
+     .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
+
+     .service-row { margin: 10px 8px; padding: 10px; }
+     .service-buttons { flex-direction: column; width: 100%; }
+     .service-buttons button { width: 100%; padding: 10px; font-size: 15px; }
+
+     .config-toolbar { flex-direction: column; align-items: stretch; margin: 10px; }
+     .config-toolbar select, .config-toolbar button { width: 100%; }
+
+     .config-row { flex-direction: column; align-items: flex-start; width: 100%; }
+     .config-row label { width: 100%; margin-bottom: 4px; font-size: 14px; }
+     .config-row input { width: 100% !important; max-width: 100%; padding: 10px; }
+
+     #save-restart { width: 100%; padding: 12px; font-size: 16px; }
+
+     #p1-form, #p2-form { width: 100%; }
+
+     #backup-modal > div { width: 95vw !important; margin-top: 20vh !important; padding: 12px; }
+ }
 </style>
 </head>
 <body>
