@@ -116,13 +116,16 @@ list_repo_files() {
     200) ;;
     404)
       err "404 Not Found: ${remote_path} (branch=${BRANCH}). Check repo structure/branch."
+	  log "404 Not Found: ${remote_path} (branch=${BRANCH}). Check repo structure/branch."
       return 4
       ;;
     403)
       warn "403 Forbidden (rate-limited?). Consider setting GITHUB_TOKEN to increase limits."
+	  log warn "403 Forbidden (rate-limited?). Consider setting GITHUB_TOKEN to increase limits."
       ;;
     *)
       warn "GitHub API returned HTTP ${status} for: $api"
+	  log "GitHub API returned HTTP ${status} for: $api"
       ;;
   esac
 
