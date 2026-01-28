@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
-  <title>SindenPS Dashboard</title>
+  <title>Lightgun Dashboard</title>
   <style>
     /* ===== Base & iOS/Safari normalizations ===== */
     html { box-sizing: border-box; }
@@ -15,14 +15,13 @@
     /* Prevent iOS 16+ zoom on form controls */
     input, select, button { font-size: 16px; }
 
-    /* Page container to avoid 100vw overflow issues on iOS */
-    .page { width: min(100%, 100vw); max-width: 1200px; margin: 0 auto; }
+    /* Page container */
+    .page { width: 100%; margin: 0 auto; }
 
-    header { background:#000; padding:20px; border-bottom:4px solid #c00; display:flex; justify-content:space-between; align-items:center; gap:12px; position:sticky; top:0; z-index:10; }
-    .header-left { display:flex; align-items:center; gap:12px; }
+    /* Header */
+    header { background:#000; padding:20px; border-bottom:4px solid #c00; position:sticky; top:0; z-index:10; }
+    .header-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
-    .header-title { font-size:28px; font-weight:700; }
-
     .tabs { display:flex; flex-wrap:wrap; gap:10px; }
     .tabs button { background:#222; color:#fff; border:1px solid #c00; padding:10px 14px; cursor:pointer; border-radius:6px; }
     .tabs button:hover { background:#c00; }
@@ -61,22 +60,18 @@
     .config-row label { width:260px; color:#ccc; font-size:14px; }
     .config-row input { flex:1 1 50%; max-width:50%; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:4px; }
 
-	/* Desktop / large screen fix */
-	@media (min-width: 769px) {
-	  .page {
-		width: 100%;
-		max-width: none;
-	  }
-	}
+    /* Desktop full-width fix */
+    @media (min-width: 769px) {
+      .page { max-width: none; }
+    }
 
     /* ===== Mobile (iPhone/Android) ===== */
     @media (max-width: 768px) {
       .page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
-      header { flex-direction: column; align-items: flex-start; padding: 12px; gap: 10px; }
-      .header-title { font-size: 22px; text-align: left; }
-
-      .tabs { width: 100%; gap: 6px; }
-      .tabs button { flex: 1 1 auto; text-align: center; padding: 12px; }
+      /* Single-row header: logo + buttons */
+      .header-row { flex-wrap: nowrap; }
+      .tabs { flex: 1 1 auto; width: auto; gap: 6px; justify-content: flex-end; }
+      .tabs button { flex: 1 1 auto; min-width: 0; text-align: center; padding: 12px; }
 
       .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
 
@@ -104,15 +99,14 @@
 <body>
   <div class="page">
     <header>
-      <div class="header-left">
-        <img src="/logo.png" class="logo" alt="logo">
-        <div class="header-title">SindenPS</div>
+      <div class="header-row">
+        /logo.png
+        <nav class="tabs">
+          <button onclick="showTab('sindenlog')">Sinden Log</button>
+          <button onclick="showTab('services')">Services</button>
+          <button onclick="showTab('config')">Configuration</button>
+        </nav>
       </div>
-      <nav class="tabs">
-        <button onclick="showTab('sindenlog')">Sinden Log</button>
-        <button onclick="showTab('services')">Services</button>
-        <button onclick="showTab('config')">Configuration</button>
-      </nav>
     </header>
 
     <!-- SINDEN LOG TAB -->
