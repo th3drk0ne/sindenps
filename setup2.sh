@@ -22,58 +22,61 @@ fi
 log "Running as root."
 
 #-----------------------------------------------------------
-# Step 0) Version selection menu (sets VERSION + VERSION_TAG)
-# - Non-interactive: set VERSION env var before running (current/psiloc)
-# - Interactive: prompts user if VERSION is not preset
+# Step 0) Version selection (no changes to download module)
+# Supported values: latest, psiloc, beta, previous
+# 'current' now maps to 'latest'
 #-----------------------------------------------------------
 normalize_version() {
-  local v="${1,,}"       # lowercase
+  local v="${1,,}"  # lowercase input
   case "$v" in
-    current|latest|new|2|n) echo "current" ;;
-    psiloc|old|legacy|uberlag|1|o) echo "psiloc" ;;
-    *) echo "" ;;
+    latest|current|new|2|n)   echo "latest"   ;;  # 'current' → 'latest'
+    psiloc|old|legacy|1|o)    echo "psiloc"   ;;
+    beta|b)                   echo "beta"     ;;
+    previous|prev|p)          echo "previous" ;;
+    *)                        echo ""         ;;
   esac
 }
 
 if [[ -z "${VERSION:-}" ]]; then
   log "Select Sinden setup version:"
-  echo "  [1] Latest version"
-  echo "  [2] Psiloc version"
+  echo "  [1] latest    (formerly 'current')"
+  echo "  [2] psiloc    (legacy)"
+  echo "  [3] beta      (pre-release/test)"
+  echo "  [4] previous  (prior release)"
   while true; do
-    read -r -p "Enter choice (1/2) [default: 1]: " choice
+    read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
-      1) VERSION="current"; break ;;
-      2) VERSION="psiloc";  break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
+      1) VERSION="latest";   break ;;
+      2) VERSION="psiloc";   break ;;
+      3) VERSION="beta";     break ;;
+      4) VERSION="previous"; break ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
     esac
   done
 else
   VERSION="$(normalize_version "$VERSION")"
   if [[ -z "$VERSION" ]]; then
-    warn "Unrecognized VERSION environment value. Falling back to interactive selection."
+    warn "Unrecognized VERSION value. Falling back to interactive selection."
     unset VERSION
-    echo "  [1] Latest version"
-    echo "  [2] Psiloc version"
+    echo "  [1] latest"
+    echo "  [2] psiloc"
+    echo "  [3] beta"
+    echo "  [4] previous"
     while true; do
-      read -r -p "Enter choice (1/2) [default: 2]: " choice
-      choice="${choice:-2}"
+      read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
+      choice="${choice:-1}"
       case "$choice" in
-        1) VERSION="current"; break ;;
-        2) VERSION="psiloc";  break ;;
-        *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
+        1) VERSION="latest";   break ;;
+        2) VERSION="psiloc";   break ;;
+        3) VERSION="beta";     break ;;
+        4) VERSION="previous"; break ;;
+        *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
       esac
     done
   fi
 fi
 
-# Optional tag for branching (e.g., URLs/flags)
-if [[ "$VERSION" == "current" ]]; then
-  VERSION_TAG="v2"
-else
-  VERSION_TAG="v1"
-fi
-log "Version selected: ${VERSION} (${VERSION_TAG})"
 
 #-----------------------------------------------------------
 # Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18
