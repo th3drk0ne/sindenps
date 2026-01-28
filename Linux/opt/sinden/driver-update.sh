@@ -14,12 +14,6 @@ install -d -m 0755 /var/log
 touch "$LOGF" && chmod 0644 "$LOGF"
 
 
-
-# --- service restarts (already present) ---
-sudo systemctl restart lightgun.service
-sudo systemctl restart lightgun-monitor.service
-
-log "Update completed for channel: $VERSION"
 #-----------------------------------------------------------
 # Step 1) Check if root
 #-----------------------------------------------------------
