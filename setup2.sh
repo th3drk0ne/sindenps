@@ -351,7 +351,6 @@ download_dir_from_repo() {
   chown -R sinden:sinden "$dest_dir"
 }
 
-
 PS1_SOURCE="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
 PS1_BACKUP_DIR="/home/sinden/Lightgun/PS1/backups"
 
