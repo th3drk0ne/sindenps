@@ -321,32 +321,89 @@ list_repo_files() {
   printf '%s' "$json" | jq -r '.[] | select(.type=="file") | .path'
 }
 
+# --- Dynamic asset sync from repo paths (wget-only, resilient) ---
+OWNER="${OWNER:-th3drk0ne}"
+REPO="${REPO:-sindenps}"
+BRANCH="${BRANCH:-main}"   # plain branch name only, e.g. "main" or "master"
+
+RAW_BASE="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}"
+
+# Optional: use a GitHub token to reduce API 403s (rate limits)
+# export GITHUB_TOKEN=ghp_xxx
+GH_AUTH_HEADER=()
+[[ -n "${GITHUB_TOKEN:-}" ]] && GH_AUTH_HEADER=(--header="Authorization: Bearer ${GITHUB_TOKEN}")
+
+list_repo_files() {
+  local remote_path="$1"  # e.g., driver/version/latest/PS1
+  local api="https://api.github.com/repos/${OWNER}/${REPO}/contents/${remote_path}?ref=${BRANCH}"
+
+  # Get status code first (from server-response) and body separately
+  local status body
+  status="$(wget -q --server-response -O- "${GH_AUTH_HEADER[@]}" --header="Accept: application/vnd.github+json" "$api" 2>&1 \
+            | awk '/^  HTTP\/|^HTTP\// {code=$2} END{print code}')"
+  body="$(wget -q -O- "${GH_AUTH_HEADER[@]}" --header="Accept: application/vnd.github+json" "$api" || true)"
+
+  if [[ -z "$status" ]]; then
+    err "GitHub API did not return a status for: $api"
+    return 2
+  fi
+
+  case "$status" in
+    200) : ;;
+    404) err "404 Not Found: ${remote_path} (branch=${BRANCH}). Check repo mapping and folders."; return 4 ;;
+    403) warn "403 Forbidden (rate-limited?). Consider setting GITHUB_TOKEN."; ;;
+    *)   warn "GitHub API returned HTTP ${status} for: $api" ;;
+  esac
+
+  if ! command -v jq >/dev/null 2>&1; then
+    err "jq is required for dynamic discovery. Install jq or pre-populate URLs."
+    return 3
+  fi
+
+  printf '%s' "$body" | jq -r '.[] | select(.type=="file") | .path'
+}
+
 download_dir_from_repo() {
-  local remote_dir="$1"   # driver/version/${VERSION}/PS1
+  local remote_dir="$1"   # driver/version/<mapped>/PS1
   local dest_dir="$2"     # /home/sinden/Lightgun/PS1
 
   install -d -o sinden -g sinden "$dest_dir"
 
-  mapfile -t files < <(list_repo_files "$remote_dir") || {
-    err "Failed to list ${remote_dir}"
+  # IMPORTANT: do not let a single failure exit the whole script
+  local -a files=()
+  if ! mapfile -t files < <(list_repo_files "$remote_dir"); then
+    err "Failed to enumerate ${remote_dir}"
     return 1
-  }
+  fi
 
   if [[ ${#files[@]} -eq 0 ]]; then
     warn "No files found in ${remote_dir}"
     return 0
   fi
 
-  log "Downloading ${#files[@]} asset(s) into ${dest_dir}."
+  log "Downloading ${#files[@]} from ${VERSION} asset(s) from ${VERSION} into ${dest_dir}."
+
+  # Save current error setting; temporarily disable -e inside the loop
+  set +e
   for rel in "${files[@]}"; do
     local url="${RAW_BASE}/${rel}"
-    local fname="$(basename "$rel")"
+    local fname; fname="$(basename "$rel")"
+
     (
-      cd "$dest_dir"
-      wget --quiet --show-progress --https-only --timestamping "$url"
-      [[ "$fname" == "LightgunMono.exe" ]] && chmod +x "$fname"
+      cd "$dest_dir" || exit 1
+      # Use --timestamping so re-runs are cheap; handle errors per-file
+      if ! wget -q --show-progress --https-only --timestamping "$url"; then
+        warn "Failed to fetch: $url (continuing)"
+        exit 0
+      fi
+
+      # Mark binaries as executable when needed
+      case "$fname" in
+        *.exe|*.so) chmod 0755 "$fname" ;;
+      esac
     )
   done
+  set -e
 
   chown -R sinden:sinden "$dest_dir"
 }
