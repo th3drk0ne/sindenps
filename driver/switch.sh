@@ -74,6 +74,8 @@ else
   fi
 fi
 
+USER_HOME="/home/sinden"
+LIGHTGUN_DIR="${USER_HOME}/Lightgun"
 
 #################################################################
 # --- Dynamic asset sync from repo paths (wget-only, strict) ---
