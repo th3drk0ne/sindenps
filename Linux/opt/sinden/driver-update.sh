@@ -3,7 +3,7 @@
 #driver switch switch 
 #
 set -euo pipefail
-
+"${VERSION:=}"
 LOGF="/var/log/sindenps-update.log"
 log()  { echo "[INFO] $*"  | tee -a "$LOGF"; }
 warn() { echo "[WARN] $*"  | tee -a "$LOGF" >&2; }
