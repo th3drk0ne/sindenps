@@ -159,15 +159,25 @@
 		</div>
 		
 		<div class="service-row" id="software-update">
-			<span class="service-name">Software Update</span>
-			<span class="service-status" id="update-status">idle…</span>
-		<div class="service-buttons">
-			<button onclick="checkForUpdates()" id="btn-check-updates">Check for Updates</button>
-			<button onclick="applyUpdate()" id="btn-update-now" disabled>Update Now</button>
-			<button class="log-toggle" onclick="toggleUpdateLogs(event)">Show Logs</button>
-		</div>
-		<div class="log-box" id="update-logs"><pre class="log-content" id="update-log-content">Loading…</pre></div>
-	</div>
+		  <span class="service-name">Software Update</span>
+		  <span class="service-status" id="update-status">idle…</span>
+		  <div class="service-buttons">
+			<select id="update-channel" aria-label="Update channel">
+			  <option value="latest" selected>latest</option>
+			  <option value="psiloc">psiloc</option>
+			  <option value="beta">beta</option>
+			  <option value="previous">previous</option>
+			</select>
+			<button id="btn-check-updates">Check</button>
+			<button id="btn-update-now" disabled>Update Now</button>
+			<button class="log-toggle" id="btn-toggle-logs">Show Logs</button>
+		  </div>
+		  <div class="log-box" id="update-logs" style="display:none">
+			<pre class="log-content" id="update-log-content">Loading…</pre>
+		  </div>
+</div>
+
+		
     </section>
 
     <!-- CONFIG TAB -->
@@ -372,6 +382,130 @@
         return data && data.success;
       } catch (e) { return false; }
     }
+	
+	//updates
+		
+
+	/** ===== Minimal updater (channel-only) ===== **/
+
+	function setUpdateState(label, canUpdate = false) {
+	  const status = document.getElementById('update-status');
+	  if (status) status.textContent = label;
+	  const btnUpdate = document.getElementById('btn-update-now');
+	  if (btnUpdate) btnUpdate.disabled = !canUpdate;
+	}
+
+	async function refreshUpdateStatus() {
+	  try {
+		const res = await fetch('/api/update/status');
+		const s = await res.json();             // { ok, state, installed.version, latest.version?, message }
+		if (!s || s.ok === false) { setUpdateState('status error'); return; }
+
+		let label = s.state || 'idle';
+		if (s.installed && s.installed.version) {
+		  label = `Installed channel: ${s.installed.version}`;
+		}
+		if (s.message) label += ` — ${s.message}`;
+
+		// If backend populated latest.version (our selected channel), enable Update Now when different
+		let canUpdate = false;
+		if (s.latest && s.latest.version && s.installed && s.installed.version) {
+		  canUpdate = String(s.latest.version) !== String(s.installed.version);
+		  if (canUpdate) {
+			label = `Update available: ${s.installed.version} → ${s.latest.version}`;
+		  } else {
+			label = `Up-to-date (${s.installed.version})`;
+		  }
+		}
+		setUpdateState(label, canUpdate);
+	  } catch (e) {
+		setUpdateState('status error: ' + e.message);
+	  }
+	}
+
+	async function checkForUpdates() {
+	  try {
+		setUpdateState('checking…');
+		const channel = document.getElementById('update-channel').value;
+		const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
+		const data = await res.json();
+		if (!data || data.ok === false) {
+		  setUpdateState('check failed');
+		  alert('Check failed: ' + (data && data.error ? data.error : 'unknown error'));
+		  return;
+		}
+		await refreshUpdateStatus();
+	  } catch (e) {
+		setUpdateState('check error: ' + e.message);
+	  }
+	}
+
+	async function applyUpdate() {
+	  if (!confirm('Apply the selected update channel now? Services may restart.')) return;
+	  try {
+		setUpdateState('applying…');
+		const channel = document.getElementById('update-channel').value;
+		const res = await fetch('/api/update/apply', {
+		  method: 'POST',
+		  headers: { 'Content-Type': 'application/json' },
+		  body: JSON.stringify({ channel })
+		});
+		const data = await res.json();
+		if (!data || data.ok === false) {
+		  setUpdateState('update failed');
+		  alert('Update failed: ' + (data && data.error ? data.error : 'unknown error'));
+		  return;
+		}
+		await refreshUpdateStatus();
+		loadUpdateLogs();
+		// If you have a Services panel refresh function, call it:
+		if (typeof refreshServices === 'function') refreshServices();
+	  } catch (e) {
+		setUpdateState('update error: ' + e.message);
+	  }
+	}
+
+	function toggleUpdateLogs() {
+	  const box = document.getElementById('update-logs');
+	  const btn = document.getElementById('btn-toggle-logs');
+	  if (box.style.display === 'block') {
+		box.style.display = 'none';
+		btn.textContent = 'Show Logs';
+	  } else {
+		box.style.display = 'block';
+		btn.textContent = 'Hide Logs';
+		loadUpdateLogs();
+	  }
+	}
+
+	async function loadUpdateLogs() {
+	  const pre = document.getElementById('update-log-content');
+	  try {
+		const res = await fetch('/api/update/logs');
+		const data = await res.json();
+		pre.textContent = (data && data.logs) ? data.logs : 'No update logs available';
+	  } catch (e) {
+		pre.textContent = 'Error loading update logs: ' + e.message;
+	  }
+	}
+
+	// Wire buttons & initial status
+	document.addEventListener('DOMContentLoaded', () => {
+	  document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
+	  document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
+	  document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
+	  refreshUpdateStatus();
+	});
+
+	// Light polling while visible (optional)
+	setInterval(() => {
+	  const panel = document.getElementById('service-panel');
+	  if (panel && panel.style.display === 'block') {
+		refreshUpdateStatus();
+		const box = document.getElementById('update-logs');
+		if (box && box.style.display === 'block') loadUpdateLogs();
+	  }
+	}, 5000);
 
     // Profiles
     async function listProfiles(platform) {
