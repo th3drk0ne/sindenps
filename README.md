@@ -22,7 +22,7 @@ Or with these if you want a specific version version
 
 Install Latest Official Sinden driver
 ```bash
-VERSION=current sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+VERSION=latest sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
 
 Install psiloc uberlag patched driver
