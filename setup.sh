@@ -448,11 +448,13 @@ echo "=== 4) Backend: Flask app  ==="
 sudo wget -O ${APP_DIR}/app.py \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/app.py
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
+log "Flask Application downloaded to ${APP_DIR}/app.py"
 
 echo "=== Downloading clean UTF-8 index.html from GitHub ==="
 sudo wget -O /opt/lightgun-dashboard/index.html \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
+log "Flask html Downloaded to ${APP_DIR}/index.html"
 
 
 echo "=== 6) Systemd unit for dashboard ==="
