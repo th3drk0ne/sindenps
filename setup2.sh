@@ -606,6 +606,10 @@ for p in PS1 PS2; do
   sudo chmod 775 "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
 done
 
+VERSION_FILE="/home/sinden/Lightgun/VERSION"
+echo "$VERSION" > "$VERSION_FILE"
+chmod 0644 "$VERSION_FILE"
+
 # Download profiles
 (
   cd /home/sinden/Lightgun/PS1/profiles
