@@ -146,6 +146,7 @@
         <div class="log-box" id="logs-lightgun-monitor"><pre class="log-content">Loading…</pre></div>
       </div>
 	  
+	  
 		<!-- SYSTEM ACTIONS -->
 		<div class="service-row" id="system-actions">
 		  <span class="service-name">System</span>
@@ -156,6 +157,17 @@
 		  </div>
 		  <div class="log-box" style="display:none;"></div>
 		</div>
+		
+		<div class="service-row" id="software-update">
+			<span class="service-name">Software Update</span>
+			<span class="service-status" id="update-status">idle…</span>
+		<div class="service-buttons">
+			<button onclick="checkForUpdates()" id="btn-check-updates">Check for Updates</button>
+			<button onclick="applyUpdate()" id="btn-update-now" disabled>Update Now</button>
+			<button class="log-toggle" onclick="toggleUpdateLogs(event)">Show Logs</button>
+		</div>
+		<div class="log-box" id="update-logs"><pre class="log-content" id="update-log-content">Loading…</pre></div>
+	</div>
     </section>
 
     <!-- CONFIG TAB -->
