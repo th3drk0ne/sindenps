@@ -2,7 +2,6 @@
 #
 #driver switch switch 
 #
-
 set -euo pipefail
 
 log()  { echo "[INFO] $*"; }
