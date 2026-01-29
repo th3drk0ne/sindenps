@@ -424,36 +424,36 @@ REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
 PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
 PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
 
-# --- PS1: list → archive → download (rollback on failure) ---
+# --- PS1: list → download ---
 ps1_files=()
 if ! mapfile -t ps1_files < <(list_repo_files "$PS1_REMOTE"); then
   err "GitHub listing failed for PS1 — aborting."
   exit 9
 fi
 if [[ ${#ps1_files[@]} -eq 0 ]]; then
-  err "No PS1 files returned from GitHub — aborting."
+  err "No PS1 files returned from GitHub — Try again in a few minutes."
   exit 9
 fi
 
 
 if ! download_files_from_list "$PS1_DIR" ps1_files; then
-  err "PS1 download failed."
+  err "PS1 download failed — Try again in a few minutes."
   exit 9
 fi
 
-# --- PS2: list → archive → download (rollback on failure) ---
+# --- PS2: list → download  ---
 ps2_files=()
 if ! mapfile -t ps2_files < <(list_repo_files "$PS2_REMOTE"); then
   err "GitHub listing failed for PS2 — aborting."
   exit 9
 fi
 if [[ ${#ps2_files[@]} -eq 0 ]]; then
-  err "No PS2 files returned from GitHub — aborting."
+  err "No PS2 files returned from GitHub — Try again in a few minutes.."
   exit 9
 fi
 
 if ! download_files_from_list "$PS2_DIR" ps2_files; then
-  err "PS2 download failed — restoring previous state."
+  err "PS2 download failed — Try again in a few minutes."
   exit 9
 fi
 
@@ -661,20 +661,11 @@ sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
 
-log "=== Done! Browse: http://sindenps.local/ ==="
+log "=== Done! Browse: http://sindenps.local ==="
 
 # 7) restart services
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
-
-# 8) install configuration editor (deprecated for the dashboard)
-
-#cd  /usr/local/bin
-# sudo wget --quiet --show-progress --https-only --timestamping \
-#    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux//usr/local/bin/lightgun-setup"
-# chmod +x /usr/local/bin/lightgun-setup
-
-#log "configuration tool installed"
 
 #-----------------------------------------------------------
 # Step 8) GCON2 UDEV Rules Pi4 and Pi5
