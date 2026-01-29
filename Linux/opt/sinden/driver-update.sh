@@ -120,19 +120,24 @@ list_repo_files() {
   local remote_path="$1"
   local api="https://api.github.com/repos/${OWNER}/${REPO}/contents/${remote_path}?ref=${BRANCH}"
 
-  # Compose headers (token optional)
-  local headers=("Accept: application/vnd.github+json")
+  # Base headers
+  local curl_args=(
+    -sS
+    -H "Accept: application/vnd.github+json"
+  )
+
+  # Optional token header
   if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    headers+=("Authorization: Bearer ${GITHUB_TOKEN}")
+    curl_args+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
   fi
 
-  # Get status code
+  # Status code
   local status
-  status=$(curl -sS -o /dev/null -w "%{http_code}" -H "${headers[0]}" ${headers[1:+-H "${headers[1]}"} "$api")
+  status=$(curl "${curl_args[@]}" -o /dev/null -w "%{http_code}" "$api")
 
-  # Get body
+  # Body
   local body
-  body=$(curl -sS -H "${headers[0]}" ${headers[1:+-H "${headers[1]}"} "$api" || true)
+  body=$(curl "${curl_args[@]}" "$api" || true)
 
   if [[ -z "$status" ]]; then
     err "GitHub API did not return a status for: $api"
@@ -140,12 +145,10 @@ list_repo_files() {
   fi
   if [[ "$status" != "200" ]]; then
     warn "GitHub API returned HTTP $status for: $api"
-    # If rate limited or 404, return failure so caller can stop
-    if [[ "$status" == "403" ]]; then warn "Possibly rate-limited"; fi
-    if [[ "$status" == "404" ]]; then err "Not found: ${remote_path} (branch=${BRANCH})"; fi
+    [[ "$status" == "403" ]] && warn "Possibly rate-limited"
+    [[ "$status" == "404" ]] && err "Not found: ${remote_path} (branch=${BRANCH})"
   fi
 
-  # Detect rate limit message
   if printf '%s' "$body" | grep -qiE 'rate limit exceeded|API rate limit exceeded'; then
     err "GitHub rate limit exceeded for path: $remote_path"
     return 9
