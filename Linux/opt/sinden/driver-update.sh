@@ -116,7 +116,7 @@ BRANCH="${BRANCH:-main}"
 RAW_BASE="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}"
 
 
-ist_repo_files() {
+list_repo_files() {
   local remote_path="$1"
   local api="https://api.github.com/repos/${OWNER}/${REPO}/contents/${remote_path}?ref=${BRANCH}"
 

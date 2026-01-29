@@ -278,7 +278,7 @@ download_assets() {
   )
 }
 
-################################################################################################################################################################
+#################################################################
 # --- Dynamic asset sync from repo paths (wget-only, strict) ---
 OWNER="${OWNER:-th3drk0ne}"
 REPO="${REPO:-sindenps}"
@@ -470,7 +470,7 @@ PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
 download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
 download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
 
-############################################################################################################################################################
+##################################################################
 
 # Create PS1/PS2 and download according to version
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
