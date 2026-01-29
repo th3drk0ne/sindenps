@@ -47,7 +47,7 @@ if [[ -z "${VERSION:-}" ]]; then
     choice="${choice:-1}"
     case "$choice" in
       1) VERSION="latest";   break ;;
-      2) VERSION="revious";   break ;;
+      2) VERSION="previous";   break ;;
       3) VERSION="beta";     break ;;
       4) VERSION="psiloc"; break ;;
       *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
