@@ -72,6 +72,8 @@ chmod 0644 "$VERSION_FILE"
 USER_HOME="/home/sinden"
 LIGHTGUN_DIR="${USER_HOME}/Lightgun"
 
+systemctl stop lightgun.service
+
 # --- Archive & clear PS1/PS2 before downloads ---
 archive_and_clear() {
   local folder="$1"
