@@ -38,7 +38,7 @@ normalize_version() {
 
 if [[ -z "${VERSION:-}" ]]; then
   log "Select Sinden setup version:"
-  echo "  [1] latest    (current release')"
+  echo "  [1] latest    (current release)"
   echo "  [2] previous  (prior release)"
   echo "  [3] beta      (pre-release/test)"
   echo "  [4] psiloc    (legacy)"
