@@ -661,7 +661,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
 
-log "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
+log "=== Done! Browse: http://sindenps.local/ ==="
 
 # 7) restart services
 sudo systemctl restart lightgun.service
