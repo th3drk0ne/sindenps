@@ -78,7 +78,8 @@ systemctl stop lightgun.service
 archive_and_clear() {
   local folder="$1"
   local timestamp="$(date +%Y%m%d_%H%M%S)"
-  local archive_dir="${folder}_archive"
+  local base_archive_dir="${LIGHTGUN_DIR}/archive"
+  local archive_dir="${base_archive_dir}/$(basename "$folder")"
   local keep=5  # keep last 5 archives
 
   mkdir -p "$archive_dir"
@@ -155,7 +156,7 @@ download_dir_from_repo() {
       out="$(wget --no-verbose --https-only --timestamping "$url" 2>&1)"
       rc=$?
 
-      echo "[$(ts)] [INFO] wget: $out" >> "$LOGF"
+      echo "[INFO] wget: $out" >> "$LOGF"
 
       if [[ $rc -ne 0 ]]; then warn "Failed to download $url"; continue; fi
 
