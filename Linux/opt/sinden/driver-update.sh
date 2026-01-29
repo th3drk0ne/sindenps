@@ -215,7 +215,7 @@ download_files_from_list() {
       rc=$?
 
       # Raw wget line without extra timestamp to avoid duplication
-      echo "[INFO] wget: $out" >> "$LOGF"
+      log "[INFO] wget: $out" >> "$LOGF"
 
       if [[ $rc -ne 0 ]]; then
         warn "Failed to download $url"
