@@ -803,7 +803,7 @@ EOF
 show_status() {
   log "Symlink status"
   for link in "/dev/${PREFIX0}" "/dev/${PREFIX1}"; do
-    [[ -e "$link" ]] && echo "  Found: $link -> $(readlink -f "$link")" || echo "  Missing: $link"
+    [[ -e "$link" ]] && log "  Found: $link -> $(readlink -f "$link")" || log "  Missing: $link"
   done
 }
 
