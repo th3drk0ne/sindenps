@@ -151,8 +151,7 @@ def api_update_apply():
         _set_state("applying", f"running {UPDATE_SCRIPT} for {channel}")
         env["VERSION"] = channel
         proc = subprocess.run(
-            [SUDO, "-n", UPDATE_SCRIPT],
-            env=env,
+            [SUDO, "-n", "env", f"VERSION={channel}", UPDATE_SCRIPT],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
