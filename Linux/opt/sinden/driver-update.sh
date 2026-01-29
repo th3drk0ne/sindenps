@@ -194,7 +194,7 @@ download_dir_from_repo() {
       out="$(wget --no-verbose --https-only --timestamping "$url" 2>&1)"
       rc=$?
 
-      echo "[INFO] wget: $out" >> "$LOGF"
+      #echo "[INFO] wget: $out" >> "$LOGF"
 
       if [[ $rc -ne 0 ]]; then warn "Failed to download $url"; continue; fi
 
