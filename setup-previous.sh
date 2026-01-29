@@ -1,7 +1,8 @@
+
 #!/usr/bin/env bash
 #
 # Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
-# Downloads different PS1/PS2 assets based on VERSION 
+# Downloads different PS1/PS2 assets based on VERSION ("current" or "psiloc")
 # Tested on Debian/Ubuntu/Raspberry Pi OS variants using /boot/firmware layout
 #
 
@@ -21,72 +22,58 @@ fi
 log "Running as root."
 
 #-----------------------------------------------------------
-# Step 0) Version selection (no changes to download module)
-# Supported values: latest, psiloc, beta, previous
-# 'current' now maps to 'latest'
+# Step 0) Version selection menu (sets VERSION + VERSION_TAG)
+# - Non-interactive: set VERSION env var before running (current/psiloc)
+# - Interactive: prompts user if VERSION is not preset
 #-----------------------------------------------------------
 normalize_version() {
-  local v="${1,,}"  # lowercase input
+  local v="${1,,}"       # lowercase
   case "$v" in
-    latest|current|new|2|n)   echo "latest"   ;;  # 'current' → 'latest'
-    psiloc|old|legacy|1|o)    echo "psiloc"   ;;
-    beta|b)                   echo "beta"     ;;
-    previous|prev|p)          echo "previous" ;;
-    *)                        echo ""         ;;
+    current|latest|new|2|n) echo "current" ;;
+    psiloc|old|legacy|uberlag|1|o) echo "psiloc" ;;
+    *) echo "" ;;
   esac
 }
 
 if [[ -z "${VERSION:-}" ]]; then
   log "Select Sinden setup version:"
-  echo "  [1] latest    (formerly 'current')"
-  echo "  [2] psiloc    (legacy)"
-  echo "  [3] beta      (pre-release/test)"
-  echo "  [4] previous  (prior release)"
+  echo "  [1] Latest version"
+  echo "  [2] Psiloc version"
   while true; do
-    read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
+    read -r -p "Enter choice (1/2) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
-      1) VERSION="latest";   break ;;
-      2) VERSION="psiloc";   break ;;
-      3) VERSION="beta";     break ;;
-      4) VERSION="previous"; break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
+      1) VERSION="current"; break ;;
+      2) VERSION="psiloc";  break ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
     esac
   done
 else
   VERSION="$(normalize_version "$VERSION")"
   if [[ -z "$VERSION" ]]; then
-    warn "Unrecognized VERSION value. Falling back to interactive selection."
+    warn "Unrecognized VERSION environment value. Falling back to interactive selection."
     unset VERSION
-    echo "  [1] latest"
-    echo "  [2] psiloc"
-    echo "  [3] beta"
-    echo "  [4] previous"
+    echo "  [1] Latest version"
+    echo "  [2] Psiloc version"
     while true; do
-      read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
-      choice="${choice:-1}"
+      read -r -p "Enter choice (1/2) [default: 2]: " choice
+      choice="${choice:-2}"
       case "$choice" in
-        1) VERSION="latest";   break ;;
-        2) VERSION="psiloc";   break ;;
-        3) VERSION="beta";     break ;;
-        4) VERSION="previous"; break ;;
-        *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
+        1) VERSION="current"; break ;;
+        2) VERSION="psiloc";  break ;;
+        *) warn "Invalid selection: '$choice'. Please choose 1 or 2." ;;
       esac
     done
   fi
 fi
 
 # Optional tag for branching (e.g., URLs/flags)
-if [[ "$VERSION" == "latest" ]]; then
+if [[ "$VERSION" == "current" ]]; then
   VERSION_TAG="v2"
 else
   VERSION_TAG="v1"
 fi
 log "Version selected: ${VERSION} (${VERSION_TAG})"
-
-log "Selected update channel: $VERSION"
-
-VERSION_FILE="/home/sinden/Lightgun/VERSION"
 
 #-----------------------------------------------------------
 # Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18
@@ -102,17 +89,20 @@ fi
 if [[ ! -f "$CONFIG_FILE" ]]; then
   err "Cannot find ${CONFIG_FILE}. Aborting."
   #exit 1
-else
-  log "Updating ${CONFIG_FILE} (backup will be created)."
-  cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
-
-  if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
-    echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
-    log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
   else
-    log "dtoverlay=gpio-fan,gpiopin=18,temp=60000 already present."
-  fi
+   
+log "Updating ${CONFIG_FILE} (backup will be created)."
+cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
+  
+if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
+  echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
+  log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
+else
+  log "dtoverlay=gpio-fan,gpiopin=18,temp=60000 already present."
 fi
+  
+fi
+
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
@@ -120,13 +110,14 @@ fi
 if ! id -u sinden &>/dev/null; then
   log "Creating user 'sinden' with password."
   useradd -m -s /bin/bash sinden
-
+  
   read -s -p "Enter password for sinden: " PASSWORD
   echo
   echo "sinden:${PASSWORD}" | chpasswd
 else
   log "User 'sinden' already exists."
 fi
+
 
 # Optionally add device-access groups (uncomment if needed)
 # usermod -aG video,plugdev,dialout sinden
@@ -235,7 +226,7 @@ systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "$
 #-----------------------------------------------------------
 log "Installing prerequisites via apt."
 sudo apt-get update -y
-sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev curl jq
+sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev xmlstarlet whiptail
 log "Prerequisites installed."
 
 #-----------------------------------------------------------
@@ -252,11 +243,10 @@ install -d -o sinden -g sinden /opt/sinden
   log "Downloading lightgun scripts to /opt/sinden."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" 
 
-  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh
-  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh
+  chmod +x lightgun.sh lightgun-monitor.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh
 )
 
 USER_HOME="/home/sinden"
@@ -282,194 +272,120 @@ download_assets() {
   )
 }
 
+# --- Define asset sets based on VERSION ---
+declare -a PS1_URLS PS2_URLS
 
-# --- GitHub repo sync (curl for API listing) ---
-OWNER="${OWNER:-th3drk0ne}"
-REPO="${REPO:-sindenps}"
-BRANCH="${BRANCH:-main}"
-RAW_BASE="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}"
-
-list_repo_files() {
-  local remote_path="$1"
-  local api="https://api.github.com/repos/${OWNER}/${REPO}/contents/${remote_path}?ref=${BRANCH}"
-
-  # Build curl arguments safely (headers as tokens)
-  local curl_args=(
-    -sS
-    -H "Accept: application/vnd.github+json"
+if [[ "$VERSION" == "current" ]]; then
+  # CURRENT (Latest) asset set
+  PS1_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1/test.bmp"
   )
-  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    curl_args+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
-  fi
-
-  # Status + body
-  local status
-  status=$(curl "${curl_args[@]}" -o /dev/null -w "%{http_code}" "$api")
-  local body
-  body=$(curl "${curl_args[@]}" "$api" || true)
-
-  if [[ -z "$status" ]]; then
-    err "GitHub API did not return a status for: $api"
-    return 2
-  fi
-  if [[ "$status" != "200" ]]; then
-    warn "GitHub API returned HTTP $status for: $api"
-    [[ "$status" == "404" ]] && err "Not found: ${remote_path} (branch=${BRANCH})"
-  fi
-
-  if printf '%s' "$body" | grep -qiE 'rate limit exceeded|API rate limit exceeded'; then
-    err "GitHub rate limit exceeded for path: $remote_path"
-    return 9
-  fi
-
-  if ! command -v jq >/dev/null 2>&1; then
-    err "jq is required for dynamic discovery."
-    return 3
-  fi
-
-  printf '%s' "$body" | jq -r '.[] | select(.type=="file") | .path'
-}
-
-# --- Download files from a validated list (no listing inside this function) ---
-# Uses RAW_BASE + rel path; logs each file; avoids duplicate timestamps.
-download_files_from_list() {
-  local dest_dir="$1"; shift
-  local -n files_ref="$1"        # nameref to caller's array
-  install -d -o sinden -g sinden "$dest_dir"
-
-  log "Downloading ${#files_ref[@]} asset(s) into $dest_dir"
-
-  local rel url fname out rc
-  for rel in "${files_ref[@]}"; do
-    url="${RAW_BASE}/${rel}"
-    fname="$(basename "$rel")"
-
-    (
-      cd "$dest_dir" || exit 1
-
-      out="$(wget --no-verbose --https-only --timestamping "$url" 2>&1)"
-      rc=$?
-
-      if [[ $rc -ne 0 ]]; then
-        warn "Failed to download $url"
-        exit 2
-      fi
-
-      if printf '%s' "$out" | grep -qiE 'not retrieving|not modified|no newer'; then
-        log "Up-to-date: $fname"
-      else
-        log "Downloaded: $fname"
-      fi
-
-      case "$fname" in *.exe|*.so) chmod 0755 "$fname" ;; esac
-    )
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-      return 2
-    fi
-  done
-
-  chown -R sinden:sinden "$dest_dir"
-  return 0
-}
-
-# --- Backup configs (unchanged) ---
-PS1_DIR="${LIGHTGUN_DIR}/PS1"
-PS2_DIR="${LIGHTGUN_DIR}/PS2"
-
-PS1_SOURCE="${PS1_DIR}/LightgunMono.exe.config"
-PS1_BACKUP_DIR="${PS1_DIR}/backups"
-
-PS2_SOURCE="${PS2_DIR}/LightgunMono.exe.config"
-PS2_BACKUP_DIR="${PS2_DIR}/backups"
-
-TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
-
-log "Starting backup..."
-
-if [[ -f "$PS1_SOURCE" ]]; then
-  install -d -o sinden -g sinden "$PS1_BACKUP_DIR"
-  cp "$PS1_SOURCE" "$PS1_BACKUP_DIR/$(basename "$PS1_SOURCE").${TIMESTAMP}-upgrade.bak"
-  log "PS1 config backed up."
+  PS2_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2/test.bmp"
+  )
 else
-  warn "PS1 config missing, skipping backup."
+  # PSILOC (Legacy) asset set — UPDATED with your URLs
+  PS1_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS1-PSILOC/test.bmp"
+  )
+  PS2_URLS=(
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.Imaging.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.Math.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/AForge.dll"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/License.txt"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/LightgunMono.exe"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/LightgunMono.exe.config"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/edges.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/libCameraInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/libSdlInterface.so"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/processed.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/raw.bmp"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/PS2-PSILOC/test.bmp"
+  )
 fi
-
-if [[ -f "$PS2_SOURCE" ]]; then
-  install -d -o sinden -g sinden "$PS2_BACKUP_DIR"
-  cp "$PS2_SOURCE" "$PS2_BACKUP_DIR/$(basename "$PS2_SOURCE").${TIMESTAMP}-upgrade.bak"
-  log "PS2 config backed up."
-else
-  warn "PS2 config missing, skipping backup."
-fi
-
-log "Backup complete."
-
-# --- Map VERSION → repo folder ---
-map_version_to_repo_folder() {
-  case "$VERSION" in
-    latest)   echo "latest" ;;
-    psiloc)   echo "psiloc" ;;
-    beta)     echo "beta" ;;
-    previous) echo "previous" ;;
-    *)        err "Invalid VERSION: $VERSION"; return 1 ;;
-  esac
-}
-REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
-
-# --- Remote paths ---
-PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
-PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
-
-# --- PS1: list → download ---
-ps1_files=()
-if ! mapfile -t ps1_files < <(list_repo_files "$PS1_REMOTE"); then
-  err "GitHub listing failed for PS1 — aborting."
-  exit 9
-fi
-if [[ ${#ps1_files[@]} -eq 0 ]]; then
-  err "No PS1 files returned from GitHub — Try again in a few minutes."
-  exit 9
-fi
-
-
-if ! download_files_from_list "$PS1_DIR" ps1_files; then
-  err "PS1 download failed — Try again in a few minutes."
-  exit 9
-fi
-
-# --- PS2: list → download  ---
-ps2_files=()
-if ! mapfile -t ps2_files < <(list_repo_files "$PS2_REMOTE"); then
-  err "GitHub listing failed for PS2 — aborting."
-  exit 9
-fi
-if [[ ${#ps2_files[@]} -eq 0 ]]; then
-  err "No PS2 files returned from GitHub — Try again in a few minutes.."
-  exit 9
-fi
-
-if ! download_files_from_list "$PS2_DIR" ps2_files; then
-  err "PS2 download failed — Try again in a few minutes."
-  exit 9
-fi
-
-
-echo "$VERSION" > "$VERSION_FILE"
-chmod 0644 "$VERSION_FILE"
-
-##################################################################
 
 # Create PS1/PS2 and download according to version
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
 
-cd "${LIGHTGUN_DIR}"
+cd ${LIGHTGUN_DIR}
 install -d -o sinden -g sinden "PS1/backups"
 install -d -o sinden -g sinden "PS2/backups"
 
-cd "${LIGHTGUN_DIR}/log"
-wget --quiet --show-progress --https-only --timestamping \
-  "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
+
+PS1_SOURCE="/home/sinden/Lightgun/PS1/LightgunMono.exe.config"
+PS1_BACKUP_DIR="/home/sinden/Lightgun/PS1/backups"
+
+PS2_SOURCE="/home/sinden/Lightgun/PS2/LightgunMono.exe.config"
+PS2_BACKUP_DIR="/home/sinden/Lightgun/PS2/backups"
+
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+echo "Starting backup..."
+
+# --- PS1 BACKUP ---
+if [[ -f "$PS1_SOURCE" ]]; then
+    mkdir -p "$PS1_BACKUP_DIR"
+    BASENAME=$(basename "$PS1_SOURCE")
+    DEST="$PS1_BACKUP_DIR/${BASENAME}.${TIMESTAMP}-upgrade.bak"
+    cp "$PS1_SOURCE" "$DEST"
+    echo "PS1 config backed up to: $DEST"
+else
+    echo "PS1 config not found, skipping."
+fi
+
+# --- PS2 BACKUP ---
+if [[ -f "$PS2_SOURCE" ]]; then
+    mkdir -p "$PS2_BACKUP_DIR"
+    BASENAME=$(basename "$PS2_SOURCE")
+    DEST="$PS2_BACKUP_DIR/${BASENAME}.${TIMESTAMP}-upgrade.bak"
+    cp "$PS2_SOURCE" "$DEST"
+    echo "PS2 config backed up to: $DEST"
+else
+    echo "PS2 config not found, skipping."
+fi
+
+echo "Backup complete."
+
+
+download_assets "${LIGHTGUN_DIR}/PS1" "${PS1_URLS[@]}"
+download_assets "${LIGHTGUN_DIR}/PS2" "${PS2_URLS[@]}"
+
+cd 	${LIGHTGUN_DIR}/log
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
 
 log "Assets deployment complete."
 
@@ -507,18 +423,18 @@ SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 # Upstream assets (logo only; index.html is written by this script)
 LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
 
-log "=== 1) Install OS packages ==="
+echo "=== 1) Install OS packages ==="
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
 
-log "=== 2) Ensure app directory and ownership ==="
+echo "=== 2) Ensure app directory and ownership ==="
 sudo mkdir -p "${APP_DIR}"
 sudo chown -R "${APP_USER}:${APP_GROUP}" "${APP_DIR}"
 sudo mkdir -p /home/${APP_USER}/.cache/pip
 sudo chown -R ${APP_USER}:${APP_GROUP} /home/${APP_USER}/.cache
 sudo chmod 777 /home/${APP_USER}/.cache
 
-log "=== 3) Python venv & dependencies ==="
+echo "=== 3) Python venv & dependencies ==="
 if [ ! -d "${VENV_DIR}" ]; then
   ${PY_BIN} -m venv "${VENV_DIR}"
 fi
@@ -527,19 +443,21 @@ source "${VENV_DIR}/bin/activate"
 pip install --upgrade pip
 pip install "flask==3.*" "gunicorn==21.*"
 
-log "=== 4) Backend: Flask app  ==="
+
+echo "=== 4) Backend: Flask app  ==="
 sudo wget -O ${APP_DIR}/app.py \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboardTest/app.py
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/app.py
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 log "Flask Application downloaded to ${APP_DIR}/app.py"
 
-log "=== Downloading clean UTF-8 index.html from GitHub ==="
+echo "=== Downloading clean UTF-8 index.html from GitHub ==="
 sudo wget -O /opt/lightgun-dashboard/index.html \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboardTest/index.html
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
 
-log "=== 6) Systemd unit for dashboard ==="
+
+echo "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
 [Unit]
 Description=Lightgun Dashboard (Flask + Gunicorn)
@@ -556,7 +474,7 @@ Restart=always
 WantedBy=multi-user.target
 UNIT_EOF
 
-log "=== 7) Tight sudoers for required systemctl actions ==="
+echo "=== 7) Tight sudoers for required systemctl actions ==="
 sudo bash -c 'cat > /etc/sudoers.d/90-sinden-systemctl' <<'SUDO_EOF'
 Cmnd_Alias LIGHTGUN_CMDS = \
   /usr/bin/systemctl start lightgun.service, \
@@ -569,7 +487,7 @@ sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-log "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
+echo "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
   cfg="/home/${APP_USER}/Lightgun/${p}/LightgunMono.exe.config"
   if [ ! -f "$cfg" ]; then
@@ -583,7 +501,7 @@ XML_EOF"
   sudo chmod 664 "$cfg"
 done
 
-log "=== 9) Ensure backup & profiles subfolders exist & are writable ==="
+echo "=== 9) Ensure backup & profiles subfolders exist & are writable ==="
 for p in PS1 PS2; do
   sudo -u "${APP_USER}" mkdir -p "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
   sudo chown -R "${APP_USER}:${APP_GROUP}" "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
@@ -600,11 +518,13 @@ done
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Light.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Strong.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-MachineGun.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Shotgun.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Shotgun.config"\
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Soft.config"
 
   chown sinden:sinden Default.config Low-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config
-
+  
+  
+  
   cd /home/sinden/Lightgun/PS2/profiles
   log "Downloading PS2 profiles."
   wget --quiet --show-progress --https-only --timestamping \
@@ -613,19 +533,19 @@ done
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Light.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Strong.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-MachineGun.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Shotgun.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Shotgun.config"\
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Soft.config"
-
+	
   chown sinden:sinden Default.config Low-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config
 )
 
-log "=== 10) Ensure Sinden log path/file exists ==="
+echo "=== 10) Ensure Sinden log path/file exists ==="
 sudo mkdir -p "${SINDEN_LOG_DIR}"
 sudo touch "${SINDEN_LOG_FILE}"
 sudo chown "${APP_USER}:${APP_GROUP}" "${SINDEN_LOG_FILE}"
 sudo chmod 644 "${SINDEN_LOG_FILE}"
 
-log "=== 11) Nginx reverse proxy on :80 ==="
+echo "=== 11) Nginx reverse proxy on :80 ==="
 sudo bash -c 'cat > /etc/nginx/sites-available/lightgun-dashboard' <<'NGINX_EOF'
 server {
     listen 80;
@@ -647,26 +567,38 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
-log "=== 12) Deploy/refresh logo (if missing) ==="
+echo "=== 12) Deploy/refresh logo (if missing) ==="
 if [ ! -f "${APP_DIR}/logo.png" ]; then
   sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/logo.png" "${LOGO_URL}" || true
 fi
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
 
-log "=== 13) Enable & restart dashboard ==="
+echo "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
 
-log "=== Done! Browse: http://sindenps.local ==="
+echo "=== Done! Browse: http://<HOST-IP>/  (or configure mDNS for http://sindenps.local/) ==="
+
+
 
 # 7) restart services
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
+# 8) install configuration editor (deprecated for the dashboard)
+
+#cd 	/usr/local/bin
+# sudo wget --quiet --show-progress --https-only --timestamping \
+#    "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux//usr/local/bin/lightgun-setup"
+# chmod +x /usr/local/bin/lightgun-setup
+
+#log "configuration tool installed"
+
 #-----------------------------------------------------------
 # Step 8) GCON2 UDEV Rules Pi4 and Pi5
 #-----------------------------------------------------------
+# setup-gcon2-serial.sh
 #
 # Creates exactly TWO symlinks via udev:
 #   /dev/ttyGCON2S_0  -> the active primary UART (whatever /dev/serial0 resolves to)
@@ -678,6 +610,7 @@ sudo systemctl restart lightgun-monitor.service
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
+
 set -euo pipefail
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
@@ -687,26 +620,26 @@ UDEV_RULE_FILE="/etc/udev/rules.d/99-gcon2-serial.rules"
 PROFILE_SNIPPET="/etc/profile.d/gcon2-serial.sh"
 CONFIG_FILE="/boot/firmware/config.txt"
 
+banner() { printf "\n\033[1;36m[%s]\033[0m %s\n" "GCON2-Serial" "$1"; }
+warn()   { printf "\033[1;33m[WARN]\033[0m %s\n" "$1"; }
+error()  { printf "\033[1;31m[ERROR]\033[0m %s\n" "$1"; }
+
 detect_model() {
   MODEL_STR="Unknown"
   if [[ -r /proc/device-tree/model ]]; then
     MODEL_STR="$(tr -d '\000' < /proc/device-tree/model 2>/dev/null || echo "Unknown")"
   fi
   if echo "$MODEL_STR" | grep -qi "Raspberry Pi 5"; then
-    log "##########################################################################################"
-    log "Raspberry Pi 5 detected: primary alias will use ttyAMA0, secondary alias will use ttyAMA4."
-	log "##########################################################################################"
+    banner "Raspberry Pi 5 detected: primary alias will use ttyAMA0, secondary alias will use ttyAMA4."
     IS_PI5=1
     PRIMARY_KERNELS=("ttyAMA0")              # UART0 for Pi 5
     SECONDARY_KERNELS=("ttyAMA4" "ttyS4")    # UART4
     OVERLAYS=("dtoverlay=uart0-pi5" "dtoverlay=uart4")
   else
-    log "###########################################################################################"
-    log "Assuming Raspberry Pi 4 or earlier: primary alias uses ttyS0, secondary alias uses ttyAMA5."
-	log "###########################################################################################"
+    banner "Assuming Raspberry Pi 4 or earlier: primary alias uses ttyS0, secondary alias uses ttyAMA5."
     IS_PI5=0
-    PRIMARY_KERNELS=("ttyS0")                 # Default
-    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")     # UART5
+    PRIMARY_KERNELS=("ttyS0")              # Default
+    SECONDARY_KERNELS=("ttyAMA5" "ttyS5")    # UART5
     OVERLAYS=("dtoverlay=uart5")
   fi
 }
@@ -717,27 +650,29 @@ require_root() {
 
 ensure_tools_and_groups() {
   if ! command -v picocom >/dev/null 2>&1; then
-    log "picocom not found; installing via apt..."
+    banner "picocom not found; installing via apt..."
     apt-get update -y && apt-get install -y picocom
   fi
   getent group dialout >/dev/null 2>&1 || groupadd dialout
   local u="${SUDO_USER:-$USER}"
   if ! id -nG "$u" | grep -qw dialout; then
-    log "Adding $u to 'dialout' group (relog required)."
+    banner "Adding $u to 'dialout' group (relog required)."
     usermod -aG dialout "$u" || true
   fi
 }
 
 enable_overlays_and_mini_uart() {
-  log "Ensuring overlays and UART settings in $CONFIG_FILE"
+  banner "Ensuring overlays and UART settings in $CONFIG_FILE"
   cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+
+
 
   if [[ $IS_PI5 -eq 1 ]]; then
     # Pi 5 specific settings
     grep -q "^enable_uart=" "$CONFIG_FILE" && sed -i 's/^enable_uart=.*/enable_uart=0/' "$CONFIG_FILE" || echo "enable_uart=0" >> "$CONFIG_FILE"
     grep -q "^dtoverlay=uart0-pi5" "$CONFIG_FILE" || echo "dtoverlay=uart0-pi5" >> "$CONFIG_FILE"
-    grep -q "^dtoverlay=uart4" "$CONFIG_FILE"     || echo "dtoverlay=uart4"     >> "$CONFIG_FILE"
-    grep -q "^dtoverlay=disable-bt" "$CONFIG_FILE"|| echo "dtoverlay=disable-bt" >> "$CONFIG_FILE"
+    grep -q "^dtoverlay=uart4" "$CONFIG_FILE" || echo "dtoverlay=uart4" >> "$CONFIG_FILE"
+	grep -q "^dtoverlay=disable-bt" "$CONFIG_FILE" || echo "dtoverlay=disable-bt" >> "$CONFIG_FILE"
   else
     # Pi 4 and earlier
     grep -q "^enable_uart=1" "$CONFIG_FILE" || echo "enable_uart=1" >> "$CONFIG_FILE"
@@ -745,11 +680,11 @@ enable_overlays_and_mini_uart() {
     grep -q "^dtoverlay=uart5" "$CONFIG_FILE" || echo "dtoverlay=uart5" >> "$CONFIG_FILE"
   fi
 
-  log "Config updated. Backup created: ${CONFIG_FILE}.bak.*"
+  banner "Config updated. Backup created: ${CONFIG_FILE}.bak.*"
 }
 
 write_udev_rules() {
-  log "Writing udev rules -> $UDEV_RULE_FILE"
+  banner "Writing udev rules -> $UDEV_RULE_FILE"
   tmpfile=$(mktemp)
   {
     echo '# Auto-generated by setup-gcon2-serial.sh'
@@ -769,7 +704,7 @@ write_udev_rules() {
 }
 
 write_profile_aliases() {
-  log "Creating shell aliases -> $PROFILE_SNIPPET"
+  banner "Creating shell aliases -> $PROFILE_SNIPPET"
   cat > "$PROFILE_SNIPPET" <<EOF
 # GCON2 serial aliases (auto-generated)
 # Default baud: $BAUD
@@ -789,9 +724,9 @@ EOF
 }
 
 show_status() {
-  log "Symlink status"
+  banner "Symlink status"
   for link in "/dev/${PREFIX0}" "/dev/${PREFIX1}"; do
-    [[ -e "$link" ]] && log "  Found: $link -> $(readlink -f "$link")" || log "  Missing: $link"
+    [[ -e "$link" ]] && echo "  Found: $link -> $(readlink -f "$link")" || echo "  Missing: $link"
   done
 }
 
@@ -800,11 +735,11 @@ prompt_reboot() {
   read -rp "Do you want to reboot now to apply changes? [y/N]: " choice
   case "$choice" in
     [Yy]*)
-      log "Rebooting now..."
+      banner "Rebooting now..."
       reboot
       ;;
     *)
-      log "Reboot skipped. Please reboot manually later."
+      banner "Reboot skipped. Please reboot manually later."
       ;;
   esac
 }
@@ -817,12 +752,12 @@ main() {
   write_udev_rules
   write_profile_aliases
   show_status
- log
- log "Next steps:"
-  log "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
-  log "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
-  log "  • Check:   gcon2_serial_status"
-  log "  • Dashboard: Running at http://sindenps.local/"
+  echo
+  echo "Next steps:"
+  echo "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
+  echo "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
+  echo "  • Check:   gcon2_serial_status"
+  echo "  • Dashboard: Running at http://sindenps.local/"
   prompt_reboot
 }
 main
