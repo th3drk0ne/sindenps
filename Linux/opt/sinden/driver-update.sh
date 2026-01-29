@@ -115,19 +115,50 @@ REPO="${REPO:-sindenps}"
 BRANCH="${BRANCH:-main}"
 RAW_BASE="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}"
 
-list_repo_files() {
+
+ist_repo_files() {
   local remote_path="$1"
   local api="https://api.github.com/repos/${OWNER}/${REPO}/contents/${remote_path}?ref=${BRANCH}"
 
-  local status body
-  status="$(wget -q --server-response -O- --header="Accept: application/vnd.github+json" "$api" 2>&1 | awk '/^  HTTP\//{print $2}')"
-  body="$(wget -q -O- --header="Accept: application/vnd.github+json" "$api" || true)"
+  # Compose headers (token optional)
+  local headers=("Accept: application/vnd.github+json")
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    headers+=("Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
 
-  if [[ "$status" != "200" ]]; then warn "GitHub API error $status for $api"; fi
-  if ! command -v jq >/dev/null; then err "jq is required."; return 3; fi
+  # Get status code
+  local status
+  status=$(curl -sS -o /dev/null -w "%{http_code}" -H "${headers[0]}" ${headers[1:+-H "${headers[1]}"} "$api")
+
+  # Get body
+  local body
+  body=$(curl -sS -H "${headers[0]}" ${headers[1:+-H "${headers[1]}"} "$api" || true)
+
+  if [[ -z "$status" ]]; then
+    err "GitHub API did not return a status for: $api"
+    return 2
+  fi
+  if [[ "$status" != "200" ]]; then
+    warn "GitHub API returned HTTP $status for: $api"
+    # If rate limited or 404, return failure so caller can stop
+    if [[ "$status" == "403" ]]; then warn "Possibly rate-limited"; fi
+    if [[ "$status" == "404" ]]; then err "Not found: ${remote_path} (branch=${BRANCH})"; fi
+  fi
+
+  # Detect rate limit message
+  if printf '%s' "$body" | grep -qiE 'rate limit exceeded|API rate limit exceeded'; then
+    err "GitHub rate limit exceeded for path: $remote_path"
+    return 9
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    err "jq is required for dynamic discovery."
+    return 3
+  fi
 
   printf '%s' "$body" | jq -r '.[] | select(.type=="file") | .path'
 }
+
 
 # Download directory with timestamps and file logging
 download_dir_from_repo() {
