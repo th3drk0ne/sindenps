@@ -235,7 +235,7 @@ systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "$
 #-----------------------------------------------------------
 log "Installing prerequisites via apt."
 sudo apt-get update -y
-sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev xmlstarlet whiptail curl
+sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev curl
 log "Prerequisites installed."
 
 #-----------------------------------------------------------
@@ -349,9 +349,6 @@ download_files_from_list() {
 
       out="$(wget --no-verbose --https-only --timestamping "$url" 2>&1)"
       rc=$?
-
-      # Raw wget line without extra timestamp to avoid duplication
-      #log "wget: $out"
 
       if [[ $rc -ne 0 ]]; then
         warn "Failed to download $url"
