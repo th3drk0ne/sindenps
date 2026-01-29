@@ -98,9 +98,11 @@ archive_and_clear() {
     rm -f "$oldfile"
   done
 
-  log "Clearing folder: $folder"
-  rm -rf "${folder:?}/"*
+log "Clearing folder (excluding backups/ and profiles/): $folder"
+  # Remove everything except backups and profiles directories
+  find "$folder" -mindepth 1 -maxdepth 1 \( ! -name 'backups' -a ! -name 'profiles' \) -exec rm -rf {} +
 }
+
 
 # Clear PS1 and PS2 before downloading
 archive_and_clear "${LIGHTGUN_DIR}/PS1"
@@ -201,7 +203,11 @@ PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
 download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
 download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
 
+
 systemctl restart lightgun.service
 systemctl restart lightgun-monitor.service
 
-echo "$VERSION" > "$VERSION_FILE
+echo "$VERSION" > "$VERSION_FILE"
+chmod 0644 "$VERSION_FILE"
+
+log "Update completed for channel: $VERSION"
