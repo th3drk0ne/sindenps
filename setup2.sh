@@ -84,6 +84,10 @@ else
 fi
 log "Version selected: ${VERSION} (${VERSION_TAG})"
 
+log "Selected update channel: $VERSION"
+
+VERSION_FILE="/home/sinden/Lightgun/VERSION"
+
 #-----------------------------------------------------------
 # Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18
 #-----------------------------------------------------------
@@ -469,6 +473,9 @@ PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
 # Download both PS1 and PS2 assets
 download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
 download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
+
+echo "$VERSION" > "$VERSION_FILE"
+chmod 0644 "$VERSION_FILE"
 
 ##################################################################
 
