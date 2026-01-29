@@ -705,13 +705,17 @@ detect_model() {
     MODEL_STR="$(tr -d '\000' < /proc/device-tree/model 2>/dev/null || echo "Unknown")"
   fi
   if echo "$MODEL_STR" | grep -qi "Raspberry Pi 5"; then
+    log "##########################################################################################"
     log "Raspberry Pi 5 detected: primary alias will use ttyAMA0, secondary alias will use ttyAMA4."
+	log "##########################################################################################"
     IS_PI5=1
     PRIMARY_KERNELS=("ttyAMA0")              # UART0 for Pi 5
     SECONDARY_KERNELS=("ttyAMA4" "ttyS4")    # UART4
     OVERLAYS=("dtoverlay=uart0-pi5" "dtoverlay=uart4")
   else
+    log "###########################################################################################"
     log "Assuming Raspberry Pi 4 or earlier: primary alias uses ttyS0, secondary alias uses ttyAMA5."
+	log "###########################################################################################"
     IS_PI5=0
     PRIMARY_KERNELS=("ttyS0")                 # Default
     SECONDARY_KERNELS=("ttyAMA5" "ttyS5")     # UART5
