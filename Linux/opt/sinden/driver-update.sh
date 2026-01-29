@@ -5,9 +5,9 @@
 set -euo pipefail
 
 LOGF="/var/log/sindenps-update.log"
-log()  { echo "[INFO] $*"  | tee -a "$LOGF"; }
-warn() { echo "[WARN] $*"  | tee -a "$LOGF" >&2; }
-err()  { echo "[ERROR] $*" | tee -a "$LOGF" >&2; }
+log()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $*"  | tee -a "$LOGF"; }
+warn() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] $*"  | tee -a "$LOGF" >&2; }
+err()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" | tee -a "$LOGF" >&2; }
 
 # ensure log file dir exists
 install -d -m 0755 /var/log
