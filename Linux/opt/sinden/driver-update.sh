@@ -178,7 +178,6 @@ list_repo_files() {
   fi
   if [[ "$status" != "200" ]]; then
     warn "GitHub API returned HTTP $status for: $api"
-    [[ "$status" == "403" ]] && warn "Possibly rate-limited"
     [[ "$status" == "404" ]] && err "Not found: ${remote_path} (branch=${BRANCH})"
   fi
 
