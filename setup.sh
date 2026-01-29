@@ -2,7 +2,7 @@
 #
 # Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
 # Downloads different PS1/PS2 assets based on VERSION 
-# Tested on Debian/Ubuntu/Raspberry Pi OS variants using /boot/firmware layout
+# Tested on /Raspberry Pi OS variants using /boot/firmware layout
 #
 
 set -euo pipefail
@@ -28,28 +28,28 @@ log "Running as root."
 normalize_version() {
   local v="${1,,}"  # lowercase input
   case "$v" in
-    latest|current|new|2|n)   echo "latest"   ;;  # 'current' → 'latest'
-    psiloc|old|legacy|1|o)    echo "psiloc"   ;;
-    beta|b)                   echo "beta"     ;;
-    previous|prev|p)          echo "previous" ;;
+    latest|current|new|1|n)   echo "latest"   ;;  # 'current' → 'latest'
+    previous|prev|2|p)        echo "previous"   ;;
+    beta|3|b)                 echo "beta"     ;;
+    psiloc|old|legacy|4|o)    echo "psiloc" ;;
     *)                        echo ""         ;;
   esac
 }
 
 if [[ -z "${VERSION:-}" ]]; then
   log "Select Sinden setup version:"
-  echo "  [1] latest    (formerly 'current')"
-  echo "  [2] psiloc    (legacy)"
+  echo "  [1] latest    (current release')"
+  echo "  [2] previous  (prior release)"
   echo "  [3] beta      (pre-release/test)"
-  echo "  [4] previous  (prior release)"
+  echo "  [4] psiloc    (legacy)"
   while true; do
     read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
       1) VERSION="latest";   break ;;
-      2) VERSION="psiloc";   break ;;
+      2) VERSION="revious";   break ;;
       3) VERSION="beta";     break ;;
-      4) VERSION="previous"; break ;;
+      4) VERSION="psiloc"; break ;;
       *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
     esac
   done
@@ -59,17 +59,17 @@ else
     warn "Unrecognized VERSION value. Falling back to interactive selection."
     unset VERSION
     echo "  [1] latest"
-    echo "  [2] psiloc"
+    echo "  [2] previous"
     echo "  [3] beta"
-    echo "  [4] previous"
+    echo "  [4] psiloc"
     while true; do
       read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
       choice="${choice:-1}"
       case "$choice" in
         1) VERSION="latest";   break ;;
-        2) VERSION="psiloc";   break ;;
+        2) VERSION="previous";   break ;;
         3) VERSION="beta";     break ;;
-        4) VERSION="previous"; break ;;
+        4) VERSION="psiloc"; break ;;
         *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
       esac
     done
