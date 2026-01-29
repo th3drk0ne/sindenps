@@ -142,7 +142,11 @@ download_dir_from_repo() {
     return 1
   fi
 
-  if [[ ${#files[@]} -eq 0 ]]; then warn "No files in: $remote_dir"; return 0; fi
+  if [[ ${#files[@]} -eq 0 ]]; then
+    err "No files returned from GitHub for $remote_dir — update failed."
+    return 9
+  fi
+
 
   log "Downloading ${#files[@]} asset(s) into $dest_dir"
 
@@ -201,8 +205,15 @@ REPO_VERSION_FOLDER="$(map_version_to_repo_folder)"
 PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
 PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
 
-download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"
-download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"
+if ! download_dir_from_repo "$PS1_REMOTE" "${LIGHTGUN_DIR}/PS1"; then
+    err "PS1 update failed — aborting."
+    exit 9
+fi
+
+if ! download_dir_from_repo "$PS2_REMOTE" "${LIGHTGUN_DIR}/PS2"; then
+    err "PS2 update failed — aborting."
+    exit 9
+fi
 
 
 systemctl restart lightgun.service
