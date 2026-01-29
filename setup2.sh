@@ -425,9 +425,8 @@ PS2_BACKUP_DIR="/home/sinden/Lightgun/PS2/backups"
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
-echo "Starting backup..."
 
-echo "Starting backup..."
+log "Starting backup..."
 
 # --- PS1 BACKUP ---
 if [[ -f "$PS1_SOURCE" ]]; then
@@ -435,9 +434,9 @@ if [[ -f "$PS1_SOURCE" ]]; then
     BASENAME=$(basename "$PS1_SOURCE")
     DEST="$PS1_BACKUP_DIR/${BASENAME}.${TIMESTAMP}-upgrade.bak"
     cp "$PS1_SOURCE" "$DEST"
-    echo "PS1 config backed up to: $DEST"
+    log "PS1 config backed up to: $DEST"
 else
-    echo "PS1 config not found, skipping."
+    log "PS1 config not found, skipping."
 fi
 
 # --- PS2 BACKUP ---
@@ -446,12 +445,12 @@ if [[ -f "$PS2_SOURCE" ]]; then
     BASENAME=$(basename "$PS2_SOURCE")
     DEST="$PS2_BACKUP_DIR/${BASENAME}.${TIMESTAMP}-upgrade.bak"
     cp "$PS2_SOURCE" "$DEST"
-    echo "PS2 config backed up to: $DEST"
+    log "PS2 config backed up to: $DEST"
 else
-    echo "PS2 config not found, skipping."
+    log "PS2 config not found, skipping."
 fi
 
-echo "Backup complete."
+log "Backup complete."
 
 # --- Map VERSION -> repo folder name under driver/version/<folder>/{PS1,PS2}
 # Supported: latest, psiloc, beta, previous
@@ -526,18 +525,18 @@ SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 # Upstream assets (logo only; index.html is written by this script)
 LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
 
-echo "=== 1) Install OS packages ==="
+log "=== 1) Install OS packages ==="
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
 
-echo "=== 2) Ensure app directory and ownership ==="
+log "=== 2) Ensure app directory and ownership ==="
 sudo mkdir -p "${APP_DIR}"
 sudo chown -R "${APP_USER}:${APP_GROUP}" "${APP_DIR}"
 sudo mkdir -p /home/${APP_USER}/.cache/pip
 sudo chown -R ${APP_USER}:${APP_GROUP} /home/${APP_USER}/.cache
 sudo chmod 777 /home/${APP_USER}/.cache
 
-echo "=== 3) Python venv & dependencies ==="
+log "=== 3) Python venv & dependencies ==="
 if [ ! -d "${VENV_DIR}" ]; then
   ${PY_BIN} -m venv "${VENV_DIR}"
 fi
@@ -546,19 +545,19 @@ source "${VENV_DIR}/bin/activate"
 pip install --upgrade pip
 pip install "flask==3.*" "gunicorn==21.*"
 
-echo "=== 4) Backend: Flask app  ==="
+log "=== 4) Backend: Flask app  ==="
 sudo wget -O ${APP_DIR}/app.py \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboardTest/app.py
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 log "Flask Application downloaded to ${APP_DIR}/app.py"
 
-echo "=== Downloading clean UTF-8 index.html from GitHub ==="
+log "=== Downloading clean UTF-8 index.html from GitHub ==="
 sudo wget -O /opt/lightgun-dashboard/index.html \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboardTest/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
 
-echo "=== 6) Systemd unit for dashboard ==="
+log "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
 [Unit]
 Description=Lightgun Dashboard (Flask + Gunicorn)
@@ -575,7 +574,7 @@ Restart=always
 WantedBy=multi-user.target
 UNIT_EOF
 
-echo "=== 7) Tight sudoers for required systemctl actions ==="
+log "=== 7) Tight sudoers for required systemctl actions ==="
 sudo bash -c 'cat > /etc/sudoers.d/90-sinden-systemctl' <<'SUDO_EOF'
 Cmnd_Alias LIGHTGUN_CMDS = \
   /usr/bin/systemctl start lightgun.service, \
@@ -588,7 +587,7 @@ sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-echo "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
+log "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
   cfg="/home/${APP_USER}/Lightgun/${p}/LightgunMono.exe.config"
   if [ ! -f "$cfg" ]; then
@@ -602,7 +601,7 @@ XML_EOF"
   sudo chmod 664 "$cfg"
 done
 
-echo "=== 9) Ensure backup & profiles subfolders exist & are writable ==="
+log "=== 9) Ensure backup & profiles subfolders exist & are writable ==="
 for p in PS1 PS2; do
   sudo -u "${APP_USER}" mkdir -p "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
   sudo chown -R "${APP_USER}:${APP_GROUP}" "/home/${APP_USER}/Lightgun/${p}/backups" "/home/${APP_USER}/Lightgun/${p}/profiles"
@@ -638,13 +637,13 @@ done
   chown sinden:sinden Default.config Low-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config
 )
 
-echo "=== 10) Ensure Sinden log path/file exists ==="
+log "=== 10) Ensure Sinden log path/file exists ==="
 sudo mkdir -p "${SINDEN_LOG_DIR}"
 sudo touch "${SINDEN_LOG_FILE}"
 sudo chown "${APP_USER}:${APP_GROUP}" "${SINDEN_LOG_FILE}"
 sudo chmod 644 "${SINDEN_LOG_FILE}"
 
-echo "=== 11) Nginx reverse proxy on :80 ==="
+log "=== 11) Nginx reverse proxy on :80 ==="
 sudo bash -c 'cat > /etc/nginx/sites-available/lightgun-dashboard' <<'NGINX_EOF'
 server {
     listen 80;
@@ -666,13 +665,13 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
-echo "=== 12) Deploy/refresh logo (if missing) ==="
+log "=== 12) Deploy/refresh logo (if missing) ==="
 if [ ! -f "${APP_DIR}/logo.png" ]; then
   sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/logo.png" "${LOGO_URL}" || true
 fi
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
 
-echo "=== 13) Enable & restart dashboard ==="
+log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 sudo systemctl restart lightgun-dashboard.service
