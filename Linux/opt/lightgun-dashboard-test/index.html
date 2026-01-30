@@ -57,6 +57,16 @@
     .config-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
     .config-row label { width:260px; color:#ccc; font-size:14px; }
     .config-row input { flex:1 1 50%; max-width:50%; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:4px; }
+	
+	
+	.config-row label {
+	  display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;
+	}
+	.config-row label small {
+	  display:block; width:100%;        /* drops to its own line */
+	  color:#888; font-size:12px; line-height:1.4; margin-top:4px;
+	}
+
 
     /* Desktop full-width fix */
     @media (min-width: 769px) {
