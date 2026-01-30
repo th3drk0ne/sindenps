@@ -44,10 +44,11 @@ log "Running as root."
 normalize_version() {
   local v="${1,,}"
   case "$v" in
-    latest|current|new|2|n)   echo "latest" ;;
-    psiloc|old|legacy|1|o)    echo "psiloc" ;;
-    beta|b)                   echo "beta" ;;
-    previous|prev|p)          echo "previous" ;;
+    latest|current|new|1|n)   echo "latest" ;;
+    psiloc|old|legacy|2|o)    echo "psiloc" ;;
+    beta|3|b)                   echo "beta" ;;
+    previous|prev|4|p)          echo "previous" ;;
+    ubuntu|pc|x86|5|d)    echo "ubuntu" ;;
     *)                        echo "" ;;
   esac
 }
@@ -62,6 +63,7 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [2] psiloc"
   echo "  [3] beta"
   echo "  [4] previous"
+  echo "  [5] ubuntu"
   while true; do
     read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
@@ -70,7 +72,8 @@ if [[ -z "${VERSION:-}" ]]; then
       2) VERSION="psiloc";   break ;;
       3) VERSION="beta";     break ;;
       4) VERSION="previous"; break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
+      5) VERSION="ubuntu"; break ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1–5." ;;
     esac
   done
 fi
@@ -279,6 +282,7 @@ map_version_to_repo_folder() {
     psiloc)   echo "psiloc" ;;
     beta)     echo "beta" ;;
     previous) echo "previous" ;;
+    ubuntu) echo "ubuntu" ;;
     *)        err "Invalid VERSION: $VERSION"; return 1 ;;
   esac
 }
