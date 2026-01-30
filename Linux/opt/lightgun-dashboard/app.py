@@ -125,7 +125,7 @@ def api_update_status():
 def api_update_check():
     # Your script uses channels; surface the chosen one as "latest"
     channel = (request.args.get("channel") or "latest").lower()
-    allowed = {"latest","psiloc","beta","previous"}
+    allowed = {"latest","psiloc","beta","previous","ubuntu"}
     if channel not in allowed:
         _set_state("error", f"unsupported channel: {channel}")
         return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
