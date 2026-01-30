@@ -416,6 +416,20 @@
         label.setAttribute('for', item.key);
         label.textContent = item.key;
 
+        // Info icon tooltip
+        if (item.comment) {
+          // visible “i” icon with custom tooltip
+          const tip = document.createElement('span');
+          tip.className = 'info-tip';
+          tip.setAttribute('tabindex', '0');         // keyboard accessible
+          tip.setAttribute('role', 'note');
+          tip.setAttribute('aria-label', 'Description');
+          tip.setAttribute('data-tip', item.comment);
+          tip.title = item.comment;                  // native fallback
+          // no visible character; tooltip shown on hover/focus via CSS or title
+		  tip.textContent = 'i';
+          label.appendChild(tip);
+
           // Optional: also show inline text under label for long comments
           const small = document.createElement('small');
           small.textContent = item.comment;
