@@ -452,7 +452,6 @@ def _split_by_player(appsettings: ET.Element):
             p1.append({"key": k, "value": it["value"], "comment": it["comment"]})
     return p1, p2, _group_by_category(p1), _group_by_category(p2)
 
-# --- Add near your XML helpers in app.py ---
 import re
 import xml.etree.ElementTree as ET
 from typing import List, Dict
