@@ -342,7 +342,7 @@ download_files_from_list() {
   local -n files_ref="$1"        # nameref to caller's array
   install -d -o sinden -g sinden "$dest_dir"
 
-  log "Downloading ${#files_ref[@]} asset(s) into $dest_dir"
+  log "Downloading ${#files_ref[@]} asset(s) from ${VERSION} into $dest_dir"
 
   local rel url fname out rc
   for rel in "${files_ref[@]}"; do
