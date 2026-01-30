@@ -452,6 +452,70 @@ def _split_by_player(appsettings: ET.Element):
             p1.append({"key": k, "value": it["value"], "comment": it["comment"]})
     return p1, p2, _group_by_category(p1), _group_by_category(p2)
 
+# --- Add near your XML helpers in app.py ---
+import re
+import xml.etree.ElementTree as ET
+from typing import List, Dict
+
+ASSIGNABLE_HEADER_RE = re.compile(r'^\s*Assignable Actions\s*$', re.I)
+
+def _parse_assignable_actions_block(appsettings: ET.Element) -> List[Dict[str, str]]:
+    """
+    Look for a comment node that starts with 'Assignable Actions' and parse
+    subsequent lines into a list of {code, label}.
+    Handles single values (e.g., '3 MouseRight') and ranges (e.g., '8-17 keyboard 0-9').
+    """
+    actions: List[Dict[str, str]] = []
+
+    # 1) Find the comment node with the header
+    children = list(appsettings)
+    header_idx = -1
+    lines_after_header: List[str] = []
+
+    for i, node in enumerate(children):
+        if node.tag is ET.Comment:
+            comment_text = (node.text or "").strip()
+            # Split into lines and trim
+            raw_lines = [ln.strip() for ln in comment_text.splitlines() if ln.strip()]
+            if not raw_lines:
+                continue
+            if ASSIGNABLE_HEADER_RE.match(raw_lines[0]):
+                header_idx = i
+                # everything after the header line is candidate content
+                lines_after_header = raw_lines[1:]
+                break
+
+    if header_idx < 0:
+        return actions  # Not found; return empty
+
+    # 2) Normalize the collected lines into code/label entries
+    # Supported forms:
+    # - "0 None"
+    # - "1 MouseLeft"
+    # - "8-17 equals keyboard 0-9"
+    for ln in lines_after_header:
+        # Skip lines that don't start with a number/range
+        if not re.match(r'^\d', ln):
+            continue
+
+        # Range form: e.g., "8-17 equals keyboard 0-9"
+        m_range = re.match(r'^(?P<start>\d+)\s*-\s*(?P<end>\d+)\s+(?P<label>.+)$', ln)
+        if m_range:
+            start = int(m_range.group('start'))
+            end = int(m_range.group('end'))
+            label = m_range.group('label')
+            # Expand the range with a friendly label
+            for code in range(start, end + 1):
+                actions.append({"code": str(code), "label": label})
+            continue
+
+        # Single form: e.g., "3 MouseRight"
+        m_single = re.match(r'^(?P<code>\d+)\s+(?P<label>.+)$', ln)
+        if m_single:
+            actions.append({"code": m_single.group('code'), "label": m_single.group('label')})
+
+    return actions
+
 # ===========================
 # Profiles helpers
 # ===========================
@@ -519,22 +583,23 @@ def api_config_get():
             path = CONFIG_PATHS[platform]
             source = "live"
      
-        tree = _load_config_tree(path)
-        appsettings = _appsettings_root(tree)
-        p1, p2, p1_groups, p2_groups = _split_by_player(appsettings)
+
+            tree = _load_config_tree(path)
+            appsettings = _appsettings_root(tree)
+            p1, p2 = _split_by_player(appsettings)
 
 
+        assignable = _parse_assignable_actions_block(appsettings)  # NEW
        
         return jsonify({
-            "ok": True,
+           "ok": True,
             "platform": platform,
             "path": path,
             "player1": p1,
             "player2": p2,
-            "player1Groups": p1_groups,   # NEW
-            "player2Groups": p2_groups,   # NEW
+            "assignableActions": assignable,   # NEW
             "source": source,
-            "profile": profile_name if profile_name else "",
+            "profile": profile_name if profile_name else ""
         })
 
     except Exception as e:

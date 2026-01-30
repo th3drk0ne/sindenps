@@ -232,7 +232,6 @@
         <span id="config-status" class="config-status-inline"></span>
         <button id="save-restart" class="btn-danger">Save & Restart</button>
       </div>
-
       <div class="config-panels">
         <div class="config-card">
           <div class="service-name">Player 1</div>
@@ -243,6 +242,13 @@
           <div id="p2-form" class="config-form"></div>
         </div>
       </div>
+	  <!-- Inside the tab-config section -->
+		<div class="config-card" id="assignable-card" style="display:none;">
+		  <div class="service-name">Assignable Actions Reference</div>
+		  <div class="config-form">
+			<pre class="log-content" id="assignable-pre" style="display:block; max-height:none; border:1px solid #444; padding:10px;"></pre>
+		  </div>
+		</div>
     </section>
 
     <!-- BACKUP RESTORE MODAL -->
@@ -361,14 +367,27 @@
     }
 
     // ===== Config helpers =====
-    async function loadConfig(platform) {
-      const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Failed to read config');
-      document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
-      buildConfigForm('p1-form', data.player1);
-      buildConfigForm('p2-form', data.player2);
-    }
+
+	  async function loadConfig(platform) {
+		const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
+		const data = await res.json();
+		if (!data.ok) throw new Error(data.error || 'Failed to read config');
+
+		// ... your existing form build for P1/P2 ...
+
+		// NEW: render Assignable Actions if present
+		if (Array.isArray(data.assignableActions) && data.assignableActions.length) {
+		  const pre = document.getElementById('assignable-pre');
+		  const card = document.getElementById('assignable-card');
+		  const lines = data.assignableActions.map(a => `${a.code}  —  ${a.label}`);
+		  pre.textContent = lines.join('\n');
+		  if (card) card.style.display = 'block';
+		} else {
+		  const card = document.getElementById('assignable-card');
+		  if (card) card.style.display = 'none';
+		}
+	  }
+
 
 
   // New: build grouped panels with headings and tooltips
