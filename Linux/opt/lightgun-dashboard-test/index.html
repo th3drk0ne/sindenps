@@ -392,7 +392,7 @@
           tip.setAttribute('aria-label', 'Description');
           tip.setAttribute('data-tip', item.comment);
           tip.title = item.comment;                  // native fallback
-          //tip.textContent = 'i';
+          // no visible character; tooltip shown on hover/focus via CSS or title
           label.appendChild(tip);
 
           // Optional: also show inline text under label for long comments
