@@ -583,23 +583,22 @@ def api_config_get():
             path = CONFIG_PATHS[platform]
             source = "live"
      
+        tree = _load_config_tree(path)
+        appsettings = _appsettings_root(tree)
+        p1, p2, p1_groups, p2_groups = _split_by_player(appsettings)
 
-            tree = _load_config_tree(path)
-            appsettings = _appsettings_root(tree)
-            p1, p2 = _split_by_player(appsettings)
 
-
-        assignable = _parse_assignable_actions_block(appsettings)  # NEW
        
         return jsonify({
-           "ok": True,
+            "ok": True,
             "platform": platform,
             "path": path,
             "player1": p1,
             "player2": p2,
-            "assignableActions": assignable,   # NEW
+            "player1Groups": p1_groups,   # NEW
+            "player2Groups": p2_groups,   # NEW
             "source": source,
-            "profile": profile_name if profile_name else ""
+            "profile": profile_name if profile_name else "",
         })
 
     except Exception as e:
