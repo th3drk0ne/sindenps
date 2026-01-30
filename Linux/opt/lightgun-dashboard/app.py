@@ -385,6 +385,136 @@ def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
         with open(path, "w", encoding="utf-8", newline="") as f:
             f.write(updated)
 
+# --- Add near your XML helpers (app.py) ---
+import re
+import xml.etree.ElementTree as ET
+from collections import OrderedDict
+
+CATEGORIES = [
+    (r'^(SerialPort|VideoDevice)', 'Device & Ports'),
+    (r'^(Calibrate|Offset|ColourMatch|GangstaSetting|CameraRes|EnableCalibration|AutoSaveCalibration)', 'Calibration'),
+    (r'^(CameraExposure|CameraBrightness|CameraContrast|MatchOnlyWherePointing|OffscreenReload|ConsoleOutputVerbose)', 'Camera & Exposure'),
+    (r'^(IAgreeRecoil|EnableRecoil|Recoil|TriggerRecoil|AutoRecoil)', 'Recoil'),
+    (r'^(Button(?!.*Offscreen)|.*Mod$)', 'Buttons (On-screen)'),
+    (r'^(Button.*Offscreen|.*OffscreenMod$)', 'Buttons (Off-screen)'),
+    (r'^(JoystickMode)', 'Joystick Mode'),
+]
+
+def _category_for(key: str) -> str:
+    for pat, name in CATEGORIES:
+        if re.search(pat, key):
+            return name
+    return 'Other'
+
+def _settings_with_comments(appsettings: ET.Element):
+    """
+    Return [{'key','value','comment'}] in document order.
+    Prefer the FOLLOWING sibling comment; fall back to PREVIOUS if needed.
+    """
+    children = list(appsettings)
+    out = []
+    for i, el in enumerate(children):
+        if not (isinstance(el.tag, str) and el.tag == "add"):
+            continue
+        key = el.attrib.get("key", "")
+        val = el.attrib.get("value", "")
+
+        comment_text = ""
+        if i + 1 < len(children) and children[i + 1].tag is ET.Comment:
+            comment_text = (children[i + 1].text or "").strip()
+        elif i - 1 >= 0 and children[i - 1].tag is ET.Comment:
+            comment_text = (children[i - 1].text or "").strip()
+
+        out.append({"key": key, "value": val, "comment": comment_text})
+    return out
+
+def _group_by_category(items):
+    """items: [{'key','value','comment'}] -> [{'name','items':[...]}, ...]"""
+    buckets = OrderedDict([(name, []) for _, name in CATEGORIES] + [('Other', [])])
+    for it in items:
+        buckets[_category_for(it['key'])].append(it)
+    return [{"name": k, "items": v} for k, v in buckets.items() if v]
+
+def _split_by_player(appsettings: ET.Element):
+    """
+    Return: (p1_list, p2_list, p1_groups, p2_groups)
+    - p1_list/p2_list keep your original shape for backward compatibility
+    - groups include the same items bucketed by category
+    """
+    items = _settings_with_comments(appsettings)
+    p1 = []
+    p2 = []
+    for it in items:
+        k = it["key"]
+        if k.endswith("P2"):
+            p2.append({"key": k[:-2], "value": it["value"], "comment": it["comment"]})
+        else:
+            p1.append({"key": k, "value": it["value"], "comment": it["comment"]})
+    return p1, p2, _group_by_category(p1), _group_by_category(p2)
+
+# --- Add near your XML helpers in app.py ---
+import re
+import xml.etree.ElementTree as ET
+from typing import List, Dict
+
+ASSIGNABLE_HEADER_RE = re.compile(r'^\s*Assignable Actions\s*$', re.I)
+
+def _parse_assignable_actions_block(appsettings: ET.Element) -> List[Dict[str, str]]:
+    """
+    Look for a comment node that starts with 'Assignable Actions' and parse
+    subsequent lines into a list of {code, label}.
+    Handles single values (e.g., '3 MouseRight') and ranges (e.g., '8-17 keyboard 0-9').
+    """
+    actions: List[Dict[str, str]] = []
+
+    # 1) Find the comment node with the header
+    children = list(appsettings)
+    header_idx = -1
+    lines_after_header: List[str] = []
+
+    for i, node in enumerate(children):
+        if node.tag is ET.Comment:
+            comment_text = (node.text or "").strip()
+            # Split into lines and trim
+            raw_lines = [ln.strip() for ln in comment_text.splitlines() if ln.strip()]
+            if not raw_lines:
+                continue
+            if ASSIGNABLE_HEADER_RE.match(raw_lines[0]):
+                header_idx = i
+                # everything after the header line is candidate content
+                lines_after_header = raw_lines[1:]
+                break
+
+    if header_idx < 0:
+        return actions  # Not found; return empty
+
+    # 2) Normalize the collected lines into code/label entries
+    # Supported forms:
+    # - "0 None"
+    # - "1 MouseLeft"
+    # - "8-17 equals keyboard 0-9"
+    for ln in lines_after_header:
+        # Skip lines that don't start with a number/range
+        if not re.match(r'^\d', ln):
+            continue
+
+        # Range form: e.g., "8-17 equals keyboard 0-9"
+        m_range = re.match(r'^(?P<start>\d+)\s*-\s*(?P<end>\d+)\s+(?P<label>.+)$', ln)
+        if m_range:
+            start = int(m_range.group('start'))
+            end = int(m_range.group('end'))
+            label = m_range.group('label')
+            # Expand the range with a friendly label
+            for code in range(start, end + 1):
+                actions.append({"code": str(code), "label": label})
+            continue
+
+        # Single form: e.g., "3 MouseRight"
+        m_single = re.match(r'^(?P<code>\d+)\s+(?P<label>.+)$', ln)
+        if m_single:
+            actions.append({"code": m_single.group('code'), "label": m_single.group('label')})
+
+    return actions
 
 # ===========================
 # Profiles helpers
@@ -452,20 +582,25 @@ def api_config_get():
         else:
             path = CONFIG_PATHS[platform]
             source = "live"
-
+     
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
-        p1, p2 = _split_by_player(appsettings)
+        p1, p2, p1_groups, p2_groups = _split_by_player(appsettings)
 
+
+       
         return jsonify({
             "ok": True,
             "platform": platform,
             "path": path,
             "player1": p1,
             "player2": p2,
+            "player1Groups": p1_groups,   # NEW
+            "player2Groups": p2_groups,   # NEW
             "source": source,
             "profile": profile_name if profile_name else "",
         })
+
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
