@@ -417,7 +417,7 @@ map_version_to_repo_folder() {
     psiloc)   echo "psiloc" ;;
     beta)     echo "beta" ;;
     previous) echo "previous" ;;
-	ubuntu) echo "previous" ;;
+    ubuntu) echo "ubuntu" ;;
     *)        err "Invalid VERSION: $VERSION"; return 1 ;;
   esac
 }
