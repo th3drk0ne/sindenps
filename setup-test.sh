@@ -45,7 +45,7 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [4] psiloc    (legacy)"
   echo "  [5] ubuntu    (Ubuntu x86)"
   while true; do
-    read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
+    read -r -p "Enter choice (1/2/3/4/5) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
       1) VERSION="latest";   break ;;
