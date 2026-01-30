@@ -137,7 +137,7 @@ def api_update_check():
 def api_update_apply():
     data = request.get_json(force=True) or {}
     channel = (data.get("channel") or "latest").lower()
-    allowed = {"latest","psiloc","beta","previous"}
+    allowed = {"latest","psiloc","beta","previous","ubuntu"}
     if channel not in allowed:
         _set_state("error", f"unsupported channel: {channel}")
         return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
