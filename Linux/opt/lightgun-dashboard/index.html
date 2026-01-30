@@ -11,7 +11,6 @@
     *, *::before, *::after { box-sizing: inherit; }
     html, body { height: 100%; }
     body { background:#000; color:#fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif; margin:0; -webkit-text-size-adjust: 100%; }
-
     /* Prevent iOS 16+ zoom on form controls */
     input, select, button { font-size: 16px; }
 
@@ -46,8 +45,7 @@
     .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 16px; }
     .config-toolbar .group { display:flex; gap:10px; align-items:center; }
     .config-path { color:#888; font-size:11px; text-align:left; }
-    .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:center; }
-
+    .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:right; }
     .btn-secondary { background:#444; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
     .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:6px 8px; border:1px solid #444; border-radius:6px; cursor:pointer; }
     .btn-danger { background:#a00; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
@@ -73,25 +71,18 @@
       .header-row { flex-wrap: nowrap; }
       .tabs { flex: 1 1 auto; width: auto; gap: 6px; justify-content: flex-end; }
       .tabs button { flex: 1 1 auto; min-width: 0; text-align: center; padding: 12px; }
-
       .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
-
       .service-row { margin: 10px 8px; padding: 10px; }
       .service-buttons { flex-direction: column; width: 100%; }
       .service-buttons button { width: 100%; padding: 12px; font-size: 16px; }
-
       .config-toolbar { flex-direction: column; align-items: stretch; margin: 10px 8px; }
       .config-toolbar .group, .config-toolbar select, .config-toolbar button { width: 100%; }
-
       .config-panels { margin: 0 8px 20px; }
       .config-card { flex: 1 1 100%; }
-
       .config-row { flex-direction: column; align-items: flex-start; width: 100%; }
       .config-row label { width: 100%; margin-bottom: 4px; font-size: 14px; }
       .config-row input { width: 100% !important; max-width: 100%; padding: 12px; }
-
       #save-restart { width: 100%; padding: 12px; font-size: 16px; }
-
       /* Modal sizing fix on iOS */
       #backup-modal > .dialog { width: 95vw !important; margin-top: 20vh !important; padding: 12px; }
     }
@@ -145,17 +136,38 @@
         </div>
         <div class="log-box" id="logs-lightgun-monitor"><pre class="log-content">Loading…</pre></div>
       </div>
-	  
-		<!-- SYSTEM ACTIONS -->
-		<div class="service-row" id="system-actions">
-		  <span class="service-name">System</span>
-		  <span id="system-status" class="service-status"></span>
-		  <div class="service-buttons">
-			<button class="btn-secondary" onclick="confirmSystemAction('reboot')">Reboot OS</button>
-			<button class="btn-danger" onclick="confirmSystemAction('shutdown')">Shutdown OS</button>
-		  </div>
-		  <div class="log-box" style="display:none;"></div>
-		</div>
+
+      <!-- SYSTEM ACTIONS -->
+      <div class="service-row" id="system-actions">
+        <span class="service-name">System</span>
+        <span id="system-status" class="service-status"></span>
+        <div class="service-buttons">
+          <button class="btn-secondary" onclick="confirmSystemAction('reboot')">Reboot OS</button>
+          <button class="btn-danger" onclick="confirmSystemAction('shutdown')">Shutdown OS</button>
+        </div>
+        <div class="log-box" style="display:none;"></div>
+      </div>
+
+      <!-- SOFTWARE UPDATE (inserted after System Actions) -->
+      <div class="service-row" id="software-update">
+        <span class="service-name">Driver Update</span>
+        <span class="service-status" id="update-status">idle…</span>
+        <div class="service-buttons">
+          <select id="update-channel" aria-label="Update channel">
+            <option value="latest" selected>latest</option>
+			<option value="previous">previous</option>
+			<option value="beta">beta</option>
+            <option value="psiloc">psiloc</option>
+          </select>
+          <button id="btn-check-updates">Check</button>
+          <button id="btn-update-now" disabled>Update Now</button>
+          <button class="log-toggle" id="btn-toggle-logs">Show Logs</button>
+        </div>
+        <div class="log-box" id="update-logs" style="display:none">
+          <pre class="log-content" id="update-log-content">Loading…</pre>
+        </div>
+      </div>
+
     </section>
 
     <!-- CONFIG TAB -->
@@ -170,12 +182,14 @@
             <option value="ps1">PlayStation 1</option>
           </select>
         </div>
+
         <div class="group">
           <label for="profile-select">Profile:</label>
           <select id="profile-select">
             <option value="">(none)</option>
           </select>
         </div>
+
         <div class="group">
           <button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
           <button id="btn-save-profile" class="btn-secondary">Save as Profile</button>
@@ -183,9 +197,10 @@
             <input type="checkbox" id="chk-restore-mode"/> Restore
           </label>
         </div>
+
         <span id="config-file-path" class="config-path"></span>
         <span id="config-status" class="config-status-inline"></span>
-        <button id="save-restart" class="btn-danger">Save &amp; Restart</button>
+        <button id="save-restart" class="btn-danger">Save & Restart</button>
       </div>
 
       <div class="config-panels">
@@ -211,10 +226,11 @@
         <div id="backup-list" style="max-height:50vh; overflow:auto; border:1px solid #444; padding:8px; border-radius:6px;"></div>
       </div>
     </div>
+
   </div>
 
   <script>
-    // Tabs
+    // ===== Tabs =====
     function showTab(name) {
       document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
       document.getElementById('tab-sindenlog').style.display = (name === 'sindenlog') ? 'block' : 'none';
@@ -230,7 +246,7 @@
       }
     }
 
-    // Services
+    // ===== Services =====
     async function refreshServices() {
       try {
         const res = await fetch('/api/services');
@@ -241,10 +257,12 @@
         }
       } catch (e) { /* no-op */ }
     }
+
     async function serviceAction(name, action) {
       await fetch(`/api/service/${name}/${action}`, { method: 'POST' });
       refreshServices();
     }
+
     function toggleLogs(evt, svc) {
       const box = document.getElementById('logs-' + svc.replace('.service',''));
       if (box.style.display === 'block') {
@@ -256,6 +274,7 @@
         loadLogs(svc);
       }
     }
+
     async function loadLogs(svc) {
       const box = document.querySelector(`#logs-${svc.replace('.service','')} .log-content`);
       try {
@@ -266,46 +285,41 @@
         box.textContent = 'Error loading logs: ' + e.message;
       }
     }
-		async function systemAction(action) {
-	  const statusEl = document.getElementById('system-status');
-	  try {
-		if (statusEl) statusEl.textContent = (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
-		const res = await fetch(`/api/system/${action}`, { method: 'POST' });
-		let ok = false;
-		try {
-		  const data = await res.json();
-		  ok = !!(data && data.ok);
-		} catch (_) { /* JSON may not complete if the machine is going down */ }
 
-		if (statusEl) {
-		  statusEl.textContent = ok
-			? ((action === 'reboot') ? 'Reboot command sent.' : 'Shutdown command sent.')
-			: 'Command failed (check server logs).';
-		}
+    async function systemAction(action) {
+      const statusEl = document.getElementById('system-status');
+      try {
+        if (statusEl) statusEl.textContent = (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
+        const res = await fetch(`/api/system/${action}`, { method: 'POST' });
+        let ok = false;
+        try {
+          const data = await res.json();
+          ok = !!(data && data.ok);
+        } catch (_) { /* JSON may not complete if the machine is going down */ }
+        if (statusEl) {
+          statusEl.textContent = ok
+            ? ((action === 'reboot') ? 'Reboot command sent.' : 'Shutdown command sent.')
+            : 'Command failed (check server logs).';
+        }
+        const btns = document.querySelectorAll('#system-actions .service-buttons button');
+        btns.forEach(b => b.disabled = true);
+      } catch (e) {
+        if (statusEl) statusEl.textContent = 'Request error: ' + e.message;
+      }
+    }
 
-		// After a reboot/shutdown command, the page may soon become unreachable.
-		// Disable buttons to prevent double-clicks.
-		const btns = document.querySelectorAll('#system-actions .service-buttons button');
-		btns.forEach(b => b.disabled = true);
-	  } catch (e) {
-		if (statusEl) statusEl.textContent = 'Request error: ' + e.message;
-	  }
-	}
+    function confirmSystemAction(action) {
+      const label = (action === 'reboot') ? 'Reboot' : 'Shutdown';
+      if (action === 'shutdown') {
+        if (!confirm('Are you sure you want to SHUT DOWN this system?')) return;
+        if (!confirm('Final confirmation: proceed to SHUT DOWN now?')) return;
+      } else {
+        if (!confirm('Are you sure you want to reboot this system?')) return;
+      }
+      systemAction(action);
+    }
 
-	function confirmSystemAction(action) {
-	  const label = (action === 'reboot') ? 'Reboot' : 'Shutdown';
-	  // Double confirm for shutdown
-	  if (action === 'shutdown') {
-		if (!confirm('Are you sure you want to SHUT DOWN this system?')) return;
-		if (!confirm('Final confirmation: proceed to SHUT DOWN now?')) return;
-	  } else {
-		if (!confirm('Are you sure you want to reboot this system?')) return;
-	  }
-	  systemAction(action);
-	}
-
-
-    // Sinden log
+    // ===== Sinden log =====
     async function loadSindenLog() {
       try {
         const res = await fetch('/api/sinden-log');
@@ -316,7 +330,7 @@
       } catch (e) { /* no-op */ }
     }
 
-    // Config helpers
+    // ===== Config helpers =====
     async function loadConfig(platform) {
       const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
       const data = await res.json();
@@ -325,6 +339,7 @@
       buildConfigForm('p1-form', data.player1);
       buildConfigForm('p2-form', data.player2);
     }
+
     function buildConfigForm(containerId, kvList) {
       const container = document.getElementById(containerId);
       container.innerHTML = '';
@@ -341,10 +356,12 @@
         container.appendChild(row);
       });
     }
+
     function collectForm(containerId) {
       return [...document.getElementById(containerId).querySelectorAll('input[data-key]')]
         .map(i => ({ key: i.dataset.key, value: i.value }));
     }
+
     async function saveConfig(platform, p1List, p2List) {
       const res = await fetch('/api/config/save', {
         method: 'POST',
@@ -353,6 +370,7 @@
       });
       return await res.json();
     }
+
     async function restartLightgunService() {
       try {
         const res = await fetch('/api/service/lightgun.service/restart', { method: 'POST' });
@@ -361,13 +379,112 @@
       } catch (e) { return false; }
     }
 
-    // Profiles
+    // ===== Software Update (channel-only) =====
+    function setUpdateState(label, canUpdate = false) {
+      const status = document.getElementById('update-status');
+      if (status) status.textContent = label;
+      const btnUpdate = document.getElementById('btn-update-now');
+      if (btnUpdate) btnUpdate.disabled = !canUpdate;
+    }
+
+    async function refreshUpdateStatus() {
+      try {
+        const res = await fetch('/api/update/status');
+        const s = await res.json(); // { ok, state, installed.version, latest.version?, message }
+        if (!s || s.ok === false) { setUpdateState('status error'); return; }
+
+        let label = s.state || 'idle';
+        if (s.installed && s.installed.version) {
+          label = `Installed channel: ${s.installed.version}`;
+        }
+        if (s.message) label += ` — ${s.message}`;
+
+        let canUpdate = false;
+        if (s.latest && s.latest.version && s.installed && s.installed.version) {
+          canUpdate = String(s.latest.version) !== String(s.installed.version);
+          label = canUpdate
+            ? `Update available: ${s.installed.version} → ${s.latest.version}`
+            : `Up-to-date (${s.installed.version})`;
+        }
+        setUpdateState(label, canUpdate);
+      } catch (e) {
+        setUpdateState('status error: ' + e.message);
+      }
+    }
+
+    async function checkForUpdates() {
+      try {
+        setUpdateState('checking…');
+        const channel = document.getElementById('update-channel').value;
+        const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
+        const data = await res.json();
+        if (!data || data.ok === false) {
+          setUpdateState('check failed');
+          alert('Check failed: ' + (data && data.error ? data.error : 'unknown error'));
+          return;
+        }
+        await refreshUpdateStatus();
+      } catch (e) {
+        setUpdateState('check error: ' + e.message);
+      }
+    }
+
+    async function applyUpdate() {
+      if (!confirm('Apply the selected update channel now? Services may restart.')) return;
+      try {
+        setUpdateState('applying…');
+        const channel = document.getElementById('update-channel').value;
+        const res = await fetch('/api/update/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel })
+        });
+        const data = await res.json();
+        if (!data || data.ok === false) {
+          setUpdateState('update failed');
+          alert('Update failed: ' + (data && data.error ? data.error : 'unknown error'));
+          return;
+        }
+        await refreshUpdateStatus();
+        loadUpdateLogs();
+        if (typeof refreshServices === 'function') refreshServices();
+      } catch (e) {
+        setUpdateState('update error: ' + e.message);
+      }
+    }
+
+    function toggleUpdateLogs() {
+      const box = document.getElementById('update-logs');
+      const btn = document.getElementById('btn-toggle-logs');
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        btn.textContent = 'Show Logs';
+      } else {
+        box.style.display = 'block';
+        btn.textContent = 'Hide Logs';
+        loadUpdateLogs();
+      }
+    }
+
+    async function loadUpdateLogs() {
+      const pre = document.getElementById('update-log-content');
+      try {
+        const res = await fetch('/api/update/logs');
+        const data = await res.json();
+        pre.textContent = (data && data.logs) ? data.logs : 'No update logs available';
+      } catch (e) {
+        pre.textContent = 'Error loading update logs: ' + e.message;
+      }
+    }
+
+    // ===== Profiles =====
     async function listProfiles(platform) {
       const res = await fetch(`/api/config/profiles?platform=${encodeURIComponent(platform)}`);
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Failed to list profiles');
       return data.profiles || [];
     }
+
     function populateProfileSelect(items) {
       const sel = document.getElementById('profile-select');
       sel.innerHTML = '';
@@ -383,6 +500,7 @@
         sel.appendChild(opt);
       });
     }
+
     async function refreshProfilesUI(platform) {
       try {
         const profiles = await listProfiles(platform);
@@ -393,6 +511,7 @@
         if (s) s.textContent = 'Profiles load error: ' + e.message;
       }
     }
+
     async function saveCurrentAsProfile(platform) {
       const name = prompt('Enter a profile name (letters, digits, _ or -, max 60 chars):');
       if (!name) return;
@@ -405,6 +524,7 @@
       await refreshProfilesUI(platform);
       document.getElementById('profile-select').value = name;
     }
+
     async function activateProfile(platform, name) {
       if (!name) { alert('Select a profile first.'); return; }
       const s = document.getElementById('config-status');
@@ -426,15 +546,17 @@
       }
     }
 
-    // Backups
+    // ===== Backups =====
     function openBackupModal() { document.getElementById('backup-modal').style.display = 'block'; }
     function closeBackupModal() { document.getElementById('backup-modal').style.display = 'none'; }
+
     async function listBackups(platform) {
       const res = await fetch(`/api/config/backups?platform=${encodeURIComponent(platform)}`);
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Failed to list backups');
       return data.backups || [];
     }
+
     function renderBackupList(backups, platform) {
       const box = document.getElementById('backup-list');
       const status = document.getElementById('backup-list-status');
@@ -476,6 +598,7 @@
         box.appendChild(row);
       });
     }
+
     async function loadBackupDialog(platform) {
       openBackupModal();
       const status = document.getElementById('backup-list-status');
@@ -488,7 +611,7 @@
       }
     }
 
-    // Wire-up
+    // ===== Wire-up =====
     document.addEventListener('DOMContentLoaded', () => {
       const status = document.getElementById('config-status');
       const selPlatform = document.getElementById('platform-select');
@@ -497,20 +620,24 @@
       const btnActivate = document.getElementById('btn-activate-profile');
       const btnSaveRestart = document.getElementById('save-restart');
       const chkRestore = document.getElementById('chk-restore-mode');
+
       // Dynamic button label + initial sync
       function updateActivateButtonLabel() {
         btnActivate.textContent = chkRestore.checked ? 'Restore Backup' : 'Activate Profile';
       }
       chkRestore.addEventListener('change', updateActivateButtonLabel);
       updateActivateButtonLabel();
+
       // Platform change
       selPlatform.addEventListener('change', () => {
         loadConfig(selPlatform.value).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
         refreshProfilesUI(selPlatform.value);
         selProfile.value = '';
       });
+
       // Save as profile
       if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
+
       // Activate OR Restore depending on checkbox
       if (btnActivate) btnActivate.onclick = () => {
         const platform = selPlatform.value;
@@ -521,6 +648,7 @@
           activateProfile(platform, profile);
         }
       };
+
       // Save & Restart
       if (btnSaveRestart) btnSaveRestart.onclick = async () => {
         btnSaveRestart.disabled = true;
@@ -534,9 +662,16 @@
           refreshServices();
         } finally { btnSaveRestart.disabled = false; }
       };
+
+      // Software update wiring
+      document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
+      document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
+      document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
+
       // Initial loads
       loadConfig(selPlatform.value).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
       refreshProfilesUI(selPlatform.value);
+      refreshUpdateStatus();
     });
 
     // Polling
@@ -547,7 +682,18 @@
       });
       if (document.getElementById('tab-sindenlog').style.display === 'block') loadSindenLog();
     }, 1000);
+
     setInterval(refreshServices, 1000);
+
+    // Service/Update polling while visible
+    setInterval(() => {
+      const panel = document.getElementById('service-panel');
+      if (panel && panel.style.display === 'block') {
+        refreshUpdateStatus();
+        const box = document.getElementById('update-logs');
+        if (box && box.style.display === 'block') loadUpdateLogs();
+      }
+    }, 5000);
 
     // Default tab
     showTab('sindenlog');
