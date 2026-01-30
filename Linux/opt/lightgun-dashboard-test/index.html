@@ -368,25 +368,28 @@
 
     // ===== Config helpers =====
 
-	  async function loadConfig(platform) {
-		const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
-		const data = await res.json();
-		if (!data.ok) throw new Error(data.error || 'Failed to read config');
 
-		// ... your existing form build for P1/P2 ...
+  async function loadConfig(platform) {
+    const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Failed to read config');
 
-		// NEW: render Assignable Actions if present
-		if (Array.isArray(data.assignableActions) && data.assignableActions.length) {
-		  const pre = document.getElementById('assignable-pre');
-		  const card = document.getElementById('assignable-card');
-		  const lines = data.assignableActions.map(a => `${a.code}  —  ${a.label}`);
-		  pre.textContent = lines.join('\n');
-		  if (card) card.style.display = 'block';
-		} else {
-		  const card = document.getElementById('assignable-card');
-		  if (card) card.style.display = 'none';
-		}
-	  }
+      document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
+      buildConfigForm('p1-form', data.player1);
+      buildConfigForm('p2-form', data.player2);
+
+    // NEW: render Assignable Actions if present
+    if (Array.isArray(data.assignableActions) && data.assignableActions.length) {
+      const pre = document.getElementById('assignable-pre');
+      const card = document.getElementById('assignable-card');
+      const lines = data.assignableActions.map(a => `${a.code}  —  ${a.label}`);
+      pre.textContent = lines.join('\n');
+      if (card) card.style.display = 'block';
+    } else {
+      const card = document.getElementById('assignable-card');
+      if (card) card.style.display = 'none';
+    }
+  }
 
 
 
