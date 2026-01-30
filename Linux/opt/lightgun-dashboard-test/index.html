@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>SindenPS</title>
+  <style>
+    /* ===== Base & iOS/Safari normalizations ===== */
+    html { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: inherit; }
+    html, body { height: 100%; }
+    body { background:#000; color:#fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif; margin:0; -webkit-text-size-adjust: 100%; }
+    /* Prevent iOS 16+ zoom on form controls */
+    input, select, button { font-size: 16px; }
+
+    /* Page container */
+    .page { width: 100%; margin: 0 auto; }
+
+    /* Header */
+    header { background:#000; padding:20px; border-bottom:4px solid #c00; position:sticky; top:0; z-index:10; }
+    .header-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .logo { height:40px; width:auto; display:block; }
+    .tabs { display:flex; flex-wrap:wrap; gap:10px; }
+    .tabs button { background:#222; color:#fff; border:1px solid #c00; padding:10px 14px; cursor:pointer; border-radius:6px; }
+    .tabs button:hover { background:#c00; }
+
+    .panel-title { color:#f33; font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
+
+    /* Services */
+    .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid #c00; border-radius:6px; }
+    .service-name { font-size:18px; font-weight:700; }
+    .service-status { font-size:14px; color:#9f9; }
+    .service-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+    .service-buttons button { padding:10px 12px; font-size:16px; font-weight:700; border:none; border-radius:6px; cursor:pointer; }
+    .service-buttons button:nth-child(1) { background:#090; color:#000; }
+    .service-buttons button:nth-child(2) { background:#a00; color:#fff; }
+    .service-buttons button:nth-child(3) { background:#3cf; color:#000; }
+    .log-toggle { background:#333; color:#fff !important; }
+
+    .log-box { width:100%; background:#000; border:1px solid #c00; padding:10px; display:none; max-height:300px; overflow:auto; border-radius:6px; }
+    .log-content { white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#ccc; }
+
+    /* Config */
+    .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 16px; }
+    .config-toolbar .group { display:flex; gap:10px; align-items:center; }
+    .config-path { color:#888; font-size:11px; text-align:left; }
+    .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:right; }
+    .btn-secondary { background:#444; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
+    .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:6px 8px; border:1px solid #444; border-radius:6px; cursor:pointer; }
+    .btn-danger { background:#a00; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
+
+    /* Forms */
+    .config-panels { display:flex; gap:16px; flex-wrap:wrap; margin:0 16px 20px; }
+    .config-card { flex:1 1 460px; background:#111; border-left:6px solid #c00; padding:12px; border-radius:6px; }
+    .config-form { margin-top:8px; }
+    .config-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
+    .config-row label { width:260px; color:#ccc; font-size:14px; }
+    .config-row input { flex:1 1 50%; max-width:50%; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:4px; }
+
+    /* Desktop full-width fix */
+    @media (min-width: 769px) {
+      .page { max-width: none; }
+    }
+
+    /* ===== Mobile (iPhone/Android) ===== */
+    @media (max-width: 768px) {
+      .log-content { font-size:10px; }
+      .page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
+      /* Single-row header: logo + buttons */
+      .header-row { flex-wrap: nowrap; }
+      .tabs { flex: 1 1 auto; width: auto; gap: 6px; justify-content: flex-end; }
+      .tabs button { flex: 1 1 auto; min-width: 0; text-align: center; padding: 12px; }
+      .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
+      .service-row { margin: 10px 8px; padding: 10px; }
+      .service-buttons { flex-direction: column; width: 100%; }
+      .service-buttons button { width: 100%; padding: 12px; font-size: 16px; }
+      .config-toolbar { flex-direction: column; align-items: stretch; margin: 10px 8px; }
+      .config-toolbar .group, .config-toolbar select, .config-toolbar button { width: 100%; }
+      .config-panels { margin: 0 8px 20px; }
+      .config-card { flex: 1 1 100%; }
+      .config-row { flex-direction: column; align-items: flex-start; width: 100%; }
+      .config-row label { width: 100%; margin-bottom: 4px; font-size: 14px; }
+      .config-row input { width: 100% !important; max-width: 100%; padding: 12px; }
+      #save-restart { width: 100%; padding: 12px; font-size: 16px; }
+      /* Modal sizing fix on iOS */
+      #backup-modal > .dialog { width: 95vw !important; margin-top: 20vh !important; padding: 12px; }
+	  /* Info tooltip (accessible, degrades to native title) */
+		.info-tip {
+		  display:inline-flex; align-items:center; justify-content:center;
+		  margin-left:6px; color:#ddd; border:1px solid #444;
+		  width:16px; height:16px; border-radius:50%;
+		  font-size:11px; font-weight:700; cursor:help; position:relative;
+		}
+		.info-tip:hover,
+		.info-tip:focus { color:#fff; border-color:#666; }
+		.info-tip[data-tip]::after {
+		  content: attr(data-tip);
+		  position:absolute; left:20px; top:50%; transform: translateY(-50%);
+		  background:#111; color:#fff; border:1px solid #444;
+		  padding:8px 10px; border-radius:6px; white-space:pre-wrap; max-width:360px;
+		  box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+		  display:none; z-index:20;
+		}
+		.info-tip:focus::after,
+		.info-tip:hover::after { display:block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="header-row">
+        <img src="/logo.png" class="logo" alt="SindenPS Logo">
+        <nav class="tabs">
+          <button onclick="showTab('sindenlog')">Sinden Log</button>
+          <button onclick="showTab('services')">Services</button>
+          <button onclick="showTab('config')">Configuration</button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- SINDEN LOG TAB -->
+    <section id="tab-sindenlog" style="display:block; padding:10px;">
+      <h2 class="panel-title">LightGun.Service Log</h2>
+      <div class="log-box" style="display:block; max-height:500px;">
+        <pre id="sinden-log-content" class="log-content">Loading…</pre>
+      </div>
+    </section>
+
+    <!-- SERVICES TAB -->
+    <section id="service-panel" style="display:none;">
+      <h2 class="panel-title">Service Monitor</h2>
+
+      <div class="service-row" id="service-lightgun">
+        <span class="service-name">lightgun.service</span>
+        <span class="service-status">loading…</span>
+        <div class="service-buttons">
+          <button onclick="serviceAction('lightgun.service','start')">Start</button>
+          <button onclick="serviceAction('lightgun.service','stop')">Stop</button>
+          <button onclick="serviceAction('lightgun.service','restart')">Restart</button>
+          <button class="log-toggle" onclick="toggleLogs(event,'lightgun.service')">Show Logs</button>
+        </div>
+        <div class="log-box" id="logs-lightgun"><pre class="log-content">Loading…</pre></div>
+      </div>
+
+      <div class="service-row" id="service-lightgun-monitor">
+        <span class="service-name">lightgun-monitor.service</span>
+        <span class="service-status">loading…</span>
+        <div class="service-buttons">
+          <button onclick="serviceAction('lightgun-monitor.service','start')">Start</button>
+          <button onclick="serviceAction('lightgun-monitor.service','stop')">Stop</button>
+          <button onclick="serviceAction('lightgun-monitor.service','restart')">Restart</button>
+          <button class="log-toggle" onclick="toggleLogs(event,'lightgun-monitor.service')">Show Logs</button>
+        </div>
+        <div class="log-box" id="logs-lightgun-monitor"><pre class="log-content">Loading…</pre></div>
+      </div>
+
+      <!-- SYSTEM ACTIONS -->
+      <div class="service-row" id="system-actions">
+        <span class="service-name">System</span>
+        <span id="system-status" class="service-status"></span>
+        <div class="service-buttons">
+          <button class="btn-secondary" onclick="confirmSystemAction('reboot')">Reboot OS</button>
+          <button class="btn-danger" onclick="confirmSystemAction('shutdown')">Shutdown OS</button>
+        </div>
+        <div class="log-box" style="display:none;"></div>
+      </div>
+
+      <!-- SOFTWARE UPDATE (inserted after System Actions) -->
+      <div class="service-row" id="software-update">
+        <span class="service-name">Driver Update</span>
+        <span class="service-status" id="update-status">idle…</span>
+        <div class="service-buttons">
+          <select id="update-channel" aria-label="Update channel">
+            <option value="latest" selected>latest</option>
+			<option value="previous">previous</option>
+			<option value="beta">beta</option>
+            <option value="psiloc">psiloc</option>
+            <option value="ubuntu">ubuntu</option>
+          </select>
+          <button id="btn-check-updates">Check</button>
+          <button id="btn-update-now" disabled>Update Now</button>
+          <button class="log-toggle" id="btn-toggle-logs">Show Logs</button>
+        </div>
+        <div class="log-box" id="update-logs" style="display:none">
+          <pre class="log-content" id="update-log-content">Loading…</pre>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- CONFIG TAB -->
+    <section id="tab-config" style="display:none; padding:10px;">
+      <h2 class="panel-title">Sinden LightGun Driver Configuration</h2>
+
+      <div class="config-toolbar">
+        <div class="group">
+          <label for="platform-select">Platform:</label>
+          <select id="platform-select">
+            <option value="ps2" selected>PlayStation 2</option>
+            <option value="ps1">PlayStation 1</option>
+          </select>
+        </div>
+
+        <div class="group">
+          <label for="profile-select">Profile:</label>
+          <select id="profile-select">
+            <option value="">(none)</option>
+          </select>
+        </div>
+
+        <div class="group">
+          <button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
+          <button id="btn-save-profile" class="btn-secondary">Save as Profile</button>
+          <label style="display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="chk-restore-mode"/> Restore
+          </label>
+        </div>
+
+        <span id="config-file-path" class="config-path"></span>
+        <span id="config-status" class="config-status-inline"></span>
+        <button id="save-restart" class="btn-danger">Save & Restart</button>
+      </div>
+
+      <div class="config-panels">
+        <div class="config-card">
+          <div class="service-name">Player 1</div>
+          <div id="p1-form" class="config-form"></div>
+        </div>
+        <div class="config-card">
+          <div class="service-name">Player 2</div>
+          <div id="p2-form" class="config-form"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BACKUP RESTORE MODAL -->
+    <div id="backup-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;">
+      <div class="dialog" style="background:#111; border:1px solid #c00; border-left:6px solid #c00; width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="service-name">Restore Backup</div>
+          <button onclick="closeBackupModal()" class="btn-tertiary">Close</button>
+        </div>
+        <div id="backup-list-status" style="margin:10px 0;"></div>
+        <div id="backup-list" style="max-height:50vh; overflow:auto; border:1px solid #444; padding:8px; border-radius:6px;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ===== Tabs =====
+    function showTab(name) {
+      document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
+      document.getElementById('tab-sindenlog').style.display = (name === 'sindenlog') ? 'block' : 'none';
+      document.getElementById('tab-config').style.display = (name === 'config') ? 'block' : 'none';
+      if (name === 'sindenlog') loadSindenLog();
+      if (name === 'config') {
+        const p = document.getElementById('platform-select').value;
+        loadConfig(p).catch(err => {
+          const s = document.getElementById('config-status');
+          if (s) s.textContent = 'Load error: ' + err.message;
+        });
+        refreshProfilesUI(p);
+      }
+    }
+
+    // ===== Services =====
+    async function refreshServices() {
+      try {
+        const res = await fetch('/api/services');
+        const data = await res.json();
+        for (const [svc, status] of Object.entries(data)) {
+          const el = document.querySelector(`#service-${svc.replace('.service','')} .service-status`);
+          if (el) el.textContent = status;
+        }
+      } catch (e) { /* no-op */ }
+    }
+
+    async function serviceAction(name, action) {
+      await fetch(`/api/service/${name}/${action}`, { method: 'POST' });
+      refreshServices();
+    }
+
+    function toggleLogs(evt, svc) {
+      const box = document.getElementById('logs-' + svc.replace('.service',''));
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        evt.target.textContent = 'Show Logs';
+      } else {
+        box.style.display = 'block';
+        evt.target.textContent = 'Hide Logs';
+        loadLogs(svc);
+      }
+    }
+
+    async function loadLogs(svc) {
+      const box = document.querySelector(`#logs-${svc.replace('.service','')} .log-content`);
+      try {
+        const res = await fetch(`/api/logs/${svc}`);
+        const data = await res.json();
+        box.textContent = (data && data.logs) ? data.logs : 'No logs available';
+      } catch (e) {
+        box.textContent = 'Error loading logs: ' + e.message;
+      }
+    }
+
+    async function systemAction(action) {
+      const statusEl = document.getElementById('system-status');
+      try {
+        if (statusEl) statusEl.textContent = (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
+        const res = await fetch(`/api/system/${action}`, { method: 'POST' });
+        let ok = false;
+        try {
+          const data = await res.json();
+          ok = !!(data && data.ok);
+        } catch (_) { /* JSON may not complete if the machine is going down */ }
+        if (statusEl) {
+          statusEl.textContent = ok
+            ? ((action === 'reboot') ? 'Reboot command sent.' : 'Shutdown command sent.')
+            : 'Command failed (check server logs).';
+        }
+        const btns = document.querySelectorAll('#system-actions .service-buttons button');
+        btns.forEach(b => b.disabled = true);
+      } catch (e) {
+        if (statusEl) statusEl.textContent = 'Request error: ' + e.message;
+      }
+    }
+
+    function confirmSystemAction(action) {
+      const label = (action === 'reboot') ? 'Reboot' : 'Shutdown';
+      if (action === 'shutdown') {
+        if (!confirm('Are you sure you want to SHUT DOWN this system?')) return;
+        if (!confirm('Final confirmation: proceed to SHUT DOWN now?')) return;
+      } else {
+        if (!confirm('Are you sure you want to reboot this system?')) return;
+      }
+      systemAction(action);
+    }
+
+    // ===== Sinden log =====
+    async function loadSindenLog() {
+      try {
+        const res = await fetch('/api/sinden-log');
+        const data = await res.json();
+        const box = document.getElementById('sinden-log-content');
+        box.textContent = data.logs || '';
+        box.parentElement.scrollTop = box.parentElement.scrollHeight;
+      } catch (e) { /* no-op */ }
+    }
+
+    // ===== Config helpers =====
+    async function loadConfig(platform) {
+      const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed to read config');
+      document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
+      buildConfigForm('p1-form', data.player1);
+      buildConfigForm('p2-form', data.player2);
+    }
+
+
+  // New: build grouped panels with headings and tooltips
+  function buildGroupedConfigForm(containerId, groups) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+
+    (groups || []).forEach(group => {
+      // Group heading (uses your .service-name style)
+      const heading = document.createElement('div');
+      heading.className = 'service-name';
+      heading.style.marginTop = '10px';
+      heading.textContent = group.name || 'Settings';
+      container.appendChild(heading);
+
+      (group.items || []).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'config-row';
+
+        const label = document.createElement('label');
+        label.setAttribute('for', item.key);
+        label.textContent = item.key;
+
+        // Info icon tooltip
+        if (item.comment) {
+          // visible “i” icon with custom tooltip
+          const tip = document.createElement('span');
+          tip.className = 'info-tip';
+          tip.setAttribute('tabindex', '0');         // keyboard accessible
+          tip.setAttribute('role', 'note');
+          tip.setAttribute('aria-label', 'Description');
+          tip.setAttribute('data-tip', item.comment);
+          tip.title = item.comment;                  // native fallback
+          tip.textContent = 'i';
+          label.appendChild(tip);
+
+          // Optional: also show inline text under label for long comments
+          const small = document.createElement('small');
+          small.textContent = item.comment;
+          label.appendChild(small);
+        }
+
+        const input = document.createElement('input');
+        input.value = (item.value ?? '');
+        input.dataset.key = item.key;
+
+        row.appendChild(label);
+        row.appendChild(input);
+        container.appendChild(row);
+      });
+    });
+  }
+
+  // Update loadConfig to prefer groups if present
+  async function loadConfig(platform) {
+    const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Failed to read config');
+
+    // Prefer groups; fall back to flat arrays if groups absent (back-compat)
+    const p1Groups = data.player1Groups || [{ name: 'All Settings', items: data.player1 || [] }];
+    const p2Groups = data.player2Groups || [{ name: 'All Settings', items: data.player2 || [] }];
+
+    document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
+    buildGroupedConfigForm('p1-form', p1Groups);
+    buildGroupedConfigForm('p2-form', p2Groups);
+  }
+
+
+    function collectForm(containerId) {
+      return [...document.getElementById(containerId).querySelectorAll('input[data-key]')]
+        .map(i => ({ key: i.dataset.key, value: i.value }));
+    }
+
+    async function saveConfig(platform, p1List, p2List) {
+      const res = await fetch('/api/config/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, player1: p1List, player2: p2List })
+      });
+      return await res.json();
+    }
+
+    async function restartLightgunService() {
+      try {
+        const res = await fetch('/api/service/lightgun.service/restart', { method: 'POST' });
+        const data = await res.json();
+        return data && data.success;
+      } catch (e) { return false; }
+    }
+
+    // ===== Software Update (channel-only) =====
+    function setUpdateState(label, canUpdate = false) {
+      const status = document.getElementById('update-status');
+      if (status) status.textContent = label;
+      const btnUpdate = document.getElementById('btn-update-now');
+      if (btnUpdate) btnUpdate.disabled = !canUpdate;
+    }
+
+    async function refreshUpdateStatus() {
+      try {
+        const res = await fetch('/api/update/status');
+        const s = await res.json(); // { ok, state, installed.version, latest.version?, message }
+        if (!s || s.ok === false) { setUpdateState('status error'); return; }
+
+        let label = s.state || 'idle';
+        if (s.installed && s.installed.version) {
+          label = `Installed channel: ${s.installed.version}`;
+        }
+        if (s.message) label += ` — ${s.message}`;
+
+        let canUpdate = false;
+        if (s.latest && s.latest.version && s.installed && s.installed.version) {
+          canUpdate = String(s.latest.version) !== String(s.installed.version);
+          label = canUpdate
+            ? `Update available: ${s.installed.version} → ${s.latest.version}`
+            : `Up-to-date (${s.installed.version})`;
+        }
+        setUpdateState(label, canUpdate);
+      } catch (e) {
+        setUpdateState('status error: ' + e.message);
+      }
+    }
+
+    async function checkForUpdates() {
+      try {
+        setUpdateState('checking…');
+        const channel = document.getElementById('update-channel').value;
+        const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
+        const data = await res.json();
+        if (!data || data.ok === false) {
+          setUpdateState('check failed');
+          alert('Check failed: ' + (data && data.error ? data.error : 'unknown error'));
+          return;
+        }
+        await refreshUpdateStatus();
+      } catch (e) {
+        setUpdateState('check error: ' + e.message);
+      }
+    }
+
+    async function applyUpdate() {
+      if (!confirm('Apply the selected update channel now? Services may restart.')) return;
+      try {
+        setUpdateState('applying…');
+        const channel = document.getElementById('update-channel').value;
+        const res = await fetch('/api/update/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel })
+        });
+        const data = await res.json();
+        if (!data || data.ok === false) {
+          setUpdateState('update failed');
+          alert('Update failed: ' + (data && data.error ? data.error : 'unknown error'));
+          return;
+        }
+        await refreshUpdateStatus();
+        loadUpdateLogs();
+        if (typeof refreshServices === 'function') refreshServices();
+      } catch (e) {
+        setUpdateState('update error: ' + e.message);
+      }
+    }
+
+    function toggleUpdateLogs() {
+      const box = document.getElementById('update-logs');
+      const btn = document.getElementById('btn-toggle-logs');
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        btn.textContent = 'Show Logs';
+      } else {
+        box.style.display = 'block';
+        btn.textContent = 'Hide Logs';
+        loadUpdateLogs();
+      }
+    }
+
+    async function loadUpdateLogs() {
+      const pre = document.getElementById('update-log-content');
+      try {
+        const res = await fetch('/api/update/logs');
+        const data = await res.json();
+        pre.textContent = (data && data.logs) ? data.logs : 'No update logs available';
+      } catch (e) {
+        pre.textContent = 'Error loading update logs: ' + e.message;
+      }
+    }
+
+    // ===== Profiles =====
+    async function listProfiles(platform) {
+      const res = await fetch(`/api/config/profiles?platform=${encodeURIComponent(platform)}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed to list profiles');
+      return data.profiles || [];
+    }
+
+    function populateProfileSelect(items) {
+      const sel = document.getElementById('profile-select');
+      sel.innerHTML = '';
+      const optNone = document.createElement('option');
+      optNone.value = '';
+      optNone.textContent = '(none)';
+      sel.appendChild(optNone);
+      (items || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name;
+        opt.textContent = p.name;
+        opt.title = `${p.path || ''}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    async function refreshProfilesUI(platform) {
+      try {
+        const profiles = await listProfiles(platform);
+        profiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        populateProfileSelect(profiles);
+      } catch (e) {
+        const s = document.getElementById('config-status');
+        if (s) s.textContent = 'Profiles load error: ' + e.message;
+      }
+    }
+
+    async function saveCurrentAsProfile(platform) {
+      const name = prompt('Enter a profile name (letters, digits, _ or -, max 60 chars):');
+      if (!name) return;
+      const res = await fetch('/api/config/profile/save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, name })
+      });
+      const data = await res.json();
+      if (!data.ok) { alert('Save failed: ' + (data.error || 'unknown error')); return; }
+      await refreshProfilesUI(platform);
+      document.getElementById('profile-select').value = name;
+    }
+
+    async function activateProfile(platform, name) {
+      if (!name) { alert('Select a profile first.'); return; }
+      const s = document.getElementById('config-status');
+      try {
+        if (s) s.textContent = 'Applying profile...';
+        const res = await fetch('/api/config/profile/load', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platform, name })
+        });
+        const data = await res.json();
+        if (!data.ok) { if (s) s.textContent = 'Apply failed: ' + (data.error || 'unknown error'); return; }
+        if (s) s.textContent = `Applied profile "${name}". Backup: ${data.backup || 'n/a'}. Restarting...`;
+        const ok = await restartLightgunService();
+        if (s) s.textContent = ok ? 'Profile applied and service restarted.' : 'Profile applied. Restart failed.';
+        refreshServices();
+        await loadConfig(platform);
+      } catch (e) {
+        if (s) s.textContent = 'Apply error: ' + e.message;
+      }
+    }
+
+    // ===== Backups =====
+    function openBackupModal() { document.getElementById('backup-modal').style.display = 'block'; }
+    function closeBackupModal() { document.getElementById('backup-modal').style.display = 'none'; }
+
+    async function listBackups(platform) {
+      const res = await fetch(`/api/config/backups?platform=${encodeURIComponent(platform)}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed to list backups');
+      return data.backups || [];
+    }
+
+    function renderBackupList(backups, platform) {
+      const box = document.getElementById('backup-list');
+      const status = document.getElementById('backup-list-status');
+      box.innerHTML = '';
+      status.textContent = '';
+      if (!backups.length) { status.textContent = 'No backups found.'; return; }
+      backups.forEach(b => {
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:8px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; gap:8px;';
+        const meta = document.createElement('div');
+        const when = b.mtime ? new Date(b.mtime * 1000).toLocaleString() : '';
+        meta.innerHTML = `<div style="font-weight:700; color:#fff">${b.name}</div>
+          <div style="color:#888; font-size:12px">${when} · ${b.size || 0} bytes</div>`;
+        const act = document.createElement('button');
+        act.className = 'btn-danger';
+        act.textContent = 'Restore';
+        act.onclick = async () => {
+          if (!confirm(`Restore backup ${b.name}?`)) return;
+          try {
+            const res = await fetch('/api/config/backup/restore', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ platform, filename: b.name })
+            });
+            const data = await res.json();
+            if (!data.ok) { alert('Restore failed: ' + (data.error || 'unknown error')); return; }
+            const s = document.getElementById('config-status');
+            if (s) s.textContent = 'Backup restored. Restarting service...';
+            const ok = await restartLightgunService();
+            if (s) s.textContent = ok ? 'Backup restored and service restarted.' : 'Backup restored. Restart failed.';
+            closeBackupModal();
+            await loadConfig(platform);
+            refreshServices();
+          } catch (e) { alert('Restore error: ' + e.message); }
+        };
+        const right = document.createElement('div');
+        right.appendChild(act);
+        row.appendChild(meta);
+        row.appendChild(right);
+        box.appendChild(row);
+      });
+    }
+
+    async function loadBackupDialog(platform) {
+      openBackupModal();
+      const status = document.getElementById('backup-list-status');
+      status.textContent = 'Loading backups...';
+      try {
+        const backups = await listBackups(platform);
+        renderBackupList(backups, platform);
+      } catch (e) {
+        status.textContent = 'Error loading backups: ' + e.message;
+      }
+    }
+
+    // ===== Wire-up =====
+    document.addEventListener('DOMContentLoaded', () => {
+      const status = document.getElementById('config-status');
+      const selPlatform = document.getElementById('platform-select');
+      const selProfile = document.getElementById('profile-select');
+      const btnSaveProfile = document.getElementById('btn-save-profile');
+      const btnActivate = document.getElementById('btn-activate-profile');
+      const btnSaveRestart = document.getElementById('save-restart');
+      const chkRestore = document.getElementById('chk-restore-mode');
+
+      // Dynamic button label + initial sync
+      function updateActivateButtonLabel() {
+        btnActivate.textContent = chkRestore.checked ? 'Restore Backup' : 'Activate Profile';
+      }
+      chkRestore.addEventListener('change', updateActivateButtonLabel);
+      updateActivateButtonLabel();
+
+      // Platform change
+      selPlatform.addEventListener('change', () => {
+        loadConfig(selPlatform.value).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
+        refreshProfilesUI(selPlatform.value);
+        selProfile.value = '';
+      });
+
+      // Save as profile
+      if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
+
+      // Activate OR Restore depending on checkbox
+      if (btnActivate) btnActivate.onclick = () => {
+        const platform = selPlatform.value;
+        const profile = selProfile.value;
+        if (chkRestore.checked) {
+          loadBackupDialog(platform);
+        } else {
+          activateProfile(platform, profile);
+        }
+      };
+
+      // Save & Restart
+      if (btnSaveRestart) btnSaveRestart.onclick = async () => {
+        btnSaveRestart.disabled = true;
+        try {
+          if (status) status.textContent = 'Saving configuration (both players)...';
+          const resp = await saveConfig(selPlatform.value, collectForm('p1-form'), collectForm('p2-form'));
+          if (!resp.ok) { if (status) status.textContent = 'Error saving: ' + (resp.error || 'unknown'); return; }
+          if (status) status.textContent = `Saved. Backup: ${resp.backup || 'n/a'}. Restarting lightgun.service...`;
+          const ok = await restartLightgunService();
+          if (status) status.textContent = ok ? 'Saved and restarted successfully.' : 'Saved. Restart failed.';
+          refreshServices();
+        } finally { btnSaveRestart.disabled = false; }
+      };
+
+      // Software update wiring
+      document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
+      document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
+      document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
+
+      // Initial loads
+      loadConfig(selPlatform.value).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
+      refreshProfilesUI(selPlatform.value);
+      refreshUpdateStatus();
+    });
+
+    // Polling
+    setInterval(() => {
+      ['lightgun.service','lightgun-monitor.service'].forEach(svc => {
+        const box = document.getElementById('logs-' + svc.replace('.service',''));
+        if (box && box.style.display === 'block') loadLogs(svc);
+      });
+      if (document.getElementById('tab-sindenlog').style.display === 'block') loadSindenLog();
+    }, 1000);
+
+    setInterval(refreshServices, 1000);
+
+    // Service/Update polling while visible
+    setInterval(() => {
+      const panel = document.getElementById('service-panel');
+      if (panel && panel.style.display === 'block') {
+        refreshUpdateStatus();
+        const box = document.getElementById('update-logs');
+        if (box && box.style.display === 'block') loadUpdateLogs();
+      }
+    }, 5000);
+
+    // Default tab
+    showTab('sindenlog');
+    refreshServices();
+  </script>
+</body>
+</html>
