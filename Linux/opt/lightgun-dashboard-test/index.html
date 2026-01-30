@@ -427,6 +427,7 @@
           tip.setAttribute('data-tip', item.comment);
           tip.title = item.comment;                  // native fallback
           // no visible character; tooltip shown on hover/focus via CSS or title
+		  tip.textContent = 'i';
           label.appendChild(tip);
 
           // Optional: also show inline text under label for long comments
