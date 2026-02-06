@@ -815,6 +815,7 @@ EOF
   - $(pwd)/cleanup-libjpeg8-build.sh"
 }
 
+
 main() {
   check_arch
   install_build_deps
