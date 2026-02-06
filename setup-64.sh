@@ -2,7 +2,8 @@
 #
 # Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
 # Downloads different PS1/PS2 assets based on VERSION 
-# Tested on /Raspberry Pi OS variants using /boot/firmware layout
+# Tested on Raspberry Pi OS variants using /boot/firmware layout
+# Test Script for Raspberry Pi OS 64-bit (Trixie) with missing libjpeg.so.8 (compiled from source)
 #
 
 set -euo pipefail
