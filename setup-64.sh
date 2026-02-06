@@ -807,7 +807,6 @@ EOF
   - $(pwd)/cleanup-libjpeg8-build.sh"
 }
 
-
 main() {
   install_build_deps
   fetch_source
