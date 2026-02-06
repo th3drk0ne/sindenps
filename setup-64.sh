@@ -692,14 +692,6 @@ PREFIX="/usr/local"
 c_ok="\033[1;32m"; c_info="\033[1;34m"; c_warn="\033[1;33m"; c_err="\033[1;31m"; c_off="\033[0m"
 
 
-check_arch() {
-  local arch
-  arch="$(dpkg --print-architecture || true)"
-  msg "Detected architecture: ${arch}"
-  if [[ "${arch}" != "arm64" && "${arch}" != "aarch64" ]]; then
-    warn "This image doesn't appear to be 64-bit (arm64). Proceeding anyway."
-  fi
-}
 
 install_build_deps() {
   msg "Updating APT and installing build dependencies..."
@@ -817,7 +809,6 @@ EOF
 
 
 main() {
-  check_arch
   install_build_deps
   fetch_source
   configure_build
