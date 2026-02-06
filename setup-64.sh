@@ -692,7 +692,7 @@ PREFIX="/usr/local"
 c_ok="\033[1;32m"; c_info="\033[1;34m"; c_warn="\033[1;33m"; c_err="\033[1;31m"; c_off="\033[0m"
 
 install_build_deps() {
-  msg "Updating APT and installing build dependencies..."
+  log "Updating APT and installing build dependencies..."
   apt-get update -y
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential autoconf automake libtool pkg-config ca-certificates wget tar
@@ -702,47 +702,47 @@ install_build_deps() {
 
 fetch_source() {
   if [[ ! -f "${SRC_TARBALL}" ]]; then
-    msg "Downloading ${SRC_TARBALL} from ${SRC_URL}..."
+    log "Downloading ${SRC_TARBALL} from ${SRC_URL}..."
     wget -O "${SRC_TARBALL}" "${SRC_URL}"
     log "Downloaded source tarball."
   else
-    msg "Source tarball already present: ${SRC_TARBALL}"
+    log "Source tarball already present: ${SRC_TARBALL}"
   fi
 
   if [[ -d "${SRC_DIR}" ]]; then
-    msg "Removing existing source directory ${SRC_DIR}..."
+    log "Removing existing source directory ${SRC_DIR}..."
     rm -rf "${SRC_DIR}"
   fi
 
-  msg "Extracting ${SRC_TARBALL}..."
+  log "Extracting ${SRC_TARBALL}..."
   tar xvf "${SRC_TARBALL}"
   log "Source extracted to ${SRC_DIR}."
 }
 
 configure_build() {
   cd "${SRC_DIR}"
-  msg "Configuring build for shared library install under ${PREFIX}..."
+  log "Configuring build for shared library install under ${PREFIX}..."
   # Enable shared, disable static to produce libjpeg.so.8
   ./configure --prefix="${PREFIX}" --enable-shared --disable-static
   log "Configure completed."
 }
 
 compile_install() {
-  msg "Compiling (using $(nproc) cores)..."
+  log "Compiling (using $(nproc) cores)..."
   make -j"$(nproc)"
   log "Build completed."
 
-  msg "Installing into ${PREFIX}..."
+  log "Installing into ${PREFIX}..."
   make install
   log "Files installed."
 
-  msg "Refreshing dynamic linker cache..."
+  log "Refreshing dynamic linker cache..."
   ldconfig
   log "ldconfig completed."
 }
 
 verify_install() {
-  msg "Verifying that libjpeg.so.8 is on the library path..."
+  log "Verifying that libjpeg.so.8 is on the library path..."
   if ldconfig -p | grep -q 'libjpeg\.so\.8'; then
     local line
     line="$(ldconfig -p | grep 'libjpeg\.so\.8' | head -n1)"
@@ -759,7 +759,7 @@ verify_install() {
     fi
   fi
 
-  msg "Checking on-disk library files in ${PREFIX}/lib..."
+  log "Checking on-disk library files in ${PREFIX}/lib..."
   ls -l "${PREFIX}/lib"/libjpeg.so* || true
 }
 
