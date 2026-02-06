@@ -816,7 +816,6 @@ EOF
 }
 
 main() {
-  need_root
   check_arch
   install_build_deps
   fetch_source
