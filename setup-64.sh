@@ -691,8 +691,6 @@ PREFIX="/usr/local"
 # Colors
 c_ok="\033[1;32m"; c_info="\033[1;34m"; c_warn="\033[1;33m"; c_err="\033[1;31m"; c_off="\033[0m"
 
-
-
 install_build_deps() {
   msg "Updating APT and installing build dependencies..."
   apt-get update -y
@@ -700,6 +698,7 @@ install_build_deps() {
     build-essential autoconf automake libtool pkg-config ca-certificates wget tar
   log "Build dependencies installed."
 }
+# fix
 
 fetch_source() {
   if [[ ! -f "${SRC_TARBALL}" ]]; then
