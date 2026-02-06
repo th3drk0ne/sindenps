@@ -426,43 +426,7 @@ REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
 
 # --- Remote paths ---
 PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
-PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
-
-# --- PS1: list → download ---
-ps1_files=()
-if ! mapfile -t ps1_files < <(list_repo_files "$PS1_REMOTE"); then
-  err "GitHub listing failed for PS1 — aborting."
-  exit 9
-fi
-if [[ ${#ps1_files[@]} -eq 0 ]]; then
-  err "No PS1 files returned from GitHub — Try again in a few minutes."
-  exit 9
-fi
-
-if ! download_files_from_list "$PS1_DIR" ps1_files; then
-  err "PS1 download failed — Try again in a few minutes."
-  exit 9
-fi
-
-# --- PS2: list → download  ---
-ps2_files=()
-if ! mapfile -t ps2_files < <(list_repo_files "$PS2_REMOTE"); then
-  err "GitHub listing failed for PS2 — aborting."
-  exit 9
-fi
-if [[ ${#ps2_files[@]} -eq 0 ]]; then
-  err "No PS2 files returned from GitHub — Try again in a few minutes.."
-  exit 9
-fi
-
-if ! download_files_from_list "$PS2_DIR" ps2_files; then
-  err "PS2 download failed — Try again in a few minutes."
-  exit 9
-fi
-
-echo "$VERSION" > "$VERSION_FILE"
-chmod 0644 "$VERSION_FILE"
-
+P
 ##################################################################
 
 # Create PS1/PS2 and download according to version
