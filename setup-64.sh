@@ -439,7 +439,6 @@ if [[ ${#ps1_files[@]} -eq 0 ]]; then
   exit 9
 fi
 
-
 if ! download_files_from_list "$PS1_DIR" ps1_files; then
   err "PS1 download failed — Try again in a few minutes."
   exit 9
@@ -460,7 +459,6 @@ if ! download_files_from_list "$PS2_DIR" ps2_files; then
   err "PS2 download failed — Try again in a few minutes."
   exit 9
 fi
-
 
 echo "$VERSION" > "$VERSION_FILE"
 chmod 0644 "$VERSION_FILE"
@@ -836,8 +834,6 @@ main() {
 }
 
 main "$@"
-
-
 
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules Pi4 and Pi5
