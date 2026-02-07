@@ -12,6 +12,14 @@ log()  { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*" >&2; }
 err()  { echo "[ERROR] $*" >&2; }
 
+
+ARCH="$(uname -m)"
+
+if [ "$ARCH" != "aarch64" ]; then
+    warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
+    exit 1
+fi
+
 #-----------------------------------------------------------
 # Step 1) Check if root
 #-----------------------------------------------------------
@@ -20,6 +28,8 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 log "Running as root."
+
+
 
 #-----------------------------------------------------------
 # Step 0) Version selection (no changes to download module)
