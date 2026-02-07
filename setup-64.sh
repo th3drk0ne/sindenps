@@ -688,9 +688,40 @@ sudo systemctl restart lightgun-monitor.service
 # libjpeg8 (libjpeg.so.8) symlink to 62 turbo
 # ------------------------------------------------------------
 
-sudo ln -s /usr/lib/aarch64-linux-gnu/libjpeg.so.62 \
-  /usr/lib/aarch64-linux-gnu/libjpeg.so.8
+#sudo ln -s /usr/lib/aarch64-linux-gnu/libjpeg.so.62 \
+#  /usr/lib/aarch64-linux-gnu/libjpeg.so.8
+#sudo ldconfig
+
+
+set -e
+
+log "Searching for libjpeg.so.62..."
+
+# Find the actual library file (excluding snapshots or weird matches)
+LIBJPEG_PATH=$(ldconfig -p | grep "libjpeg.so.62" | awk '{print $NF}' | head -n1)
+
+if [ -z "$LIBJPEG_PATH" ]; then
+    warn "libjpeg.so.62 not found on this system."
+    exit 1
+fi
+
+log "Found: $LIBJPEG_PATH"
+
+LIBDIR=$(dirname "$LIBJPEG_PATH")
+TARGET="$LIBDIR/libjpeg.so.8"
+
+log "Creating symlink: $TARGET -> $LIBJPEG_PATH"
+
+# Remove old link if it exists
+if [ -L "$TARGET" ] || [ -e "$TARGET" ]; then
+    sudo rm -f "$TARGET"
+fi
+
+sudo ln -s "$LIBJPEG_PATH" "$TARGET"
 sudo ldconfig
+
+log "Symlink created successfully."
+log "libjpeg.so.8 now points to: $LIBJPEG_PATH"
 
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules Pi4 and Pi5
