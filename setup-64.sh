@@ -670,159 +670,17 @@ sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
 #-----------------------------------------------------------
-# step 8) Compile form source libjpeg8
+# step 8) fix libjpeg8
 #-----------------------------------------------------------
 
-set -euo pipefail
 
 # ------------------------------------------------------------
-# libjpeg8 (libjpeg.so.8) installer for Raspberry Pi OS Trixie
-# - Builds from IJG jpeg v8d source
-# - Installs to /usr/local
-# - Coexists with Debian's libjpeg62-turbo
+# libjpeg8 (libjpeg.so.8) symlink to 62 turbo
 # ------------------------------------------------------------
 
-JPEG_VER="8d"
-SRC_TARBALL="jpegsrc.v${JPEG_VER}.tar.gz"
-SRC_URL="https://ijg.org/files/${SRC_TARBALL}"
-SRC_DIR="jpeg-${JPEG_VER}"
-PREFIX="/usr/local"
-
-# Colors
-c_ok="\033[1;32m"; c_info="\033[1;34m"; c_warn="\033[1;33m"; c_err="\033[1;31m"; c_off="\033[0m"
-
-install_build_deps() {
-  log "Updating APT and installing build dependencies..."
-  apt-get update -y
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    build-essential autoconf automake libtool pkg-config ca-certificates wget tar
-  log "Build dependencies installed."
-}
-# fix
-
-fetch_source() {
-  if [[ ! -f "${SRC_TARBALL}" ]]; then
-    log "Downloading ${SRC_TARBALL} from ${SRC_URL}..."
-    wget -O "${SRC_TARBALL}" "${SRC_URL}"
-    log "Downloaded source tarball."
-  else
-    log "Source tarball already present: ${SRC_TARBALL}"
-  fi
-
-  if [[ -d "${SRC_DIR}" ]]; then
-    log "Removing existing source directory ${SRC_DIR}..."
-    rm -rf "${SRC_DIR}"
-  fi
-
-  log "Extracting ${SRC_TARBALL}..."
-  tar xvf "${SRC_TARBALL}"
-  log "Source extracted to ${SRC_DIR}."
-}
-
-configure_build() {
-  cd "${SRC_DIR}"
-  log "Configuring build for shared library install under ${PREFIX}..."
-  # Enable shared, disable static to produce libjpeg.so.8
-  ./configure --prefix="${PREFIX}" --enable-shared --disable-static
-  log "Configure completed."
-}
-
-compile_install() {
-  log "Compiling (using $(nproc) cores)..."
-  make -j"$(nproc)"
-  log "Build completed."
-
-  log "Installing into ${PREFIX}..."
-  make install
-  log "Files installed."
-
-  log "Refreshing dynamic linker cache..."
-  ldconfig
-  log "ldconfig completed."
-}
-
-verify_install() {
-  log "Verifying that libjpeg.so.8 is on the library path..."
-  if ldconfig -p | grep -q 'libjpeg\.so\.8'; then
-    local line
-    line="$(ldconfig -p | grep 'libjpeg\.so\.8' | head -n1)"
-    log "Found: ${line}"
-  else
-    warn "libjpeg.so.8 not reported by ldconfig - adding ${PREFIX}/lib to loader config."
-    echo "${PREFIX}/lib" >/etc/ld.so.conf.d/local-libjpeg8.conf
-    ldconfig
-    if ldconfig -p | grep -q 'libjpeg\.so\.8'; then
-      log "Found after adding ${PREFIX}/lib to /etc/ld.so.conf.d/local-libjpeg8.conf"
-    else
-      err "libjpeg.so.8 still not visible to the loader. Check install logs."
-      exit 1
-    fi
-  fi
-
-  log "Checking on-disk library files in ${PREFIX}/lib..."
-  ls -l "${PREFIX}/lib"/libjpeg.so* || true
-}
-
-write_helpers() {
-  cd ..
-  cat > uninstall-libjpeg8.sh <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-PREFIX="/usr/local"
-
-echo "[*] This will remove libjpeg8 installed under ${PREFIX}. Continue? (y/N)"
-read -r ans
-if [[ "${ans:-N}" != "y" && "${ans:-N}" != "Y" ]]; then
-  echo "Aborted."
-  exit 0
-fi
-
-# Remove libraries and headers
-rm -f "${PREFIX}/lib/libjpeg.so.8" "${PREFIX}/lib/libjpeg.so.8."* "${PREFIX}/lib/libjpeg.so"
-rm -f "${PREFIX}/lib/libjpeg.la" || true
-rm -f "${PREFIX}/lib/pkgconfig/libjpeg.pc" || true
-rm -rf "${PREFIX}/include/jpeglib.h" "${PREFIX}/include/jconfig.h" "${PREFIX}/include/jmorecfg.h" "${PREFIX}/include/jerror.h" 2>/dev/null || true
-
-# Remove loader conf if created by installer
-if [[ -f /etc/ld.so.conf.d/local-libjpeg8.conf ]]; then
-  rm -f /etc/ld.so.conf.d/local-libjpeg8.conf
-fi
-
-ldconfig
-echo "[✓] libjpeg8 removed and loader cache refreshed."
-EOF
-  chmod +x uninstall-libjpeg8.sh
-
-  cat > cleanup-libjpeg8-build.sh <<EOF
-#!/usr/bin/env bash
-set -euo pipefail
-rm -rf "${SRC_DIR}" "${SRC_TARBALL}" 2>/dev/null || true
-echo "[✓] Build artifacts removed."
-EOF
-  chmod +x cleanup-libjpeg8-build.sh
-
-  log "Helper scripts created:
-  - $(pwd)/uninstall-libjpeg8.sh
-  - $(pwd)/cleanup-libjpeg8-build.sh"
-}
-
-main() {
-  install_build_deps
-  fetch_source
-  configure_build
-  compile_install
-  verify_install
-  write_helpers
-
-  log  "libjpeg8 (libjpeg.so.8) is installed under ${PREFIX}."
-  echo -e "${c_info}Next steps:${c_off}
-  - If a program still fails to find libjpeg.so.8, verify with: ldconfig -p | grep libjpeg.so.8
-  - If needed, ensure ${PREFIX}/lib is in the loader path (the installer attempted this).
-  - To remove: sudo ./uninstall-libjpeg8.sh
-  - To cleanup sources: ./cleanup-libjpeg8-build.sh"
-}
-
-main "$@"
+sudo ln -s /usr/lib/aarch64-linux-gnu/libjpeg.so.62 \
+  /usr/lib/aarch64-linux-gnu/libjpeg.so.8
+sudo ldconfig
 
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules Pi4 and Pi5
