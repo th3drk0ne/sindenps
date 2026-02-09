@@ -20,7 +20,7 @@ case "$UNAME_ARCH:$DEB_ARCH" in
         ARCH="arm32"
         ;;
     aarch64:armhf)
-        ARCH="arm32-kernel64"   # 32‑bit userland, 64‑bit kernel
+        ARCH="arm32"   # 32‑bit userland, 64‑bit kernel
         ;;
     aarch64:arm64)
         ARCH="aarch64"
