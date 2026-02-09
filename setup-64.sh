@@ -31,10 +31,10 @@ esac
 
 log "ARCH=$ARCH"
 
-if [ "$ARCH" != "aarch64" ]; then
-    warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
-    exit 1
-fi
+#if [ "$ARCH" != "aarch64" ]; then
+#    warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
+#    exit 1
+#fi
 
 #-----------------------------------------------------------
 # Step 1) Check if root
@@ -451,8 +451,8 @@ map_version_to_repo_folder() {
 REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
 
 # --- Remote paths ---
-PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
-PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
+PS1_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS1"
+PS2_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS2"
 
 # --- PS1: list → download ---
 ps1_files=()
