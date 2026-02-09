@@ -20,12 +20,12 @@ bits=$(getconf LONG_BIT)
 
 if echo "$arch" | grep -q '^arm'; then
     if [ "$bits" = "32" ]; then
-        echo "System is 32-bit ARM"
+        log "System is 32-bit ARM"
     else
-        echo "System is ARM but not 32-bit"
+        log "System is ARM but not 32-bit"
     fi
 else
-    echo "Not an ARM system"
+    warn "Not an ARM system"
 fi
 
 
