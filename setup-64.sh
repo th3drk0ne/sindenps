@@ -29,7 +29,7 @@ case "$ARCH" in
         ;;
 esac
 
-echo "ARCH=$ARCH"
+log "ARCH=$ARCH"
 
 if [ "$ARCH" != "aarch64" ]; then
     warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
