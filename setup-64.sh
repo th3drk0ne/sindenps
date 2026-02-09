@@ -12,24 +12,21 @@ log()  { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*" >&2; }
 err()  { echo "[ERROR] $*" >&2; }
 
-
-#!/bin/sh
-
-arch=$(uname -m)
-bits=$(getconf LONG_BIT)
-
-if echo "$arch" | grep -q '^arm'; then
-    if [ "$bits" = "32" ]; then
-        log "System is 32-bit ARM"
-    else
-        log "System is ARM but not 32-bit"
-    fi
-else
-    warn "Not an ARM system"
-fi
-
-
 ARCH="$(uname -m)"
+
+case "$arch" in
+    armv6l|armv7l)
+        ARCH="arm32"
+        ;;
+    aarch64)
+        ARCH="aarch64"
+        ;;
+    *)
+        ARCH="unknown"
+        ;;
+esac
+
+echo "ARCH=$ARCH"
 
 if [ "$ARCH" != "aarch64" ]; then
     warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
