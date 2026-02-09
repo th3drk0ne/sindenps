@@ -68,7 +68,6 @@ normalize_version() {
     previous|prev|2|p)        echo "previous"   ;;
     beta|3|b)                 echo "beta"     ;;
     psiloc|old|legacy|4|o)    echo "psiloc" ;;
-	ubuntu|pc|x86|5|d)    echo "ubuntu" ;;
     *)                        echo ""         ;;
   esac
 }
