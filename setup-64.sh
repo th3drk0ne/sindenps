@@ -70,17 +70,15 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [2] previous  (prior release)"
   echo "  [3] beta      (pre-release/test)"
   echo "  [4] psiloc    (legacy)"
-  echo "  [5] ubuntu    (Ubuntu x86)"
   while true; do
-    read -r -p "Enter choice (1/2/3/4/5) [default: 1]: " choice
+    read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
       1) VERSION="latest";   break ;;
       2) VERSION="previous";   break ;;
       3) VERSION="beta";     break ;;
       4) VERSION="psiloc"; break ;;
-	  5) VERSION="ubuntu"; break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–5." ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
     esac
   done
 else
@@ -92,7 +90,6 @@ else
     echo "  [2] previous"
     echo "  [3] beta"
     echo "  [4] psiloc"
-	echo "  [4] ubuntu"
     while true; do
       read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
       choice="${choice:-1}"
@@ -101,7 +98,6 @@ else
         2) VERSION="previous";   break ;;
         3) VERSION="beta";     break ;;
         4) VERSION="psiloc"; break ;;
-		5) VERSION="ubuntu"; break ;;
         *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
       esac
     done

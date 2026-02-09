@@ -67,7 +67,6 @@ normalize_version() {
     psiloc|old|legacy|2|o)    echo "psiloc" ;;
     beta|3|b)                   echo "beta" ;;
     previous|prev|4|p)          echo "previous" ;;
-    ubuntu|pc|x86|5|d)    echo "ubuntu" ;;
     *)                        echo "" ;;
   esac
 }
@@ -82,7 +81,6 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [2] psiloc"
   echo "  [3] beta"
   echo "  [4] previous"
-  echo "  [5] ubuntu"
   while true; do
     read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
@@ -91,8 +89,7 @@ if [[ -z "${VERSION:-}" ]]; then
       2) VERSION="psiloc";   break ;;
       3) VERSION="beta";     break ;;
       4) VERSION="previous"; break ;;
-      5) VERSION="ubuntu"; break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–5." ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
     esac
   done
 fi
