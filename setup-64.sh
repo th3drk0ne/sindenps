@@ -946,9 +946,6 @@ detect_model() {
   fi
 }
 
-require_root() {
-  if [[ $EUID -ne 0 ]]; then error "Please run as root (sudo)."; exit 1; fi
-}
 
 ensure_tools_and_groups() {
   if ! command -v picocom >/dev/null 2>&1; then
@@ -1045,7 +1042,6 @@ prompt_reboot() {
 }
 
 main() {
-  require_root
   detect_model
   ensure_tools_and_groups
   enable_overlays_and_mini_uart
