@@ -17,7 +17,7 @@ sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sinden
 Or with these if you want a specific version version
 
 
-Install Latest Official Sinden driver
+Install latest official Sinden driver
 ```bash
 VERSION=latest sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
@@ -30,7 +30,7 @@ VERSION=psiloc sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/t
 For Linux installs that do not have a sinden user please specify a password below, replace StrongP@ssw0rd! with one of your choosing
 
 
-Install Latest Official Sinden driver
+Install latest official Sinden driver
 ```bash
 VERSION=latest SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
@@ -40,7 +40,7 @@ Install psiloc uberlag patched driver
 VERSION=psiloc SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
 ---
-Install Latest Official Sinden driver (Debian Trixie 64-Bit)
+Install latest official Sinden driver (Debian Trixie 64-Bit)
 ```bash
 VERSION=latest sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup-64.sh")"
 ```
