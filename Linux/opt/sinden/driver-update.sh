@@ -25,11 +25,9 @@ esac
 
 LOGF="/var/log/sindenps-update.log"
 
-# --- Timestamped logging ---
-ts()   { date '+%Y-%m-%d %H:%M:%S'; }
-log()  { echo "[$(ts)] [INFO]  $*"  | tee -a "$LOGF"; }
-warn() { echo "[$(ts)] [WARN]  $*"  | tee -a "$LOGF" >&2; }
-err()  { echo "[$(ts)] [ERROR] $*" | tee -a "$LOGF" >&2; }
+log()  { echo "[INFO]  $*"  | tee -a "$LOGF"; }
+warn() { echo "[WARN]  $*"  | tee -a "$LOGF" >&2; }
+err()  { echo "[ERROR] $*" | tee -a "$LOGF" >&2; }
 
 log "ARCH=$ARCH"
 
