@@ -861,7 +861,7 @@ WantedBy=multi-user.target
 EOF
   systemctl daemon-reload
   systemctl enable --now cpu-governor-performance.service
-  log "  - Installed & enabled: cpu-governor-performance.service"
+  log "  • Installed & enabled: cpu-governor-performance.service"
 }
 
 check_usb_fallback_warn() {
