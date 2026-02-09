@@ -1,4 +1,4 @@
-# SindenPS
+
 ![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
 
 
