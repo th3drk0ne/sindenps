@@ -11,6 +11,16 @@ log()  { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*" >&2; }
 err()  { echo "[ERROR] $*" >&2; }
 
+ARCH="$(uname -m)"
+
+# ---- Detect architecture ----
+case "$ARCH" in
+    armv6l|armv7l) ARCH="arm32" ;;
+    aarch64)       ARCH="aarch64" ;;
+    x86_64)        ARCH="x86_64" ;;
+    *)             ARCH="unknown" ;;
+esac
+
 #-----------------------------------------------------------
 # Step 1) Check if root
 #-----------------------------------------------------------
@@ -32,7 +42,6 @@ normalize_version() {
     previous|prev|2|p)        echo "previous"   ;;
     beta|3|b)                 echo "beta"     ;;
     psiloc|old|legacy|4|o)    echo "psiloc" ;;
-	ubuntu|pc|x86|5|d)    echo "ubuntu" ;;
     *)                        echo ""         ;;
   esac
 }
@@ -43,17 +52,15 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [2] previous  (prior release)"
   echo "  [3] beta      (pre-release/test)"
   echo "  [4] psiloc    (legacy)"
-  echo "  [5] ubuntu    (Ubuntu x86)"
   while true; do
-    read -r -p "Enter choice (1/2/3/4/5) [default: 1]: " choice
+    read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
       1) VERSION="latest";   break ;;
       2) VERSION="previous";   break ;;
       3) VERSION="beta";     break ;;
       4) VERSION="psiloc"; break ;;
-	  5) VERSION="ubuntu"; break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–5." ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
     esac
   done
 else
@@ -65,7 +72,6 @@ else
     echo "  [2] previous"
     echo "  [3] beta"
     echo "  [4] psiloc"
-	echo "  [4] ubuntu"
     while true; do
       read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
       choice="${choice:-1}"
@@ -74,7 +80,6 @@ else
         2) VERSION="previous";   break ;;
         3) VERSION="beta";     break ;;
         4) VERSION="psiloc"; break ;;
-		5) VERSION="ubuntu"; break ;;
         *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
       esac
     done
@@ -342,7 +347,7 @@ download_files_from_list() {
   local -n files_ref="$1"        # nameref to caller's array
   install -d -o sinden -g sinden "$dest_dir"
 
-  log "Downloading ${#files_ref[@]} asset(s) from ${VERSION} into $dest_dir"
+  log "Downloading ${#files_ref[@]} asset(s) from ${ARCH}/${VERSION} into $dest_dir"
 
   local rel url fname out rc
   for rel in "${files_ref[@]}"; do
@@ -424,8 +429,8 @@ map_version_to_repo_folder() {
 REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
 
 # --- Remote paths ---
-PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
-PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
+PS1_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS1"
+PS2_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS2"
 
 # --- PS1: list → download ---
 ps1_files=()
