@@ -35,7 +35,6 @@ case "$MODEL_FULL" in
     *)                  PI_MODEL="unknown" ;;
 esac
 
-log "ARCH=$ARCH"
 log "PI_MODEL=$PI_MODEL"
 
 log "ARCH=$ARCH"
