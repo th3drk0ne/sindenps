@@ -26,13 +26,15 @@ esac
 
 
 LOGF="/var/log/sindenps-update.log"
-log "ARCH=$ARCH"
+
 
 # --- Timestamped logging ---
 ts()   { date '+%Y-%m-%d %H:%M:%S'; }
 log()  { echo "[$(ts)] [INFO]  $*"  | tee -a "$LOGF"; }
 warn() { echo "[$(ts)] [WARN]  $*"  | tee -a "$LOGF" >&2; }
 err()  { echo "[$(ts)] [ERROR] $*" | tee -a "$LOGF" >&2; }
+
+log "ARCH=$ARCH"
 
 # ensure log file dir exists
 install -d -m 0755 /var/log
