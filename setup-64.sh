@@ -13,6 +13,22 @@ warn() { echo "[WARN] $*" >&2; }
 err()  { echo "[ERROR] $*" >&2; }
 
 
+#!/bin/sh
+
+arch=$(uname -m)
+bits=$(getconf LONG_BIT)
+
+if echo "$arch" | grep -q '^arm'; then
+    if [ "$bits" = "32" ]; then
+        echo "System is 32-bit ARM"
+    else
+        echo "System is ARM but not 32-bit"
+    fi
+else
+    echo "Not an ARM system"
+fi
+
+
 ARCH="$(uname -m)"
 
 if [ "$ARCH" != "aarch64" ]; then
