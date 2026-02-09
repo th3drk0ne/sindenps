@@ -899,7 +899,7 @@ fi
 
 # 4) Background services (Pi4 preset enables this by default)
 if [ "${DISABLE_BACKGROUND_SERVICES}" = "1" ]; then
-  service_disable_now_and_boot "avahi-daemon"
+  #service_disable_now_and_boot "avahi-daemon"
   service_disable_now_and_boot "triggerhappy"
   # Optional and **invasive**: disable rsyslog (local syslog)
   # service_disable_now_and_boot "rsyslog"
