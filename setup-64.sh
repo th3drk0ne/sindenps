@@ -909,7 +909,7 @@ fi
 check_usb_fallback_warn
 
 echo
-log "Tip: In the Sinden app, prefer 640x480 (or 320x240) to further reduce lag."
+log "Tip: In the Sinden app, prefer 640x480 (or 320x240) to further reduce lag. Low-Resolution Profile available"
 
 ### End Performance Optimization
 
