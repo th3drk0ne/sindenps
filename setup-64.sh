@@ -77,7 +77,7 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [1] latest    (current release)"
   echo "  [2] previous  (prior release)"
   echo "  [3] beta      (pre-release/test)"
-  echo "  [4] psiloc    (legacy)"
+  echo "  [4] psiloc    (community)"
   while true; do
     read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
