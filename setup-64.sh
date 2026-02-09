@@ -749,6 +749,7 @@ fi
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
+if [ "$ARCH" != "x86_64" ]; then
 set -euo pipefail
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
@@ -897,3 +898,4 @@ main() {
   prompt_reboot
 }
 main
+fi
