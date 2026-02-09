@@ -826,14 +826,14 @@ set_kv_in_boot_config() {
   log "${key}=${value}" >> "$tmp"
   install -m 644 "$tmp" "$file"
   rm -f "$tmp"
-  log "  - ${key} set to '${value}' (backup: $bak)"
+  log "  • ${key} set to '${value}' (backup: $bak)"
 }
 
 service_disable_now_and_boot() {
   local svc="$1"
   if systemctl list-unit-files | grep -q "^${svc}\.service"; then
     systemctl disable --now "${svc}.service" || true
-    log "  - Disabled service: ${svc}.service"
+    log "  • Disabled service: ${svc}.service"
   fi
 }
 
@@ -843,7 +843,7 @@ create_cpu_governor_service() {
     for g in /sys/devices/system/cpu/cpu*[0-9]/cpufreq/scaling_governor; do
       log performance > "$g" 2>/dev/null || true
     done
-    log "  - CPU governor set to 'performance' (immediate)"
+    log "  • CPU governor set to 'performance' (immediate)"
   fi
   # Persistent service
   local unit="/etc/systemd/system/cpu-governor-performance.service"
