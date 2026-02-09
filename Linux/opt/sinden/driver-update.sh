@@ -25,9 +25,9 @@ esac
 
 LOGF="/var/log/sindenps-update.log"
 
-log()  { echo "[INFO]  $*"  | tee -a "$LOGF"; }
-warn() { echo "[WARN]  $*"  | tee -a "$LOGF" >&2; }
-err()  { echo "[ERROR] $*" | tee -a "$LOGF" >&2; }
+log()  { printf '%s [INFO]  %s\n'  "$(date '+%F %T')" "$*" | tee -a "$LOGF"; }
+warn() { printf '%s [WARN]  %s\n'  "$(date '+%F %T')" "$*" | tee -a "$LOGF" >&2; }
+err()  { printf '%s [ERROR] %s\n'  "$(date '+%F %T')" "$*" | tee -a "$LOGF" >&2; }
 
 log "ARCH=$ARCH"
 

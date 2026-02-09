@@ -104,13 +104,25 @@ UPDATE_STATE = {
     "message": ""
 }
 UPDATE_LOG_RING = []  # ring buffer populated from subprocess output
+
+# OLD (prepend server timestamp to each line)
+# def _append_log(lines: str):
+#     if not lines: return
+#     for ln in lines.splitlines():
+#         stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+#         UPDATE_LOG_RING.append(f"{stamp} {ln}")
+#     if len(UPDATE_LOG_RING) > 2000:
+#         UPDATE_LOG_RING.pop(0)
+
+# NEW (store raw lines; no timestamp)
 def _append_log(lines: str):
-    if not lines: return
+    if not lines:
+        return
     for ln in lines.splitlines():
-        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        UPDATE_LOG_RING.append(f"{stamp} {ln}")
-        if len(UPDATE_LOG_RING) > 2000:
-            UPDATE_LOG_RING.pop(0)
+        UPDATE_LOG_RING.append(ln)
+    if len(UPDATE_LOG_RING) > 2000:
+        UPDATE_LOG_RING.pop(0)
+
 
 def _set_state(st, msg=""):
     UPDATE_STATE["state"] = st
@@ -175,13 +187,13 @@ def api_update_apply():
 
 @app.route("/api/update/logs")
 def api_update_logs():
-    # Prefer the ring buffer; fall back to file if present
-    if UPDATE_LOG_RING:
-        return jsonify({"logs": "\n".join(UPDATE_LOG_RING)})
     try:
         with open(UPDATE_LOGF, "r", encoding="utf-8", errors="replace") as f:
             return jsonify({"logs": f.read()})
     except Exception as e:
+        # Optional: show the in-memory ring if file missing (first run)
+        if UPDATE_LOG_RING:
+            return jsonify({"logs": "\n".join(UPDATE_LOG_RING)})
         return jsonify({"logs": f"Logs unavailable: {e}"})
 # ===========================
 # Flask routes: services
