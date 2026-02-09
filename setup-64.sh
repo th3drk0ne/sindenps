@@ -14,20 +14,29 @@ err()  { echo "[ERROR] $*" >&2; }
 
 ARCH="$(uname -m)"
 
+# ---- Detect architecture ----
 case "$ARCH" in
-    armv6l|armv7l)
-        ARCH="arm32"
-        ;;
-    aarch64)
-        ARCH="aarch64"
-        ;;
-	x86_64)
-        ARCH="x86_64"
-        ;;
-    *)
-        ARCH="unknown"
-        ;;
+    armv6l|armv7l) ARCH="arm32" ;;
+    aarch64)       ARCH="aarch64" ;;
+    *)             ARCH="unknown" ;;
 esac
+
+# ---- Detect Pi model (Pi3 / Pi4 / Pi5 only) ----
+if [ -r /proc/device-tree/model ]; then
+    MODEL_FULL="$(tr -d '\0' < /proc/device-tree/model)"
+else
+    MODEL_FULL=""
+fi
+
+case "$MODEL_FULL" in
+    *"Raspberry Pi 5"*) PI_MODEL="Pi5" ;;
+    *"Raspberry Pi 4"*) PI_MODEL="Pi4" ;;
+    *"Raspberry Pi 3"*) PI_MODEL="Pi3" ;;
+    *)                  PI_MODEL="unknown" ;;
+esac
+
+log "ARCH=$ARCH"
+log "PI_MODEL=$PI_MODEL"
 
 log "ARCH=$ARCH"
 
