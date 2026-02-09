@@ -18,6 +18,7 @@ ARCH="$(uname -m)"
 case "$ARCH" in
     armv6l|armv7l) ARCH="arm32" ;;
     aarch64)       ARCH="aarch64" ;;
+    x86_64)        ARCH="x86_64" ;;
     *)             ARCH="unknown" ;;
 esac
 
