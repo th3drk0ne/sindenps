@@ -6,7 +6,27 @@
 #
 set -euo pipefail
 
+ARCH="$(uname -m)"
+
+case "$ARCH" in
+    armv6l|armv7l)
+        ARCH="arm32"
+        ;;
+    aarch64)
+        ARCH="aarch64"
+        ;;
+	x86_64)
+        ARCH="x86_64"
+        ;;
+    *)
+        ARCH="unknown"
+        ;;
+esac
+
+
+
 LOGF="/var/log/sindenps-update.log"
+log "ARCH=$ARCH"
 
 # --- Timestamped logging ---
 ts()   { date '+%Y-%m-%d %H:%M:%S'; }
@@ -204,7 +224,8 @@ download_files_from_list() {
   local -n files_ref="$1"        # nameref to caller's array
   install -d -o sinden -g sinden "$dest_dir"
 
-  log "Downloading ${#files_ref[@]} asset(s) into $dest_dir"
+  #log "Downloading ${#files_ref[@]} asset(s) into $dest_dir"
+  log "Downloading ${#files_ref[@]} asset(s) from ${ARCH}/${VERSION} into $dest_dir"
 
   local rel url fname out rc
   for rel in "${files_ref[@]}"; do
@@ -289,8 +310,8 @@ map_version_to_repo_folder() {
 REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
 
 # --- Remote paths ---
-PS1_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS1"
-PS2_REMOTE="driver/version/${REPO_VERSION_FOLDER}/PS2"
+PS1_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS1"
+PS2_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS2"
 
 # --- PS1: list → archive → download (rollback on failure) ---
 ps1_files=()
