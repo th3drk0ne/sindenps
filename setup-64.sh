@@ -708,9 +708,9 @@ sudo systemctl restart lightgun-monitor.service
 #  /usr/lib/aarch64-linux-gnu/libjpeg.so.8
 #sudo ldconfig
 
-
+if [ "$ARCH" = "aarch64" ]; then
 set -e
-
+ 
 log "Searching for libjpeg.so.62..."
 
 # Find the actual library file (excluding snapshots or weird matches)
@@ -738,6 +738,7 @@ sudo ldconfig
 
 log "Symlink created successfully."
 log "libjpeg.so.8 now points to: $LIBJPEG_PATH"
+fi
 
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules Pi4 and Pi5
