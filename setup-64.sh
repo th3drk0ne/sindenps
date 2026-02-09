@@ -14,7 +14,7 @@ err()  { echo "[ERROR] $*" >&2; }
 
 ARCH="$(uname -m)"
 
-case "$arch" in
+case "$ARCH" in
     armv6l|armv7l)
         ARCH="arm32"
         ;;
