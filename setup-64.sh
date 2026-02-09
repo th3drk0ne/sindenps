@@ -695,13 +695,8 @@ log "=== Done! Browse: http://sindenps.local ==="
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
-#-----------------------------------------------------------
-# step 8) fix libjpeg8
-#-----------------------------------------------------------
-
-
 # ------------------------------------------------------------
-# libjpeg8 (libjpeg.so.8) symlink to 62 turbo
+# step 8) libjpeg8 (libjpeg.so.8) symlink to 62 turbo on aarch64
 # ------------------------------------------------------------
 
 #sudo ln -s /usr/lib/aarch64-linux-gnu/libjpeg.so.62 \
