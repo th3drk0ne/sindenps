@@ -6,16 +6,20 @@
 #
 set -euo pipefail
 
-ARCH="$(uname -m)"
+UNAME_ARCH="$(uname -m)"
+DEB_ARCH="$(dpkg --print-architecture)"
 
-case "$ARCH" in
-    armv6l|armv7l)
+case "$UNAME_ARCH:$DEB_ARCH" in
+    armv6l:armhf|armv7l:armhf)
         ARCH="arm32"
         ;;
-    aarch64)
+    aarch64:armhf)
+        ARCH="arm32"   # 32‑bit userland, 64‑bit kernel
+        ;;
+    aarch64:arm64)
         ARCH="aarch64"
         ;;
-	x86_64)
+    x86_64:amd64)
         ARCH="x86_64"
         ;;
     *)
