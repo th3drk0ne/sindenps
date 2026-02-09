@@ -12,14 +12,25 @@ log()  { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*" >&2; }
 err()  { echo "[ERROR] $*" >&2; }
 
-ARCH="$(uname -m)"
+UNAME_ARCH="$(uname -m)"
+DEB_ARCH="$(dpkg --print-architecture)"
 
-# ---- Detect architecture ----
-case "$ARCH" in
-    armv6l|armv7l) ARCH="arm32" ;;
-    aarch64)       ARCH="aarch64" ;;
-    x86_64)        ARCH="x86_64" ;;
-    *)             ARCH="unknown" ;;
+case "$UNAME_ARCH:$DEB_ARCH" in
+    armv6l:armhf|armv7l:armhf)
+        ARCH="arm32"
+        ;;
+    aarch64:armhf)
+        ARCH="arm32-kernel64"   # 32‑bit userland, 64‑bit kernel
+        ;;
+    aarch64:arm64)
+        ARCH="aarch64"
+        ;;
+    x86_64:amd64)
+        ARCH="x86_64"
+        ;;
+    *)
+        ARCH="unknown"
+        ;;
 esac
 
 # -----------------------------
