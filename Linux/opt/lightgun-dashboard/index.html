@@ -493,46 +493,45 @@
     }
 
     async function refreshUpdateStatus() {
-      try {
-        const res = await fetch('/api/update/status');
-        const s = await res.json(); // { ok, state, installed.version, latest.version?, message }
-        if (!s || s.ok === false) { setUpdateState('status error'); return; }
+	  try {
+		const res = await fetch('/api/update/status');
+		const s = await res.json();
 
-        let label = s.state || 'idle';
-        if (s.installed && s.installed.version) {
-          label = `Installed channel: ${s.installed.version}`;
-        }
-        if (s.message) label += ` — ${s.message}`;
+		if (!s || s.ok === false) {
+		  setUpdateState('status error');
+		  return;
+		}
 
-        let canUpdate = false;
-        if (s.latest && s.latest.version && s.installed && s.installed.version) {
-          canUpdate = String(s.latest.version) !== String(s.installed.version);
-          label = canUpdate
-            ? `Update available: ${s.installed.version} → ${s.latest.version}`
-            : `Up-to-date (${s.installed.version})`;
-        }
-        setUpdateState(label, canUpdate);
-      } catch (e) {
-        setUpdateState('status error: ' + e.message);
-      }
-    }
+		// Installed channel (exactly what you want shown in UI)
+		const channel = s.installed?.version || "unknown";
 
-    async function checkForUpdates() {
-      try {
-        setUpdateState('checking…');
-        const channel = document.getElementById('update-channel').value;
-        const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
-        const data = await res.json();
-        if (!data || data.ok === false) {
-          setUpdateState('check failed');
-          alert('Check failed: ' + (data && data.error ? data.error : 'unknown error'));
-          return;
-        }
-        await refreshUpdateStatus();
-      } catch (e) {
-        setUpdateState('check error: ' + e.message);
-      }
-    }
+		setUpdateState(`Channel: ${channel}`, true); // always allow updating
+
+	  } catch (e) {
+		setUpdateState('status error: ' + e.message);
+	  }
+	}
+
+	async function checkForUpdates() {
+	  try {
+		setUpdateState('checking…');
+		const channel = document.getElementById('update-channel').value;
+
+		const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
+		const data = await res.json();
+
+		if (!data || data.ok === false) {
+		  setUpdateState('check failed');
+		  alert('Check failed: ' + (data?.error || 'unknown'));
+		  return;
+		}
+
+		setUpdateState(`Channel ready: ${channel}`, true);
+
+	  } catch (e) {
+		setUpdateState('check error: ' + e.message);
+	  }
+	}
 
     async function applyUpdate() {
       if (!confirm('Apply the selected update channel now? Services may restart.')) return;
