@@ -23,10 +23,7 @@ case "$ARCH" in
         ;;
 esac
 
-
-
 LOGF="/var/log/sindenps-update.log"
-
 
 # --- Timestamped logging ---
 ts()   { date '+%Y-%m-%d %H:%M:%S'; }
