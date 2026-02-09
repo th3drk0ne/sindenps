@@ -806,9 +806,9 @@ backup_file() {
 detect_boot_config() {
   # Bookworm/Trixie: /boot/firmware/config.txt ; older: /boot/config.txt
   if [ -f /boot/firmware/config.txt ]; then
-    log "/boot/firmware/config.txt"
+    echo "/boot/firmware/config.txt"
   else
-    log "/boot/config.txt"
+    echo "/boot/config.txt"
   fi
 }
 
