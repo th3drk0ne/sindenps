@@ -239,14 +239,10 @@ Description=Lightgun USB Device Monitor
 After=network.target
 
 [Service]
-Type=simple
 ExecStart=/opt/sinden/lightgun-monitor.sh
-ExecStop=/usr/bin/bash -c 'echo "[INFO] Stopping Sinden Lightgun Monitor Service"; \
-    pkill -TERM -f "/opt/sinden/lightgun.sh" || true;'
-
-Restart=on-failure
+Restart=always
 RestartSec=5
-User=sinden
+User=root
 StandardOutput=journal
 StandardError=journal
 
