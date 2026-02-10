@@ -215,7 +215,7 @@ ExecStop=/usr/bin/bash -c 'echo "[INFO] Stopping Sinden Lightgun Service";
     pkill -TERM -u sinden -f LightgunMono.exe || true;
     pkill -TERM -f "/opt/sinden/lightgun.sh" || true;
     sleep 1;
-    pkill -KILL -u sinden -f "LightgunMono.exe" || true;
+    pkill -KILL -u sinden -f LightgunMono.exe || true;
 '
 
 Restart=on-failure
