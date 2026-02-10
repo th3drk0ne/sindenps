@@ -213,6 +213,9 @@ WorkingDirectory=/home/sinden
 
 ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
 
+RuntimeDirectory=lightgun
+RuntimeDirectoryMode=0755
+
 # Let systemd kill the whole process group (shell + LightgunMono.exe)
 KillMode=control-group
 
@@ -411,7 +414,7 @@ download_files_from_list() {
 }
 
 
-MODE_FILE="/var/run/sinden_mode"
+MODE_FILE="/run/lightgun/sinden_mode"
 echo "ps2" > $MODE_FILE
 chown sinden:sinden $MODE_FILE
 

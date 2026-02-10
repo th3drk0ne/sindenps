@@ -93,7 +93,7 @@ do
     fi
 done
 
-MODE_FILE="/var/run/sinden_mode"
+MODE_FILE="/run/lightgun/sinden_mode"
 sudo echo "ps2" > $MODE_FILE
 sudo chown sinden:sinden $MODE_FILE
 

@@ -206,7 +206,7 @@ def list_services():
 @app.route("/api/platform", methods=["GET"])
 def api_platform():
     try:
-        modefile = "/var/run/sinden_mode"
+        modefile = "/run/lightgun/sinden_mode"
         if os.path.exists(modefile):
             with open(modefile, "r") as f:
                 mode = f.read().strip().lower()
