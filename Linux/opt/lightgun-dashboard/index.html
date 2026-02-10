@@ -107,29 +107,23 @@
     @media (max-width: 768px) {
 	
 /* Stack logo above mode indicator on mobile */
-    .logo-area {
-        flex-direction: column;     /* vertical stack */
-        align-items: flex-start;    /* left aligned */
-        gap: 4px;                   /* small spacing */
-    }
-
-
+	.logo-area {
+		flex-direction: row;        /* KEEP logo + indicator on one line */
+		align-items: center;
+		gap: 6px;
+	}
     .mode-indicator {
         font-size: 13px;
         padding: 4px 10px;
     }
-
-
-      .log-content { font-size:10px; }
-      .page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
-      /* Single-row header: logo + buttons */
+	.log-content { font-size:10px; }
+	.page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
+	/* Single-row header: logo + buttons */
 
     .header-row {
         flex-wrap: wrap;         /* allow wrapping on mobile */
         align-items: flex-start; /* cleaner alignment */
     }
-
-
       .tabs { flex: 1 1 auto; width: auto; gap: 6px; justify-content: flex-end; }
       .tabs button { flex: 1 1 auto; min-width: 0; text-align: center; padding: 12px; }
       .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
