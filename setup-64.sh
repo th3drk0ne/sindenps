@@ -410,6 +410,11 @@ download_files_from_list() {
   return 0
 }
 
+
+MODE_FILE="/var/run/sinden_mode"
+touch $MODE_FILE
+chown -R sinden:sinden MODE_FILE
+
 # --- Backup configs (unchanged) ---
 PS1_DIR="${LIGHTGUN_DIR}/PS1"
 PS2_DIR="${LIGHTGUN_DIR}/PS2"
