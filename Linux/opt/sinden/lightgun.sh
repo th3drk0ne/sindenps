@@ -94,8 +94,8 @@ do
 done
 
 
-MODE_FILE="/run/sinden_mode"
-mkdir -p /run
+MODE_FILE="/var/run/sinden_mode"
+touch $MODE_FILE
 chown sinden:sinden MODE_FILE
 
 if [ "$IsPsxMode" == 1 ]; then

@@ -828,7 +828,7 @@ async function updateModeIndicator() {
     const btnSaveRestart = document.getElementById('save-restart');
     const chkRestore = document.getElementById('chk-restore-mode');
 
-    // 🔥 Auto-detect mode from /run/sinden_mode
+    // 🔥 Auto-detect mode from /var/run/sinden_mode
     const detected = await autoDetectPlatform();
     selPlatform.value = detected;
 
