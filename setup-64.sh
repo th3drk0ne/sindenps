@@ -412,7 +412,7 @@ download_files_from_list() {
 
 
 MODE_FILE="/var/run/sinden_mode"
-touch $MODE_FILE
+sudo touch $MODE_FILE
 chown -R sinden:sinden MODE_FILE
 
 # --- Backup configs (unchanged) ---
