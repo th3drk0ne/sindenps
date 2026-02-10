@@ -207,7 +207,7 @@ Description=Sinden LightGun Service
 After=network.target
 
 [Service]
-type=simple
+Type=simple
 User=sinden
 WorkingDirectory=/home/sinden
 ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
@@ -241,7 +241,7 @@ Description=Lightgun USB Device Monitor
 After=network.target
 
 [Service]
-type=simple
+Type=simple
 ExecStart=/opt/sinden/lightgun-monitor.sh
 ExecStop=/usr/bin/bash -c '
 	echo "[INFO] Stopping Sinden Lightgun Monitor Service";
