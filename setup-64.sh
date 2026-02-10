@@ -210,14 +210,15 @@ After=network.target
 Type=simple
 User=sinden
 WorkingDirectory=/home/sinden
-ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
-ExecStop=/usr/bin/bash -c 'echo "[INFO] Stopping Sinden Lightgun Service"; \
-    pkill -TERM -u sinden -f LightgunMono.exe || true; \
-    pkill -TERM -f "/opt/sinden/lightgun.sh" || true; \
-    sleep 1; \
-    pkill -KILL -u sinden -f LightgunMono.exe || true;'
 
-SuccessExitStatus=SIGTERM
+ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
+
+# Let systemd kill the whole process group (shell + LightgunMono.exe)
+KillMode=control-group
+
+# Optional: give LightgunMono time to exit cleanly
+TimeoutStopSec=5
+
 Restart=on-failure
 RestartSec=2
 
