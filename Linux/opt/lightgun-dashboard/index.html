@@ -105,6 +105,19 @@
 
     /* ===== Mobile (iPhone/Android) ===== */
     @media (max-width: 768px) {
+	
+/* Stack logo above mode indicator on mobile */
+    .logo-area {
+        flex-direction: column;     /* vertical stack */
+        align-items: flex-start;    /* left aligned */
+        gap: 4px;                   /* small spacing */
+    }
+
+    .mode-indicator {
+        font-size: 13px;
+        padding: 4px 10px;
+    }
+
       .log-content { font-size:10px; }
       .page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
       /* Single-row header: logo + buttons */
