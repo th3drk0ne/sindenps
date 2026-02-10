@@ -6,21 +6,6 @@
   <meta name="color-scheme" content="dark" />
   <title>SindenPS</title>
   <style>
-    
-	:root {
-	  --theme-main: #cc0000;  /* red default (PS1) */
-	  --theme-border: #c00;
-	  --theme-accent: #f33;
-	  --theme-button-danger: #a00;
-	}
-
-	body.ps2-mode {
-	  --theme-main: #0040ff;     /* blue */
-	  --theme-border: #0040ff;
-	  --theme-accent: #3385ff;
-	  --theme-button-danger: #0033aa;
-	}
-
     /* ===== Base & iOS/Safari normalizations ===== */
     html { box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
@@ -33,27 +18,27 @@
     .page { width: 100%; margin: 0 auto; }
 
     /* Header */
-    header { background:#000; padding:20px; border-bottom:4px solid var(--theme-border); position:sticky; top:0; z-index:10; }
+    header { background:#000; padding:20px; border-bottom:4px solid #c00; position:sticky; top:0; z-index:10; }
     .header-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
     .tabs { display:flex; flex-wrap:wrap; gap:10px; }
-    .tabs button { background:#222; color:#fff; border:1px solid var(--theme-border); padding:10px 14px; cursor:pointer; border-radius:6px; }
-    .tabs button:hover { background: var(--theme-border); }
+    .tabs button { background:#222; color:#fff; border:1px solid #c00; padding:10px 14px; cursor:pointer; border-radius:6px; }
+    .tabs button:hover { background:#c00; }
 
-    .panel-title { color: var(--theme-accent); font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
+    .panel-title { color:#f33; font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
 
     /* Services */
-    .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid var(--theme-border); border-radius:6px; }
+    .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid #c00; border-radius:6px; }
     .service-name { font-size:18px; font-weight:700; }
     .service-status { font-size:14px; color:#9f9; }
     .service-buttons { display:flex; gap:8px; flex-wrap:wrap; }
     .service-buttons button { padding:10px 12px; font-size:16px; font-weight:700; border:none; border-radius:6px; cursor:pointer; }
     .service-buttons button:nth-child(1) { background:#090; color:#000; }
-    .service-buttons button:nth-child(2) { background: var(--theme-button-danger); color:#fff; }
+    .service-buttons button:nth-child(2) { background:#a00; color:#fff; }
     .service-buttons button:nth-child(3) { background:#3cf; color:#000; }
     .log-toggle { background:#333; color:#fff !important; }
 
-    .log-box { width:100%; background:#000; border:1px solid var(--theme-border); padding:10px; display:none; max-height:300px; overflow:auto; border-radius:6px; }
+    .log-box { width:100%; background:#000; border:1px solid #c00; padding:10px; display:none; max-height:300px; overflow:auto; border-radius:6px; }
     .log-content { white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#ccc; }
 
     /* Config */
@@ -63,11 +48,11 @@
     .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:right; }
     .btn-secondary { background:#444; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
     .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:6px 8px; border:1px solid #444; border-radius:6px; cursor:pointer; }
-    .btn-danger { background: var(--theme-button-danger); color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
+    .btn-danger { background:#a00; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
 
     /* Forms */
     .config-panels { display:flex; gap:16px; flex-wrap:wrap; margin:0 16px 20px; }
-    .config-card { flex:1 1 460px; background:#111; border-left:6px solid var(--theme-border); padding:12px; border-radius:6px; }
+    .config-card { flex:1 1 460px; background:#111; border-left:6px solid #c00; padding:12px; border-radius:6px; }
     .config-form { margin-top:8px; }
     .config-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
     .config-row label { width:260px; color:#ccc; font-size:14px; }
@@ -352,7 +337,7 @@
 
     <!-- BACKUP RESTORE MODAL -->
     <div id="backup-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;">
-      <div class="dialog" style="background:#111; border:1px solid #c00; border-left:6px solid var(--theme-border); width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
+      <div class="dialog" style="background:#111; border:1px solid #c00; border-left:6px solid #c00; width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div class="service-name">Restore Backup</div>
           <button onclick="closeBackupModal()" class="btn-tertiary">Close</button>
@@ -391,11 +376,9 @@ async function updateModeIndicator() {
         if (!data.ok) return;
 
         if (data.platform === "ps1") {
-            document.body.classList.remove("ps2-mode");
             img.src = "/ps1.png";
             img.alt = "PS1 Mode";
         } else {
-            document.body.classList.add("ps2-mode");
             img.src = "/ps2.png";
             img.alt = "PS2 Mode";
         }
