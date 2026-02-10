@@ -540,9 +540,6 @@ CFG_PS2="/home/${APP_USER}/Lightgun/PS2/LightgunMono.exe.config"
 SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
 SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 
-# Upstream assets (logo only; index.html is written by this script)
-LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
-
 log "=== 1) Install OS packages ==="
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
@@ -683,11 +680,24 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
-log "=== 12) Deploy/refresh logo (if missing) ==="
-if [ ! -f "${APP_DIR}/logo.png" ]; then
-  sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/logo.png" "${LOGO_URL}" || true
-fi
-sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
+log "=== 12) Deploy/images ==="
+
+# Upstream assets 
+LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
+LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps1.png"
+LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2.png"
+
+for FILE in logo.png ps1.png ps2.png; do
+  URL_VAR="LOGO_${FILE%%.*^^}"  # Converts filename to uppercase variable name
+  URL="${!URL_VAR}"
+  DEST="${APP_DIR}/${FILE}"
+
+  if [ ! -f "$DEST" ]; then
+    sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
+  fi
+
+  sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
+done
 
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload

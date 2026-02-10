@@ -58,6 +58,19 @@
     .config-row label { width:260px; color:#ccc; font-size:14px; }
     .config-row input { flex:1 1 50%; max-width:50%; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:4px; }
 	
+	/* Image-based mode indicator */
+	.mode-indicator-img {
+		height: 28px;
+		width: auto;
+		display: block;
+	}
+
+	/* Desktop keeps it inline beside logo */
+	.logo-area {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
 	
 	.config-row label {
 	  display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;
@@ -118,6 +131,10 @@
         font-size: 13px;
         padding: 4px 10px;
     }
+    .mode-indicator-img {
+        height: 24px;
+    }
+
 	.log-content { font-size:10px; }
 	.page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
 	/* Single-row header: logo + buttons */
@@ -170,7 +187,7 @@
       <div class="header-row">  
 		<div class="logo-area">
 			<img src="/logo.png" class="logo" alt="SindenPS Logo">
-			<div id="mode-indicator" class="mode-indicator">Loading…</div>
+			<img id="mode-indicator" class="mode-indicator-img" src="/ps2.png" alt="Mode Icon">
 		</div>
         <nav class="tabs">
           <button onclick="showTab('sindenlog')">Sinden Log</button>
@@ -349,31 +366,27 @@
       }
     }
 	
-	async function updateModeIndicator() {
-    const box = document.getElementById("mode-indicator");
-    if (!box) return;
+async function updateModeIndicator() {
+    const img = document.getElementById("mode-indicator");
+    if (!img) return;
 
     try {
         const res = await fetch("/api/platform");
         const data = await res.json();
-        if (!data.ok) {
-            box.textContent = "Unknown";
-            box.className = "mode-indicator";
-            return;
-        }
+        if (!data.ok) return;
 
         if (data.platform === "ps1") {
-            box.textContent = "🟦 PS1";
-            box.className = "mode-indicator mode-ps1";
+            img.src = "/ps1.png";
+            img.alt = "PS1 Mode";
         } else {
-            box.textContent = "🟥 PS2";
-            box.className = "mode-indicator mode-ps2";
+            img.src = "/ps2.png";
+            img.alt = "PS2 Mode";
         }
-    } catch (_) {
-        box.textContent = "Unknown";
-        box.className = "mode-indicator";
+
+    } catch (e) {
+        console.log("Mode update failed:", e);
     }
-	}
+}
 
     // ===== Services =====
     async function refreshServices() {
