@@ -77,6 +77,7 @@
 		background: #444;
 		border: 1px solid #666;
 		white-space: nowrap;
+		text-align: left;
 	}
 
 	/* PS1 blue */
@@ -337,10 +338,10 @@
         }
 
         if (data.platform === "ps1") {
-            box.textContent = "🟦 PS1 Mode Active";
+            box.textContent = "🟦 PS1";
             box.className = "mode-indicator mode-ps1";
         } else {
-            box.textContent = "🟥 PS2 Mode Active";
+            box.textContent = "🟥 PS2";
             box.className = "mode-indicator mode-ps2";
         }
     } catch (_) {
