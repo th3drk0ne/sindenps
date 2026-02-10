@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
 # Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
-# Downloads different PS1/PS2 assets based on VERSION 
-# Tested on /Raspberry Pi OS variants using /boot/firmware layout
+# Downloads different PS1/PS2 assets based on VERSION and architecture
+# Tested on Raspberry Pi OS variants using /boot/firmware layout
+# Test Script for Raspberry Pi OS 64-bit (Trixie) with missing libjpeg.so.8 symlinked to libjpeg.so.62
 #
 
 set -euo pipefail
@@ -10,7 +11,6 @@ set -euo pipefail
 log()  { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*" >&2; }
 err()  { echo "[ERROR] $*" >&2; }
-
 
 UNAME_ARCH="$(uname -m)"
 DEB_ARCH="$(dpkg --print-architecture)"
@@ -32,6 +32,33 @@ case "$UNAME_ARCH:$DEB_ARCH" in
         ARCH="unknown"
         ;;
 esac
+
+# -----------------------------
+# Detect board model (Pi4 / Pi5 only)
+# -----------------------------
+read_pi_model() {
+  if [ -r /proc/device-tree/model ]; then
+    tr -d '\0' < /proc/device-tree/model
+  else
+    log ""
+  fi
+}
+
+MODEL_FULL="$(read_pi_model)"
+case "$MODEL_FULL" in
+  *"Raspberry Pi 5"*)  PI_MODEL="Pi5" ;;
+  *"Raspberry Pi 4"*)  PI_MODEL="Pi4" ;;
+  *"Raspberry Pi Zero 2 W"*)  PI_MODEL="PiZero2W" ;; 
+  *)                   PI_MODEL="unknown" ;;
+esac
+log "Detected board: ${MODEL_FULL:-unknown}  =>  ${PI_MODEL}"
+
+log "ARCH=$ARCH"
+
+#if [ "$ARCH" != "aarch64" ]; then
+#    warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
+#    exit 1
+#fi
 
 #-----------------------------------------------------------
 # Step 1) Check if root
@@ -63,7 +90,7 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [1] latest    (current release)"
   echo "  [2] previous  (prior release)"
   echo "  [3] beta      (pre-release/test)"
-  echo "  [4] psiloc    (legacy)"
+  echo "  [4] psiloc    (community)"
   while true; do
     read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
@@ -109,32 +136,6 @@ log "Version selected: ${VERSION} (${VERSION_TAG})"
 log "Selected update channel: $VERSION"
 
 VERSION_FILE="/home/sinden/Lightgun/VERSION"
-
-#-----------------------------------------------------------
-# Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18
-#-----------------------------------------------------------
-BOOT_DIR="/boot/firmware"
-CONFIG_FILE="${BOOT_DIR}/config.txt"
-
-if [[ ! -d "$BOOT_DIR" ]]; then
-  BOOT_DIR="/boot"
-  CONFIG_FILE="${BOOT_DIR}/config.txt"
-fi
-
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  err "Cannot find ${CONFIG_FILE}. Aborting."
-  #exit 1
-else
-  log "Updating ${CONFIG_FILE} (backup will be created)."
-  cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
-
-  if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
-    echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
-    log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
-  else
-    log "dtoverlay=gpio-fan,gpiopin=18,temp=60000 already present."
-  fi
-fi
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
@@ -201,13 +202,27 @@ else
   cat > "${SYSTEMD_DIR}/${svc1}" <<'EOF'
 [Unit]
 Description=Sinden LightGun Service
-After=network.target
+After=network.target systemd-tmpfiles-setup.service
 
 [Service]
+Type=simple
 User=sinden
 WorkingDirectory=/home/sinden
+
 ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
-Restart=always
+
+RuntimeDirectory=lightgun
+RuntimeDirectoryMode=0755
+
+# Let systemd kill the whole process group (shell + LightgunMono.exe)
+KillMode=control-group
+
+# Optional: give LightgunMono time to exit cleanly
+TimeoutStopSec=5
+
+Restart=on-failure
+RestartSec=2
+
 StandardOutput=journal
 StandardError=journal
 
@@ -224,9 +239,10 @@ else
   cat > "${SYSTEMD_DIR}/${svc2}" <<'EOF'
 [Unit]
 Description=Lightgun USB Device Monitor
-After=network.target
+After=network.target systemd-tmpfiles-setup.service
 
 [Service]
+Type=simple
 ExecStart=/opt/sinden/lightgun-monitor.sh
 Restart=always
 RestartSec=5
@@ -303,7 +319,6 @@ download_assets() {
     chown -R sinden:sinden "$dest"
   )
 }
-
 
 # --- GitHub repo sync (curl for API listing) ---
 OWNER="${OWNER:-th3drk0ne}"
@@ -455,7 +470,6 @@ if [[ ${#ps1_files[@]} -eq 0 ]]; then
   exit 9
 fi
 
-
 if ! download_files_from_list "$PS1_DIR" ps1_files; then
   err "PS1 download failed — Try again in a few minutes."
   exit 9
@@ -476,7 +490,6 @@ if ! download_files_from_list "$PS2_DIR" ps2_files; then
   err "PS2 download failed — Try again in a few minutes."
   exit 9
 fi
-
 
 echo "$VERSION" > "$VERSION_FILE"
 chmod 0644 "$VERSION_FILE"
@@ -499,10 +512,6 @@ log "Assets deployment complete."
 #-----------------------------------------------------------
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
 #-----------------------------------------------------------
-
-#!/bin/bash
-set -euo pipefail
-
 #========================================
 # Lightgun Dashboard - Installer/Updater
 # With Profiles (save/list/preview/activate/delete)
@@ -526,9 +535,6 @@ CFG_PS2="/home/${APP_USER}/Lightgun/PS2/LightgunMono.exe.config"
 # Sinden log file
 SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
 SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
-
-# Upstream assets (logo only; index.html is written by this script)
-LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
 
 log "=== 1) Install OS packages ==="
 sudo apt update
@@ -670,11 +676,28 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
-log "=== 12) Deploy/refresh logo (if missing) ==="
-if [ ! -f "${APP_DIR}/logo.png" ]; then
-  sudo -u "${APP_USER}" wget -q -O "${APP_DIR}/logo.png" "${LOGO_URL}" || true
-fi
-sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/logo.png" || true
+log "=== 12) Deploy/images ==="
+
+# Upstream assets 
+LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
+LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps1.png"
+LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2.png"
+
+for FILE in logo.png ps1.png ps2.png; do
+  case "$FILE" in
+    logo.png) URL="$LOGO_URL" ;;
+    ps1.png)  URL="$LOGO_PS1" ;;
+    ps2.png)  URL="$LOGO_PS2" ;;
+  esac
+
+  DEST="${APP_DIR}/${FILE}"
+
+  if [ ! -f "$DEST" ]; then
+    sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
+  fi
+
+  sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
+done
 
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
@@ -687,8 +710,48 @@ log "=== Done! Browse: http://sindenps.local ==="
 sudo systemctl restart lightgun.service
 sudo systemctl restart lightgun-monitor.service
 
+# ------------------------------------------------------------
+# step 8) libjpeg8 (libjpeg.so.8) symlink to 62 turbo on aarch64
+# ------------------------------------------------------------
+
+#sudo ln -s /usr/lib/aarch64-linux-gnu/libjpeg.so.62 \
+#  /usr/lib/aarch64-linux-gnu/libjpeg.so.8
+#sudo ldconfig
+
+if [ "$ARCH" = "aarch64" ]; then
+set -e
+ 
+log "Searching for libjpeg.so.62..."
+
+# Find the actual library file (excluding snapshots or weird matches)
+LIBJPEG_PATH=$(ldconfig -p | grep "libjpeg.so.62" | awk '{print $NF}' | head -n1)
+
+if [ -z "$LIBJPEG_PATH" ]; then
+    warn "libjpeg.so.62 not found on this system."
+    exit 1
+fi
+
+log "Found: $LIBJPEG_PATH"
+
+LIBDIR=$(dirname "$LIBJPEG_PATH")
+TARGET="$LIBDIR/libjpeg.so.8"
+
+log "Creating symlink: $TARGET -> $LIBJPEG_PATH"
+
+# Remove old link if it exists
+if [ -L "$TARGET" ] || [ -e "$TARGET" ]; then
+    sudo rm -f "$TARGET"
+fi
+
+sudo ln -s "$LIBJPEG_PATH" "$TARGET"
+sudo ldconfig
+
+log "Symlink created successfully."
+log "libjpeg.so.8 now points to: $LIBJPEG_PATH"
+fi
+
 #-----------------------------------------------------------
-# Step 8) GCON2 UDEV Rules Pi4 and Pi5
+# Step 9) GCON2 UDEV Rules and performance tweaks for Pi4 and Pi5
 #-----------------------------------------------------------
 #
 # Creates exactly TWO symlinks via udev:
@@ -701,7 +764,162 @@ sudo systemctl restart lightgun-monitor.service
 #
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
-set -euo pipefail
+if [ "$ARCH" != "x86_64" ]; then
+### Performance Optimization
+
+# -----------------------------
+# Defaults (generic fallback)
+# -----------------------------
+GPU_MEM_TARGET="256"                  # gpu_mem MB target
+DISABLE_BLUETOOTH="1"                 # 1=disable bluetooth/hciuart
+DISABLE_BACKGROUND_SERVICES="0"       # 1=disable avahi-daemon, triggerhappy (and optionally rsyslog)
+
+# -----------------------------
+# Apply Pi-model specific presets (Pi4 / Pi5)
+# -----------------------------
+if [ "$PI_MODEL" = "Pi5" ]; then
+  # Pi5 has plenty of headroom—keep fewer service cuts, slightly lower exposure
+  GPU_MEM_TARGET="256"
+  DISABLE_BLUETOOTH="1"
+  DISABLE_BACKGROUND_SERVICES="0"
+
+  log "Applying Pi5 presets"
+
+elif [ "$PI_MODEL" = "Pi4" ]; then
+  # Pi4 benefits more from trimming background services & a touch more brightness
+  GPU_MEM_TARGET="256"
+  DISABLE_BLUETOOTH="1"
+  DISABLE_BACKGROUND_SERVICES="1"
+
+  log "Applying Pi4 presets"
+
+else
+  log "Unknown model: applying generic defaults (no model-specific cuts)."
+fi
+
+# -----------------------------
+# Helpers
+# -----------------------------
+timestamp() { date +"%Y%m%d-%H%M%S"; }
+backup_file() {
+  local f="$1"
+  local ts; ts="$(timestamp)"
+  local b="${f}.${ts}.bak"
+  cp -a -- "$f" "$b" 2>/dev/null || true
+  log "$b"
+}
+
+detect_boot_config() {
+  # Bookworm/Trixie: /boot/firmware/config.txt ; older: /boot/config.txt
+  if [ -f /boot/firmware/config.txt ]; then
+    echo "/boot/firmware/config.txt"
+  else
+    echo "/boot/config.txt"
+  fi
+}
+
+set_kv_in_boot_config() {
+  local file="$1" key="$2" value="$3"
+  local bak; bak="$(backup_file "$file")"
+  local tmp; tmp="$(mktemp)"
+  awk -v KEY="$key" '
+    BEGIN{IGNORECASE=1}
+    {
+      if ($0 ~ "^[[:space:]]*#?[[:space:]]*"KEY"[[:space:]]*=") next
+      print
+    }
+  ' "$file" > "$tmp"
+  echo "${key}=${value}" >> "$tmp"
+  install -m 644 "$tmp" "$file"
+  rm -f "$tmp"
+  log "  • ${key} set to '${value}' (backup: $bak)"
+}
+
+service_disable_now_and_boot() {
+  local svc="$1"
+  if systemctl list-unit-files | grep -q "^${svc}\.service"; then
+    systemctl disable --now "${svc}.service" || true
+    log "  • Disabled service: ${svc}.service"
+  fi
+}
+
+create_cpu_governor_service() {
+  # Immediate
+  if ls /sys/devices/system/cpu/cpu*[0-9]/cpufreq/scaling_governor >/dev/null 2>&1; then
+    for g in /sys/devices/system/cpu/cpu*[0-9]/cpufreq/scaling_governor; do
+      log performance > "$g" 2>/dev/null || true
+    done
+    log "  • CPU governor set to 'performance' (immediate)"
+  fi
+  # Persistent service
+  local unit="/etc/systemd/system/cpu-governor-performance.service"
+  cat > "$unit" <<'EOF'
+[Unit]
+Description=Set CPU governor to performance
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do log performance > "$f" 2>/dev/null || true; done'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+  systemctl enable --now cpu-governor-performance.service
+  log "  • Installed & enabled: cpu-governor-performance.service"
+}
+
+check_usb_fallback_warn() {
+  if command -v lsusb >/dev/null 2>&1; then
+    if lsusb -t 2>/dev/null | grep -q "12M"; then
+      warn "USB 1.1 (12M) link detected. If it's the Sinden camera, expect lag."
+      log "      Try a different port/cable and avoid hubs/adapters."
+    fi
+  fi
+}
+
+# -----------------------------
+# Main flow
+# -----------------------------
+log "== Sinden Performance Tweaks (Pi model presets) =="
+
+# 1) CPU governor performance (now + persistent)
+create_cpu_governor_service
+
+# 2) GPU mem split
+BOOT_CFG="$(detect_boot_config)"
+if [ -f "$BOOT_CFG" ]; then
+  set_kv_in_boot_config "$BOOT_CFG" "gpu_mem" "$GPU_MEM_TARGET"
+else
+  warn "/boot config not found (checked /boot/firmware/config.txt and /boot/config.txt)"
+fi
+
+# 3) Bluetooth (and serial helper) off if requested
+if [ "${DISABLE_BLUETOOTH}" = "1" ]; then
+  service_disable_now_and_boot "bluetooth"
+  service_disable_now_and_boot "hciuart"
+  # To hard-disable in firmware, uncomment next line:
+  # set_kv_in_boot_config "$BOOT_CFG" "dtoverlay" "disable-bt"
+fi
+
+# 4) Background services (Pi4 preset enables this by default)
+if [ "${DISABLE_BACKGROUND_SERVICES}" = "1" ]; then
+  #service_disable_now_and_boot "avahi-daemon"
+  service_disable_now_and_boot "triggerhappy"
+  # Optional and **invasive**: disable rsyslog (local syslog)
+  # service_disable_now_and_boot "rsyslog"
+fi
+
+# 5) USB link check
+check_usb_fallback_warn
+
+echo
+log "Tip: In the Sinden app, prefer 640x480 (or 320x240) to further reduce lag. Low-Resolution Profile available"
+
+### End Performance Optimization
+
+### Gcon2 UDEV Rules
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
 PREFIX1="ttyGCON2S_1"   # Secondary UART alias
@@ -732,10 +950,6 @@ detect_model() {
     SECONDARY_KERNELS=("ttyAMA5" "ttyS5")     # UART5
     OVERLAYS=("dtoverlay=uart5")
   fi
-}
-
-require_root() {
-  if [[ $EUID -ne 0 ]]; then error "Please run as root (sudo)."; exit 1; fi
 }
 
 ensure_tools_and_groups() {
@@ -833,15 +1047,14 @@ prompt_reboot() {
 }
 
 main() {
-  require_root
   detect_model
   ensure_tools_and_groups
   enable_overlays_and_mini_uart
   write_udev_rules
   write_profile_aliases
   show_status
- log
- log "Next steps:"
+  log ""
+  log "Next steps:"
   log "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
   log "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   log "  • Check:   gcon2_serial_status"
@@ -849,3 +1062,4 @@ main() {
   prompt_reboot
 }
 main
+fi
