@@ -48,6 +48,7 @@ MODEL_FULL="$(read_pi_model)"
 case "$MODEL_FULL" in
   *"Raspberry Pi 5"*)  PI_MODEL="Pi5" ;;
   *"Raspberry Pi 4"*)  PI_MODEL="Pi4" ;;
+  *"Raspberry Pi Zero 2 W"*)  PI_MODEL="PiZero2W" ;; 
   *)                   PI_MODEL="unknown" ;;
 esac
 log "Detected board: ${MODEL_FULL:-unknown}  =>  ${PI_MODEL}"
