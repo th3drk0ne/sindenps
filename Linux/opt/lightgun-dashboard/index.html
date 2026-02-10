@@ -108,8 +108,10 @@
 	
 /* Stack logo above mode indicator on mobile */
 	.logo-area {
-		flex-direction: row;        /* KEEP logo + indicator on one line */
+		flex-direction: row;
 		align-items: center;
+		justify-content: space-between;  /* pushes indicator RIGHT */
+		width: 100%;                     /* ensures full row width */
 		gap: 6px;
 	}
     .mode-indicator {
