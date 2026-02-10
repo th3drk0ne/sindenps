@@ -66,7 +66,30 @@
 	  display:block; width:100%;        /* drops to its own line */
 	  color:#888; font-size:12px; line-height:1.4; margin-top:4px;
 	}
+	
+	/* ===== Active Mode Badge ===== */
+	.mode-indicator {
+		padding: 6px 12px;
+		border-radius: 6px;
+		font-size: 14px;
+		font-weight: 700;
+		color: #fff;
+		background: #444;
+		border: 1px solid #666;
+		white-space: nowrap;
+	}
 
+	/* PS1 blue */
+	.mode-ps1 {
+		background: #0040ff;
+		border-color: #3366ff;
+	}
+
+	/* PS2 red */
+	.mode-ps2 {
+		background: #cc0000;
+		border-color: #ff3333;
+	}
 
     /* Desktop full-width fix */
     @media (min-width: 769px) {
@@ -122,6 +145,7 @@
     <header>
       <div class="header-row">
         <img src="/logo.png" class="logo" alt="SindenPS Logo">
+		<div id="mode-indicator" class="mode-indicator">Loading…</div>
         <nav class="tabs">
           <button onclick="showTab('sindenlog')">Sinden Log</button>
           <button onclick="showTab('services')">Services</button>
@@ -298,6 +322,32 @@
         refreshProfilesUI(p);
       }
     }
+	
+	async function updateModeIndicator() {
+    const box = document.getElementById("mode-indicator");
+    if (!box) return;
+
+    try {
+        const res = await fetch("/api/platform");
+        const data = await res.json();
+        if (!data.ok) {
+            box.textContent = "Unknown";
+            box.className = "mode-indicator";
+            return;
+        }
+
+        if (data.platform === "ps1") {
+            box.textContent = "🟦 PS1 Mode Active";
+            box.className = "mode-indicator mode-ps1";
+        } else {
+            box.textContent = "🟥 PS2 Mode Active";
+            box.className = "mode-indicator mode-ps2";
+        }
+    } catch (_) {
+        box.textContent = "Unknown";
+        box.className = "mode-indicator";
+    }
+	}
 
     // ===== Services =====
     async function refreshServices() {
@@ -749,7 +799,26 @@
     });
     refreshProfilesUI(detected);
     refreshUpdateStatus();
+	setInterval(updateModeIndicator, 2000);
+	
+	// Auto‑refresh the active platform indicator + platform select
+	setInterval(async () => {
+		const platform = await autoDetectPlatform();
+		const sel = document.getElementById('platform-select');
 
+		// Only update if a change occurred (prevents UI flicker)
+		if (sel && sel.value !== platform) {
+			sel.value = platform;
+
+			// Reload config + profiles for new mode
+			loadConfig(platform).catch(() => {});
+			refreshProfilesUI(platform);
+
+			// Update top‑bar indicator if you added it
+			updateModeIndicator();
+		}
+	}, 2000); // <-- check every 2 seconds
+	
     function updateActivateButtonLabel() {
         btnActivate.textContent = chkRestore.checked ? 'Restore Backup' : 'Activate Profile';
     }
