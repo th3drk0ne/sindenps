@@ -11,14 +11,26 @@ log()  { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*" >&2; }
 err()  { echo "[ERROR] $*" >&2; }
 
-ARCH="$(uname -m)"
 
-# ---- Detect architecture ----
-case "$ARCH" in
-    armv6l|armv7l) ARCH="arm32" ;;
-    aarch64)       ARCH="aarch64" ;;
-    x86_64)        ARCH="x86_64" ;;
-    *)             ARCH="unknown" ;;
+UNAME_ARCH="$(uname -m)"
+DEB_ARCH="$(dpkg --print-architecture)"
+
+case "$UNAME_ARCH:$DEB_ARCH" in
+    armv6l:armhf|armv7l:armhf)
+        ARCH="arm32"
+        ;;
+    aarch64:armhf)
+        ARCH="arm32"   # 32‑bit userland, 64‑bit kernel
+        ;;
+    aarch64:arm64)
+        ARCH="aarch64"
+        ;;
+    x86_64:amd64)
+        ARCH="x86_64"
+        ;;
+    *)
+        ARCH="unknown"
+        ;;
 esac
 
 #-----------------------------------------------------------
@@ -607,7 +619,7 @@ done
   log "Downloading PS1 profiles."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Default.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Low-Resolution.config" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/High-Resolution.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Light.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Strong.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-MachineGun.config" \
@@ -620,7 +632,7 @@ done
   log "Downloading PS2 profiles."
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Default.config" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Low-Resolution.config"  \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/High-Resolution.config"  \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Light.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Strong.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-MachineGun.config" \
