@@ -204,7 +204,7 @@ else
   cat > "${SYSTEMD_DIR}/${svc1}" <<'EOF'
 [Unit]
 Description=Sinden LightGun Service
-After=network.target
+After=network.target systemd-tmpfiles-setup.service
 
 [Service]
 Type=simple
