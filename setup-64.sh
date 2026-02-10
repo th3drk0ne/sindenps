@@ -68,8 +68,6 @@ if [[ $EUID -ne 0 ]]; then
 fi
 log "Running as root."
 
-
-
 #-----------------------------------------------------------
 # Step 0) Version selection (no changes to download module)
 # Supported values: latest, psiloc, beta, previous
@@ -137,7 +135,6 @@ log "Version selected: ${VERSION} (${VERSION_TAG})"
 log "Selected update channel: $VERSION"
 
 VERSION_FILE="/home/sinden/Lightgun/VERSION"
-
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
@@ -321,7 +318,6 @@ download_assets() {
     chown -R sinden:sinden "$dest"
   )
 }
-
 
 # --- GitHub repo sync (curl for API listing) ---
 OWNER="${OWNER:-th3drk0ne}"
@@ -702,7 +698,6 @@ for FILE in logo.png ps1.png ps2.png; do
   sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
 done
 
-
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
@@ -812,7 +807,6 @@ backup_file() {
   cp -a -- "$f" "$b" 2>/dev/null || true
   log "$b"
 }
-
 
 detect_boot_config() {
   # Bookworm/Trixie: /boot/firmware/config.txt ; older: /boot/config.txt
@@ -956,7 +950,6 @@ detect_model() {
     OVERLAYS=("dtoverlay=uart5")
   fi
 }
-
 
 ensure_tools_and_groups() {
   if ! command -v picocom >/dev/null 2>&1; then
