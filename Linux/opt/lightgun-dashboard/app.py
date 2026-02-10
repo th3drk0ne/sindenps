@@ -868,6 +868,13 @@ def api_backup_restore():
 def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
 
+@app.route("/ps1.png")
+def ps1_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ps1.png")
+
+@app.route("/ps2.png")
+def ps2_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ps2.png")
 
 @app.route("/")
 def index():
