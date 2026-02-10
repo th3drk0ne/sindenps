@@ -413,11 +413,6 @@ download_files_from_list() {
   return 0
 }
 
-sudo systemctl restart lightgun.service
-MODE_FILE="/run/lightgun/sinden_mode"
-echo "ps2" > $MODE_FILE
-chown sinden:sinden $MODE_FILE
-
 # --- Backup configs (unchanged) ---
 PS1_DIR="${LIGHTGUN_DIR}/PS1"
 PS2_DIR="${LIGHTGUN_DIR}/PS2"
