@@ -207,10 +207,21 @@ Description=Sinden LightGun Service
 After=network.target
 
 [Service]
+type=simple
 User=sinden
 WorkingDirectory=/home/sinden
 ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
-Restart=always
+ExecStop=/usr/bin/bash -c '
+	echo "[INFO] Stopping Sinden Lightgun Service";
+	pkill -TERM -u sinden -f LightgunMono.exe" || true;
+	pkill -TERM -f "/opt/sinden/lightgun.sh" || true;
+	sleep 1;
+	pkill -KILL -u sinden 0f "LightgunMono.exe" || true;
+'
+
+Restart=on-failure
+RestartSec=2
+
 StandardOutput=journal
 StandardError=journal
 
@@ -230,10 +241,15 @@ Description=Lightgun USB Device Monitor
 After=network.target
 
 [Service]
+type=simple
 ExecStart=/opt/sinden/lightgun-monitor.sh
-Restart=always
+ExecStop=/usr/bin/bash -c '
+	echo "[INFO] Stopping Sinden Lightgun Monitor Service";
+	pkill -TERM -f "/opt/sinden/lightgun-monitor.sh" || true;
+'
+Restart=on-failure
 RestartSec=5
-User=root
+User=sinden
 StandardOutput=journal
 StandardError=journal
 
