@@ -97,10 +97,10 @@ while :; do
 if [ "$IsPsxMode" == 1 ]; then
     	echo "[INFO] Launching PS1/LightgunMono.exe..."
     	cd /home/sinden/Lightgun/PS1/
-    	sudo mono LightgunMono.exe
+    	mono LightgunMono.exe
 else
 	echo "[INFO] Launching PS2/LightgunMono.exe..."
     	cd /home/sinden/Lightgun/PS2/
-    	sudo mono LightgunMono.exe
+    	mono LightgunMono.exe
 fi
 done
