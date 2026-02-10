@@ -93,6 +93,17 @@ do
     fi
 done
 
+
+MODE_FILE="/run/sinden_mode"
+mkdir -p /run
+
+if [ "$IsPsxMode" == 1 ]; then
+    echo "ps1" > "$MODE_FILE"
+else
+    echo "ps2" > "$MODE_FILE"
+fi
+
+
 while :; do
 if [ "$IsPsxMode" == 1 ]; then
     	echo "[INFO] Launching PS1/LightgunMono.exe..."
