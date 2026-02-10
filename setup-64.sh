@@ -1051,8 +1051,8 @@ main() {
   write_udev_rules
   write_profile_aliases
   show_status
- log
- log "Next steps:"
+  log ""
+  log "Next steps:"
   log "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
   log "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   log "  • Check:   gcon2_serial_status"
