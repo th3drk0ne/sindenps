@@ -93,10 +93,9 @@ do
     fi
 done
 
-
 MODE_FILE="/var/run/sinden_mode"
-touch $MODE_FILE
-chown sinden:sinden MODE_FILE
+echo "" > $MODE_FILE
+chown sinden:sinden $MODE_FILE
 
 if [ "$IsPsxMode" == 1 ]; then
     echo "ps1" > "$MODE_FILE"
