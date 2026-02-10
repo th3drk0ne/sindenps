@@ -121,7 +121,13 @@
       .log-content { font-size:10px; }
       .page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
       /* Single-row header: logo + buttons */
-      .header-row { flex-wrap: nowrap; }
+      
+
+	.header-row {
+		flex-wrap: wrap;       /* allow logo-area to wrap */
+		align-items: flex-start; /* aligns nicely on mobile */
+	}
+
       .tabs { flex: 1 1 auto; width: auto; gap: 6px; justify-content: flex-end; }
       .tabs button { flex: 1 1 auto; min-width: 0; text-align: center; padding: 12px; }
       .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
