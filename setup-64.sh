@@ -213,7 +213,7 @@ WorkingDirectory=/home/sinden
 ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
 ExecStop=/usr/bin/bash -c '
 	echo "[INFO] Stopping Sinden Lightgun Service";
-	pkill -TERM -u sinden -f LightgunMono.exe" || true;
+	pkill -TERM -u sinden -f "LightgunMono.exe" || true;
 	pkill -TERM -f "/opt/sinden/lightgun.sh" || true;
 	sleep 1;
 	pkill -KILL -u sinden 0f "LightgunMono.exe" || true;
