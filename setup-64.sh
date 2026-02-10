@@ -241,7 +241,7 @@ else
   cat > "${SYSTEMD_DIR}/${svc2}" <<'EOF'
 [Unit]
 Description=Lightgun USB Device Monitor
-After=network.target
+After=network.target systemd-tmpfiles-setup.service
 
 [Service]
 Type=simple
