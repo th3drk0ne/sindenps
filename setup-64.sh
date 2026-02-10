@@ -217,6 +217,7 @@ ExecStop=/usr/bin/bash -c 'echo "[INFO] Stopping Sinden Lightgun Service"; \
     sleep 1; \
     pkill -KILL -u sinden -f LightgunMono.exe || true;'
 
+SuccessExitStatus=SIGTERM
 Restart=on-failure
 RestartSec=2
 
@@ -239,6 +240,7 @@ Description=Lightgun USB Device Monitor
 After=network.target
 
 [Service]
+Type=simple
 ExecStart=/opt/sinden/lightgun-monitor.sh
 Restart=always
 RestartSec=5
