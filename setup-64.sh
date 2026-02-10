@@ -413,7 +413,7 @@ download_files_from_list() {
 
 MODE_FILE="/var/run/sinden_mode"
 echo "ps2" > $MODE_FILE
-chown sinden:sinden MODE_FILE
+chown sinden:sinden $MODE_FILE
 
 # --- Backup configs (unchanged) ---
 PS1_DIR="${LIGHTGUN_DIR}/PS1"
