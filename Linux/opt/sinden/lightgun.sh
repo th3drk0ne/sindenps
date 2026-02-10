@@ -96,6 +96,7 @@ done
 
 MODE_FILE="/run/sinden_mode"
 mkdir -p /run
+chown sinden:sinden MODE_FILE
 
 if [ "$IsPsxMode" == 1 ]; then
     echo "ps1" > "$MODE_FILE"
