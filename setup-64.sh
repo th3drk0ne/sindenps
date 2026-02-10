@@ -412,7 +412,7 @@ download_files_from_list() {
 
 
 MODE_FILE="/var/run/sinden_mode"
-sudo touch $MODE_FILE
+echo "ps2" > $MODE_FILE
 chown -R sinden:sinden MODE_FILE
 
 # --- Backup configs (unchanged) ---
