@@ -138,31 +138,6 @@ log "Selected update channel: $VERSION"
 
 VERSION_FILE="/home/sinden/Lightgun/VERSION"
 
-#-----------------------------------------------------------
-# Step 2) Update config.txt (UART5 enable + overlay + FAN Control on GPIO18
-#-----------------------------------------------------------
-BOOT_DIR="/boot/firmware"
-CONFIG_FILE="${BOOT_DIR}/config.txt"
-
-if [[ ! -d "$BOOT_DIR" ]]; then
-  BOOT_DIR="/boot"
-  CONFIG_FILE="${BOOT_DIR}/config.txt"
-fi
-
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  err "Cannot find ${CONFIG_FILE}. Aborting."
-  #exit 1
-else
-  log "Updating ${CONFIG_FILE} (backup will be created)."
-  cp -a "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
-
-  if ! grep -qE '^dtoverlay=gpio-fan,gpiopin=18,temp=60000\b' "$CONFIG_FILE"; then
-    echo "dtoverlay=gpio-fan,gpiopin=18,temp=60000" >> "$CONFIG_FILE"
-    log "Added dtoverlay=gpio-fan,gpiopin=18,temp=60000."
-  else
-    log "dtoverlay=gpio-fan,gpiopin=18,temp=60000 already present."
-  fi
-fi
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
@@ -834,7 +809,7 @@ set_kv_in_boot_config() {
       print
     }
   ' "$file" > "$tmp"
-  log "${key}=${value}" >> "$tmp"
+  echo "${key}=${value}" >> "$tmp"
   install -m 644 "$tmp" "$file"
   rm -f "$tmp"
   log "  • ${key} set to '${value}' (backup: $bak)"
