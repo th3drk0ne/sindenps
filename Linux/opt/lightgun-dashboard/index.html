@@ -649,6 +649,20 @@
         if (s) s.textContent = 'Apply error: ' + e.message;
       }
     }
+	
+	async function autoDetectPlatform() {
+    try {
+        const res = await fetch('/api/platform');
+        const data = await res.json();
+        if (data.ok && data.platform) {
+            return data.platform; // 'ps1' or 'ps2'
+        }
+    } catch (e) {
+        console.log("Platform auto-detect failed:", e);
+    }
+    return 'ps2'; // fallback
+	}
+
 
     // ===== Backups =====
     function openBackupModal() { document.getElementById('backup-modal').style.display = 'block'; }
@@ -716,67 +730,81 @@
     }
 
     // ===== Wire-up =====
-    document.addEventListener('DOMContentLoaded', () => {
-      const status = document.getElementById('config-status');
-      const selPlatform = document.getElementById('platform-select');
-      const selProfile = document.getElementById('profile-select');
-      const btnSaveProfile = document.getElementById('btn-save-profile');
-      const btnActivate = document.getElementById('btn-activate-profile');
-      const btnSaveRestart = document.getElementById('save-restart');
-      const chkRestore = document.getElementById('chk-restore-mode');
+	document.addEventListener('DOMContentLoaded', async () => {
+    const status = document.getElementById('config-status');
+    const selPlatform = document.getElementById('platform-select');
+    const selProfile = document.getElementById('profile-select');
+    const btnSaveProfile = document.getElementById('btn-save-profile');
+    const btnActivate = document.getElementById('btn-activate-profile');
+    const btnSaveRestart = document.getElementById('save-restart');
+    const chkRestore = document.getElementById('chk-restore-mode');
 
-      // Dynamic button label + initial sync
-      function updateActivateButtonLabel() {
+    // 🔥 Auto-detect mode from /run/sinden_mode
+    const detected = await autoDetectPlatform();
+    selPlatform.value = detected;
+
+    // Initial load for detected mode
+    loadConfig(detected).catch(err => {
+        if (status) status.textContent = 'Load error: ' + err.message;
+    });
+    refreshProfilesUI(detected);
+    refreshUpdateStatus();
+
+    function updateActivateButtonLabel() {
         btnActivate.textContent = chkRestore.checked ? 'Restore Backup' : 'Activate Profile';
-      }
-      chkRestore.addEventListener('change', updateActivateButtonLabel);
-      updateActivateButtonLabel();
+    }
+    chkRestore.addEventListener('change', updateActivateButtonLabel);
+    updateActivateButtonLabel();
 
-      // Platform change
-      selPlatform.addEventListener('change', () => {
-        loadConfig(selPlatform.value).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
-        refreshProfilesUI(selPlatform.value);
+    // Platform change handler
+    selPlatform.addEventListener('change', () => {
+        const p = selPlatform.value;
+        loadConfig(p).catch(err => {
+            if (status) status.textContent = 'Load error: ' + err.message;
+        });
+        refreshProfilesUI(p);
         selProfile.value = '';
-      });
+    });
 
-      // Save as profile
-      if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
+    if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
 
-      // Activate OR Restore depending on checkbox
-      if (btnActivate) btnActivate.onclick = () => {
+    // Activate/Restore
+    if (btnActivate) btnActivate.onclick = () => {
         const platform = selPlatform.value;
         const profile = selProfile.value;
         if (chkRestore.checked) {
-          loadBackupDialog(platform);
+            loadBackupDialog(platform);
         } else {
-          activateProfile(platform, profile);
+            activateProfile(platform, profile);
         }
-      };
+    };
 
-      // Save & Restart
-      if (btnSaveRestart) btnSaveRestart.onclick = async () => {
+    if (btnSaveRestart) btnSaveRestart.onclick = async () => {
         btnSaveRestart.disabled = true;
         try {
-          if (status) status.textContent = 'Saving configuration (both players)...';
-          const resp = await saveConfig(selPlatform.value, collectForm('p1-form'), collectForm('p2-form'));
-          if (!resp.ok) { if (status) status.textContent = 'Error saving: ' + (resp.error || 'unknown'); return; }
-          if (status) status.textContent = `Saved. Backup: ${resp.backup || 'n/a'}. Restarting lightgun.service...`;
-          const ok = await restartLightgunService();
-          if (status) status.textContent = ok ? 'Saved and restarted successfully.' : 'Saved. Restart failed.';
-          refreshServices();
-        } finally { btnSaveRestart.disabled = false; }
-      };
+            if (status) status.textContent = 'Saving configuration...';
+            const resp = await saveConfig(selPlatform.value, collectForm('p1-form'), collectForm('p2-form'));
 
-      // Software update wiring
-      document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
-      document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
-      document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
+            if (!resp.ok) {
+                if (status) status.textContent = 'Error saving: ' + (resp.error || 'unknown');
+                return;
+            }
 
-      // Initial loads
-      loadConfig(selPlatform.value).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
-      refreshProfilesUI(selPlatform.value);
-      refreshUpdateStatus();
-    });
+            if (status) status.textContent = `Saved. Backup: ${resp.backup || 'n/a'}. Restarting lightgun.service...`;
+            const ok = await restartLightgunService();
+            if (status) status.textContent = ok ? 'Saved and restarted.' : 'Saved. Restart failed.';
+            refreshServices();
+        }
+        finally {
+            btnSaveRestart.disabled = false;
+        }
+    };
+
+    // Software update buttons
+    document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
+    document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
+    document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
+	});
 
     // Polling
     setInterval(() => {

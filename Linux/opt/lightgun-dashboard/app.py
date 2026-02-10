@@ -203,6 +203,20 @@ def api_update_logs():
 def list_services():
     return jsonify({s: get_status(s) for s in SERVICES})
 
+@app.route("/api/platform", methods=["GET"])
+def api_platform():
+    try:
+        modefile = "/run/sinden_mode"
+        if os.path.exists(modefile):
+            with open(modefile, "r") as f:
+                mode = f.read().strip().lower()
+                if mode in ("ps1", "ps2"):
+                    return jsonify({"ok": True, "platform": mode})
+
+        # fallback (if file missing or corrupted)
+        return jsonify({"ok": True, "platform": "ps2"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
