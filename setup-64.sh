@@ -211,12 +211,11 @@ Type=simple
 User=sinden
 WorkingDirectory=/home/sinden
 ExecStart=/usr/bin/bash /opt/sinden/lightgun.sh
-ExecStop=/usr/bin/bash -c 'echo "[INFO] Stopping Sinden Lightgun Service";
-    pkill -TERM -u sinden -f LightgunMono.exe || true;
-    pkill -TERM -f "/opt/sinden/lightgun.sh" || true;
-    sleep 1;
-    pkill -KILL -u sinden -f LightgunMono.exe || true;
-'
+ExecStop=/usr/bin/bash -c 'echo "[INFO] Stopping Sinden Lightgun Service"; \
+    pkill -TERM -u sinden -f LightgunMono.exe || true; \
+    pkill -TERM -f "/opt/sinden/lightgun.sh" || true; \
+    sleep 1; \
+    pkill -KILL -u sinden -f LightgunMono.exe || true;'
 
 Restart=on-failure
 RestartSec=2
@@ -242,10 +241,9 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/opt/sinden/lightgun-monitor.sh
-ExecStop=/usr/bin/bash -c '
-	echo "[INFO] Stopping Sinden Lightgun Monitor Service";
-	pkill -TERM -f "/opt/sinden/lightgun-monitor.sh" || true;
-'
+ExecStop=/usr/bin/bash -c 'echo "[INFO] Stopping Sinden Lightgun Monitor Service"; \
+    pkill -TERM -f "/opt/sinden/lightgun.sh" || true;'
+
 Restart=on-failure
 RestartSec=5
 User=sinden
