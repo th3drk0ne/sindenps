@@ -512,10 +512,6 @@ log "Assets deployment complete."
 #-----------------------------------------------------------
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
 #-----------------------------------------------------------
-
-#!/bin/bash
-set -euo pipefail
-
 #========================================
 # Lightgun Dashboard - Installer/Updater
 # With Profiles (save/list/preview/activate/delete)
@@ -688,7 +684,7 @@ LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/li
 LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2.png"
 
 for FILE in logo.png ps1.png ps2.png; do
-  URL_VAR="LOGO_${FILE%%.*^^}"  # Converts filename to uppercase variable name
+  URL_VAR="LOGO_${FILE%%.*}"  # Converts filename to uppercase variable name
   URL="${!URL_VAR}"
   DEST="${APP_DIR}/${FILE}"
 
@@ -765,7 +761,6 @@ fi
 # Default baud: 115200 (override: export BAUD=9600 before running)
 
 if [ "$ARCH" != "x86_64" ]; then
-set -euo pipefail
 ### Performance Optimization
 
 # -----------------------------
