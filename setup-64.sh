@@ -684,8 +684,12 @@ LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/li
 LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2.png"
 
 for FILE in logo.png ps1.png ps2.png; do
-  URL_VAR="LOGO_${FILE%%.*}"  # Converts filename to uppercase variable name
-  URL="${!URL_VAR}"
+  case "$FILE" in
+    logo.png) URL="$LOGO_URL" ;;
+    ps1.png)  URL="$LOGO_PS1" ;;
+    ps2.png)  URL="$LOGO_PS2" ;;
+  esac
+
   DEST="${APP_DIR}/${FILE}"
 
   if [ ! -f "$DEST" ]; then
@@ -694,6 +698,7 @@ for FILE in logo.png ps1.png ps2.png; do
 
   sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
 done
+
 
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
