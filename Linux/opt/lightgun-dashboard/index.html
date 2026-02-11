@@ -75,11 +75,6 @@
     /* Desktop keeps it inline beside logo */
     .logo-area { display: flex; align-items: center; gap: 12px; }
 
-    /* Mode badge (if you want a text badge instead of image) */
-    .mode-indicator { padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: 700; color: #fff; background: #444; border: 1px solid #666; white-space: nowrap; }
-    .mode-ps1 { background: #0040ff; border-color: #3366ff; }
-    .mode-ps2 { background: #cc0000; border-color: #ff3333; }
-
     /* Hide the old dropdown by default (we keep a hidden select for state) */
     #platform-select, label[for="platform-select"] { display: none !important; }
 
@@ -92,7 +87,6 @@
       .header-row { flex-wrap: wrap; align-items: flex-start; }
       /* Keep logo + indicator on a single row, indicator aligned right */
       .logo-area { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px; }
-      .mode-indicator { font-size: 13px; padding: 4px 10px; }
       .mode-indicator-img { height: 24px; }
       .log-content { font-size:10px; }
       .page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
@@ -112,11 +106,6 @@
       #save-restart { width: 100%; padding: 12px; font-size: 16px; }
       /* Modal sizing fix on iOS */
       #backup-modal > .dialog { width: 95vw !important; margin-top: 20vh !important; padding: 12px; }
-      /* Info tooltip */
-      .info-tip { display:inline-flex; align-items:center; justify-content:center; margin-left:6px; color:#ddd; border:1px solid #444; width:16px; height:16px; border-radius:50%; font-size:11px; font-weight:700; cursor:help; position:relative; }
-      .info-tip:hover, .info-tip:focus { color:#fff; border-color:#666; }
-      .info-tip[data-tip]::after { content: attr(data-tip); position:absolute; left:20px; top:50%; transform: translateY(-50%); background:#111; color:#fff; border:1px solid #444; padding:8px 10px; border-radius:6px; white-space:pre-wrap; max-width:360px; box-shadow: 0 2px 10px rgba(0,0,0,0.6); display:none; z-index:20; }
-      .info-tip:focus::after, .info-tip:hover::after { display:block; }
     }
   </style>
 </head>
@@ -125,7 +114,7 @@
     <header>
       <div class="header-row">
         <div class="logo-area">
-          <img src="/logo.png" class="logo" alt="SindenPS">
+          <img src="/logo.png" class="logo" alt="SindenPS Logo">
           <img id="mode-indicator" class="mode-indicator-img" src="/load.png" alt="Mode Icon">
         </div>
         <nav class="tabs">
@@ -306,13 +295,19 @@
       }
     }
 
-    // ===== Helpers to control header state =====
-    function forceLoadingUI() {
+    // ===== Header state helpers =====
+    function setOfflineUI() {
+      document.body.classList.remove('ps2-mode'); // default red theme
+      const img = document.getElementById('mode-indicator');
+      if (img) { img.src = '/offline.png'; img.alt = 'Offline'; }
+    }
+    function setLoadingUI() {
       document.body.classList.remove('ps2-mode'); // default red theme
       const img = document.getElementById('mode-indicator');
       if (img) { img.src = '/load.png'; img.alt = 'Loading...'; }
     }
 
+    // ===== Mode indicator (Option C logic) =====
     async function updateModeIndicator() {
       const img = document.getElementById('mode-indicator');
       if (!img) return;
@@ -320,25 +315,24 @@
         // 1) Service-first
         const svc = await (await fetch('/api/services')).json();
         const lg = (svc['lightgun.service'] || '').toLowerCase();
-        if (lg !== 'active') { forceLoadingUI(); return; }
+        if (lg !== 'active') { setOfflineUI(); return; }
 
-        // 2) Service active => platform
+        // 2) Service active => check platform
         const plat = await (await fetch('/api/platform')).json();
-        const platform = (plat && plat.ok && (plat.platform === 'ps1' || plat.platform === 'ps2')) ? plat.platform : null;
+        const ok = !!(plat && plat.ok);
+        if (!ok || !(plat.platform === 'ps1' || plat.platform === 'ps2')) { setLoadingUI(); return; }
 
-        if (platform === 'ps1') {
+        if (plat.platform === 'ps1') {
           document.body.classList.remove('ps2-mode');
           img.src = '/ps1.png';
           img.alt = 'PS1 Mode';
-        } else if (platform === 'ps2') {
+        } else {
           document.body.classList.add('ps2-mode');
           img.src = '/ps2.png';
           img.alt = 'PS2 Mode';
-        } else {
-          forceLoadingUI();
         }
       } catch (e) {
-        forceLoadingUI();
+        setOfflineUI();
       }
     }
 
@@ -610,16 +604,13 @@
         const data = await res.json();
         if (!data.ok) { if (s) s.textContent = 'Apply failed: ' + (data.error || 'unknown error'); return; }
         if (s) s.textContent = `Applied profile "${name}". Backup: ${data.backup || 'n/a'}. Restarting...`;
-
-        // Prevent PS2 flash during restart
-        forceLoadingUI();
+        // Prevent flash immediately
+        setLoadingUI();
         const ok = await restartLightgunService();
         if (s) s.textContent = ok ? 'Profile applied and service restarted.' : 'Profile applied. Restart failed.';
         refreshServices();
         await loadConfig(platform);
-      } catch (e) {
-        if (s) s.textContent = 'Apply error: ' + e.message;
-      }
+      } catch (e) { if (s) s.textContent = 'Apply error: ' + e.message; }
     }
 
     // ===== Backups =====
@@ -657,7 +648,7 @@
             if (!data.ok) { alert('Restore failed: ' + (data.error || 'unknown error')); return; }
             const s = document.getElementById('config-status');
             if (s) s.textContent = 'Backup restored. Restarting service...';
-            forceLoadingUI();
+            setLoadingUI();
             const ok = await restartLightgunService();
             if (s) s.textContent = ok ? 'Backup restored and service restarted.' : 'Backup restored. Restart failed.';
             closeBackupModal();
@@ -691,17 +682,18 @@
       const btnActivate = document.getElementById('btn-activate-profile');
       const btnSaveRestart = document.getElementById('save-restart');
       const chkRestore = document.getElementById('chk-restore-mode');
-
-      // Initial platform detection
-      const detected = await (async function autoDetectOnce(){
-        try { const r = await fetch('/api/platform'); const d = await r.json(); if (d && d.ok && (d.platform==='ps1'||d.platform==='ps2')) return d.platform; } catch(e){}
-        return null;
-      })();
-      if (selPlatform && detected) selPlatform.value = detected;
       const platDisplay = document.getElementById('platform-display');
+
+      // Initial platform fetch (do not force ps2 fallback)
+      let detected = null;
+      try {
+        const r = await fetch('/api/platform');
+        const d = await r.json();
+        if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) detected = d.platform;
+      } catch {}
+      if (selPlatform && detected) selPlatform.value = detected;
       if (platDisplay) platDisplay.textContent = (detected || 'loading…').toUpperCase();
 
-      // Initial load for detected/selected mode
       const initialPlatform = selPlatform.value || 'ps2';
       loadConfig(initialPlatform).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
       refreshProfilesUI(initialPlatform);
@@ -711,20 +703,21 @@
       updateModeIndicator();
       setInterval(updateModeIndicator, 2000);
 
-      // Auto‑refresh the active platform state + header (service‑aware, no PS2 fallback)
+      // Service-aware platform sync (Option C: offline when service down, loading when unknown)
       setInterval(async () => {
         try {
-          // 1) Service-first
           const svc = await (await fetch('/api/services')).json();
           const lg = (svc['lightgun.service'] || '').toLowerCase();
-          if (lg !== 'active') { forceLoadingUI(); return; }
+          if (lg !== 'active') { setOfflineUI(); return; }
 
-          // 2) Service active => platform
           let platform = null;
-          try { const r = await fetch('/api/platform'); const d = await r.json(); if (d && d.ok && (d.platform==='ps1'||d.platform==='ps2')) platform = d.platform; } catch(e){}
-          if (!platform) { forceLoadingUI(); return; }
+          try {
+            const r = await fetch('/api/platform');
+            const d = await r.json();
+            if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) platform = d.platform;
+          } catch {}
+          if (!platform) { setLoadingUI(); return; }
 
-          // 3) Update hidden select + visible label only if changed
           if (selPlatform && selPlatform.value !== platform) {
             selPlatform.value = platform;
             if (platDisplay) platDisplay.textContent = platform.toUpperCase();
@@ -732,9 +725,8 @@
             refreshProfilesUI(platform);
           }
 
-          // 4) Sync the header badge
           await updateModeIndicator();
-        } catch (e) { forceLoadingUI(); }
+        } catch (e) { setOfflineUI(); }
       }, 2000);
 
       // Delete profile
@@ -758,7 +750,7 @@
       chkRestore.addEventListener('change', updateActivateButtonLabel);
       updateActivateButtonLabel();
 
-      // Platform change handler (kept for completeness, though dropdown is hidden)
+      // Platform change handler (won't fire from UI; select is hidden, but kept for codepaths)
       selPlatform.addEventListener('change', () => {
         const p = selPlatform.value;
         loadConfig(p).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
@@ -785,7 +777,7 @@
           const resp = await saveConfig(selPlatform.value, collectForm('p1-form'), collectForm('p2-form'));
           if (!resp.ok) { if (status) status.textContent = 'Error saving: ' + (resp.error || 'unknown'); return; }
           if (status) status.textContent = `Saved. Backup: ${resp.backup || 'n/a'}. Restarting lightgun.service...`;
-          forceLoadingUI();
+          setLoadingUI();
           const ok = await restartLightgunService();
           if (status) status.textContent = ok ? 'Saved and restarted.' : 'Saved. Restart failed.';
           refreshServices();
