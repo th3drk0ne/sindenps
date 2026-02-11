@@ -60,21 +60,23 @@
     .config-value { margin-right: 10px; display: inline-block; }
     .config-comment { margin-left: 10px; opacity: 0.8; }
 	/* Space key ↔ comment inside the label (desktop) */
-	.config-row label {
-	  display: flex;
-	  align-items: baseline;
-	  justify-content: space-between; /* push comment to the right of the key */
-	  gap: 12px;
-	}
+	
+/* Three columns: Key | Value | Comment  */
+.config-row {
+  display: grid;
+  grid-template-columns: 260px 1fr auto;
+  align-items: center;
+  gap: 12px; /* creates a consistent gap between value and comment */
+}
 
-	/* Style the inline comment */
-	.config-row label small {
-	  margin-left: 12px;
-	  color: #888;
-	  font-size: 12px;
-	  opacity: 0.85;
-	  white-space: nowrap; /* keeps short #comments on one line */
-	}
+/* Style for the trailing comment */
+.config-comment {
+  color: #888;
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
 
 	
     .btn-secondary { background:#444; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
