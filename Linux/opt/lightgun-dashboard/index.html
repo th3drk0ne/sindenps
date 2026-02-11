@@ -381,29 +381,47 @@
       }
     }
 	
-async function updateModeIndicator() {
-    const img = document.getElementById("mode-indicator");
-    if (!img) return;
 
-    try {
-        const res = await fetch("/api/platform");
-        const data = await res.json();
-        if (!data.ok) return;
+	async function updateModeIndicator() {
+	  const img = document.getElementById("mode-indicator");
+	  if (!img) return;
 
-        if (data.platform === "ps1") {
-            document.body.classList.remove("ps2-mode");
-            img.src = "/ps1.png";
-            img.alt = "PS1 Mode";
-        } else {
-            document.body.classList.add("ps2-mode");
-            img.src = "/ps2.png";
-            img.alt = "PS2 Mode";
-        }
+	  try {
+		// 1) Check service status first
+		const svcRes = await fetch("/api/services");
+		const svc = await svcRes.json(); // { "lightgun.service": "active", ... }
+		const lgStatus = (svc && svc["lightgun.service"]) ? String(svc["lightgun.service"]).toLowerCase() : "unknown";
 
-    } catch (e) {
-        console.log("Mode update failed:", e);
-    }
-}
+		// If service isn't active, show the Loading… badge and neutral theme
+		if (lgStatus !== "active") {
+		  document.body.classList.remove("ps2-mode"); // keep neutral red/PS1 palette off the body
+		  img.src = "/load.png";
+		  img.alt = "Loading...";
+		  return;
+		}
+
+		// 2) Service is active → query platform and set PS1/PS2 icon + theme
+		const platRes = await fetch("/api/platform");
+		const data = await platRes.json(); // { ok: true, platform: "ps1" | "ps2" }
+		if (!data.ok) return;
+
+		if (data.platform === "ps1") {
+		  document.body.classList.remove("ps2-mode");
+		  img.src = "/ps1.png";
+		  img.alt = "PS1 Mode";
+		} else {
+		  document.body.classList.add("ps2-mode");
+		  img.src = "/ps2.png";
+		  img.alt = "PS2 Mode";
+		}
+	  } catch (e) {
+		// On any error, keep a conservative Loading… indicator
+		img.src = "/load.png";
+		img.alt = "Loading...";
+		console.log("Mode update failed:", e);
+	  }
+	}
+
 
     // ===== Services =====
     async function refreshServices() {
