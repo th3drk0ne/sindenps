@@ -875,7 +875,11 @@ def ps1_png():
 @app.route("/ps2.png")
 def ps2_png():
     return send_from_directory("/opt/lightgun-dashboard", "ps2.png")
-
+    
+@app.route("/load.png")
+def load_png():
+    return send_from_directory("/opt/lightgun-dashboard", "load.png")
+    
 @app.route("/")
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
