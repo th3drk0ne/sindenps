@@ -395,8 +395,8 @@
 		// If service isn't active, show the Loading… badge and neutral theme
 		if (lgStatus !== "active") {
 		  document.body.classList.remove("ps2-mode"); // keep neutral red/PS1 palette off the body
-		  img.src = "/load.png";
-		  img.alt = "Loading...";
+		  img.src = "/offline.png";
+		  img.alt = "Offline";
 		  return;
 		}
 
@@ -416,8 +416,8 @@
 		}
 	  } catch (e) {
 		// On any error, keep a conservative Loading… indicator
-		img.src = "/load.png";
-		img.alt = "Loading...";
+		img.src = "/offline.png";
+		img.alt = "Offline";
 		console.log("Mode update failed:", e);
 	  }
 	}

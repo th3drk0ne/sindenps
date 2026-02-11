@@ -880,6 +880,10 @@ def ps2_png():
 def load_png():
     return send_from_directory("/opt/lightgun-dashboard", "load.png")
     
+@app.route("/offline.png")
+def offline_png():
+    return send_from_directory("/opt/lightgun-dashboard", "offline.png")
+    
 @app.route("/")
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:

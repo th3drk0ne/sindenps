@@ -683,13 +683,15 @@ LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/li
 LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps1.png"
 LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2.png"
 LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/load.png"
+OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/stop.png"
 
-for FILE in logo.png ps1.png ps2.png load.png; do
+for FILE in logo.png ps1.png ps2.png load.png offline.png; do
   case "$FILE" in
     logo.png) URL="$LOGO_URL" ;;
     ps1.png)  URL="$LOGO_PS1" ;;
     ps2.png)  URL="$LOGO_PS2" ;;
     load.png)  URL="$LOAD" ;;
+    offline.png)  URL="$OFFLINE" ;;
   esac
 
   DEST="${APP_DIR}/${FILE}"
