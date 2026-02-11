@@ -94,8 +94,6 @@ do
 done
 
 MODE_FILE="/run/lightgun/sinden_mode"
-sudo echo "" > $MODE_FILE
-sudo chown sinden:sinden $MODE_FILE
 
 if [ "$IsPsxMode" == 1 ]; then
     echo "ps1" > "$MODE_FILE"
