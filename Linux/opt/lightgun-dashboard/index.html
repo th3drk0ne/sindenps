@@ -131,15 +131,6 @@
 	label[for="platform-select"] {
 		display: none !important;
 	}
-	
-	#platform-display {
-	padding: 6px 12px;
-	border-radius: 6px;
-	background: #222;
-	border: 1px solid var(--theme-border);
-	font-weight: 800;
-	letter-spacing: 0.3px;
-	}
 
 
     /* Desktop full-width fix */
@@ -302,15 +293,14 @@
       <h2 class="panel-title">Sinden LightGun Driver Configuration</h2>
 
       <div class="config-toolbar">
-		
-		<div class="group">
-			<label>Platform:</label>
-			<span id="platform-display" style="font-weight:700; color:#fff;">loading…</span>
-			<select id="platform-select" style="display:none;">
-			<option value="ps2">PS2</option>
-			<option value="ps1">PS1</option>
-			</select>
-		</div>
+	  
+        <div class="group">
+          <label for="platform-select">Platform:</label>
+          <select id="platform-select">
+            <option value="ps2" selected>PlayStation 2</option>
+            <option value="ps1">PlayStation 1</option>
+          </select>
+        </div>
 
         <div class="group">
           <label for="profile-select">Profile:</label>
@@ -882,35 +872,33 @@
     const chkRestore = document.getElementById('chk-restore-mode');
 
     // 🔥 Auto-detect mode from /var/run/sinden_mode
-	const detected = await autoDetectPlatform();
-	const selPlatform = document.getElementById('platform-select');
-	if (selPlatform) selPlatform.value = detected;
-	const platDisplay = document.getElementById('platform-display');
-	if (platDisplay) platDisplay.textContent = detected.toUpperCase();
+    const detected = await autoDetectPlatform();
+    selPlatform.value = detected;
 
-	loadConfig(detected).catch(err => {
-	  const status = document.getElementById('config-status');
-	  if (status) status.textContent = 'Load error: ' + err.message;
-	});
-	refreshProfilesUI(detected);
+    // Initial load for detected mode
+    loadConfig(detected).catch(err => {
+        if (status) status.textContent = 'Load error: ' + err.message;
+    });
+    refreshProfilesUI(detected);
     refreshUpdateStatus();
 	setInterval(updateModeIndicator, 2000);
 	
 	// Auto‑refresh the active platform indicator + platform select
 	setInterval(async () => {
-	  const platform = await autoDetectPlatform();
-	  const sel = document.getElementById('platform-select');
-	  const platDisplay = document.getElementById('platform-display');
+		const platform = await autoDetectPlatform();
+		const sel = document.getElementById('platform-select');
 
-	  if (sel && sel.value !== platform) {
-		sel.value = platform;
-		if (platDisplay) platDisplay.textContent = platform.toUpperCase();
+		// Only update if a change occurred (prevents UI flicker)
+		if (sel && sel.value !== platform) {
+			sel.value = platform;
 
-		// Reload config + profiles for new mode
-		loadConfig(platform).catch(() => {});
-		refreshProfilesUI(platform);
-		updateModeIndicator();
-	  }
+			// Reload config + profiles for new mode
+			loadConfig(platform).catch(() => {});
+			refreshProfilesUI(platform);
+
+			// Update top‑bar indicator if you added it
+			updateModeIndicator();
+		}
 	}, 2000); // <-- check every 2 seconds
 	
     function updateActivateButtonLabel() {
