@@ -73,27 +73,53 @@
     .config-panels { display:flex; gap:16px; flex-wrap:wrap; margin:0 16px 20px; }
     .config-card { flex:1 1 460px; background:#111; border-left:6px solid var(--theme-border); padding:12px; border-radius:6px; }
     .config-form { margin-top:8px; }
-   /* === FORCE vertical stack for config rows on all screen sizes === */
-	.config-row {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: flex-start !important;
-		gap: 4px !important;
-	}
+   /* ================================
+   CLEAN CONFIG LAYOUT (FINAL)
+   Label
+   # comment
+   [input field]
+   ================================ */
 
-	/* Full width input */
-	.config-row input {
-		width: 100% !important;
-		max-width: 100% !important;
-	}
+/* Force vertical stacking for every config row */
+.config-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100%;
+    gap: 6px !important;
+    margin: 10px 0;
+}
 
-	/* Comment styling */
-	.config-comment {
-		font-size: 12px;
-		color: #888;
-		opacity: 0.85;
-		margin-left: 2px;
-	}
+/* Label always sits at the top */
+.config-row label {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    font-size: 14px;
+    color: #ccc;
+}
+
+/* Comment appears directly under the label */
+.config-comment {
+    font-size: 12px;
+    color: #888;
+    opacity: 0.85;
+    margin-left: 2px;
+    width: 100%;
+    line-height: 1.2em;
+}
+
+/* The input spans the full width under the comment */
+.config-row input {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 10px;
+    background: #000;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
 
     /* Image-based mode indicator */
     .mode-indicator-img { height: 28px; width: auto; display: block; }
