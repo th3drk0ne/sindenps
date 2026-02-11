@@ -1,7 +1,7 @@
 ![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
 ## Install by running the following command on Raspberry Pi OS Lite 32-bit
 ---
-[script for 64-bit distribution available at the bottom for testing]
+[script working now for 64-bit Debian Trixie Pi OS Lite - for testing]
 
 [SindenPS Base OS Install PDF](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Documents/sindenps-base-os-install.pdf)
 
