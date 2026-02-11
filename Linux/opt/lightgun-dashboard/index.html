@@ -389,45 +389,38 @@
 	
 
 	async function updateModeIndicator() {
-		const img = document.getElementById("mode-indicator");
-		if (!img) return;
+	  const img = document.getElementById('mode-indicator');
+	  if (!img) return;
 
-		try {
-			// 1. Check service state first
-			const svcRes = await fetch("/api/services");
-			const svc = await svcRes.json();
-			const lg = (svc["lightgun.service"] || "").toLowerCase();
+	  try {
+		// Service-first check
+		const svc = await (await fetch('/api/services')).json();
+		const lg = (svc['lightgun.service'] || '').toLowerCase();
 
-			// If service down/inactive/restarting/unknown → force Loading state
-			if (lg !== "active") {
-				document.body.classList.remove("ps2-mode");  // force default red
-				img.src = "/load.png";
-				img.alt = "Loading...";
-				return;
-			}
-
-			// 2. If service is active, THEN read platform
-			const platRes = await fetch("/api/platform");
-			const data = await platRes.json();
-			if (!data.ok) return;
-
-			if (data.platform === "ps1") {
-				document.body.classList.remove("ps2-mode");
-				img.src = "/ps1.png";
-				img.alt = "PS1 Mode";
-			} else {
-				document.body.classList.add("ps2-mode");
-				img.src = "/ps2.png";
-				img.alt = "PS2 Mode";
-			}
-		} catch (e) {
-			// on any error → safest state
-			document.body.classList.remove("ps2-mode");
-			img.src = "/load.png";
-			img.alt = "Loading...";
+		if (lg !== 'active') {
+		  document.body.classList.remove('ps2-mode'); // default red
+		  img.src = '/load.png';
+		  img.alt = 'Loading...';
+		  return;
 		}
-	}
 
+		// Service is active → choose PS1/PS2
+		const plat = await (await fetch('/api/platform')).json();
+		if (plat.ok && plat.platform === 'ps1') {
+		  document.body.classList.remove('ps2-mode');
+		  img.src = '/ps1.png';
+		  img.alt = 'PS1 Mode';
+		} else {
+		  document.body.classList.add('ps2-mode');
+		  img.src = '/ps2.png';
+		  img.alt = 'PS2 Mode';
+		}
+	  } catch (e) {
+		document.body.classList.remove('ps2-mode'); // default red
+		img.src = '/load.png';
+		img.alt = 'Loading...';
+	  }
+	}
 
 
     // ===== Services =====
@@ -882,23 +875,51 @@
     refreshUpdateStatus();
 	setInterval(updateModeIndicator, 2000);
 	
-	// Auto‑refresh the active platform indicator + platform select
-	setInterval(async () => {
-		const platform = await autoDetectPlatform();
-		const sel = document.getElementById('platform-select');
 
-		// Only update if a change occurred (prevents UI flicker)
-		if (sel && sel.value !== platform) {
-			sel.value = platform;
+// Auto‑refresh the active platform indicator + platform select
+setInterval(async () => {
+  try {
+    // 1) Check service state first
+    const svc = await (await fetch('/api/services')).json();
+    const lg = (svc['lightgun.service'] || '').toLowerCase();
 
-			// Reload config + profiles for new mode
-			loadConfig(platform).catch(() => {});
-			refreshProfilesUI(platform);
+    // If service is not active, force Loading + default red theme and exit early
+    if (lg !== 'active') {
+      const img = document.getElementById('mode-indicator');
+      document.body.classList.remove('ps2-mode');   // default red
+      if (img) {
+        img.src = '/load.png';
+        img.alt = 'Loading...';
+      }
+      return; // don't call /api/platform while service is down
+    }
 
-			// Update top‑bar indicator if you added it
-			updateModeIndicator();
-		}
-	}, 2000); // <-- check every 2 seconds
+    // 2) Service is active → detect platform and apply changes if needed
+    const platform = await autoDetectPlatform();     // will hit /api/platform
+    const sel = document.getElementById('platform-select');
+
+    // Only update if the platform actually changed (prevents flicker)
+    if (sel && sel.value !== platform) {
+      sel.value = platform;
+
+      // Reload config + profiles for new mode
+      loadConfig(platform).catch(() => {});
+      refreshProfilesUI(platform);
+
+      // Update top‑bar indicator
+      updateModeIndicator();
+    }
+  } catch (e) {
+    // On any error, prefer a safe Loading state
+    const img = document.getElementById('mode-indicator');
+    document.body.classList.remove('ps2-mode'); // default red
+    if (img) {
+      img.src = '/load.png';
+      img.alt = 'Loading...';
+    }
+  }
+}, 2000); // <-- check every 2 seconds
+
 	
 	// Delete profile
 	const btnDelete = document.getElementById('btn-delete-profile');
