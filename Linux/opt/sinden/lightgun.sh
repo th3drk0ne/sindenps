@@ -38,6 +38,35 @@ DEVICE_IDS=(
     "10c4:ea60"  # CP2102-based Arduino clone
 )
 
+IsPsxMode=0
+
+# Loop through all USB devices
+for dev in /sys/bus/usb/devices/*-*
+do
+    if [ -f "$dev/idVendor" ] && [ -f "$dev/idProduct" ]; then
+        VID=$(cat "$dev/idVendor")
+        PID=$(cat "$dev/idProduct")
+        VIDPID="${VID}:${PID}"
+
+        for ID in "${DEVICE_IDS[@]}"; do
+            if [[ "$VIDPID" == "$ID" ]]; then
+                echo "[INFO] Found Arduino-compatible device: $VIDPID"
+                IsPsxMode=1
+                break 2  # Exit both loops
+            fi
+        done
+    fi
+done
+
+MODE_FILE="/run/lightgun/sinden_mode"
+
+if [ "$IsPsxMode" == 1 ]; then
+    echo "ps1" > "$MODE_FILE"
+else
+    echo "ps2" > "$MODE_FILE"
+fi
+
+
 # ---- Step 3: Scan USB devices ----
 echo "[INFO] Scanning for connected USB devices..."
 lsusb | while read -r line; do
@@ -72,34 +101,6 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 echo "[INFO] Udev setup complete."
 sleep 3
-
-IsPsxMode=0
-
-# Loop through all USB devices
-for dev in /sys/bus/usb/devices/*-*
-do
-    if [ -f "$dev/idVendor" ] && [ -f "$dev/idProduct" ]; then
-        VID=$(cat "$dev/idVendor")
-        PID=$(cat "$dev/idProduct")
-        VIDPID="${VID}:${PID}"
-
-        for ID in "${DEVICE_IDS[@]}"; do
-            if [[ "$VIDPID" == "$ID" ]]; then
-                echo "[INFO] Found Arduino-compatible device: $VIDPID"
-                IsPsxMode=1
-                break 2  # Exit both loops
-            fi
-        done
-    fi
-done
-
-MODE_FILE="/run/lightgun/sinden_mode"
-
-if [ "$IsPsxMode" == 1 ]; then
-    echo "ps1" > "$MODE_FILE"
-else
-    echo "ps2" > "$MODE_FILE"
-fi
 
 
 while :; do
