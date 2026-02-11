@@ -678,18 +678,18 @@ sudo nginx -t && sudo systemctl restart nginx
 
 log "=== 12) Deploy/images ==="
 
-# Upstream assets 
+# images 
 LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/logo.png"
 LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps1.png"
 LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2.png"
-LOGO_LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/load.png"
+LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/load.png"
 
-for FILE in logo.png ps1.png ps2.png; do
+for FILE in logo.png ps1.png ps2.png load.png; do
   case "$FILE" in
     logo.png) URL="$LOGO_URL" ;;
     ps1.png)  URL="$LOGO_PS1" ;;
     ps2.png)  URL="$LOGO_PS2" ;;
-    load.png)  URL="$LOGO_LOAD" ;;
+    load.png)  URL="$LOAD" ;;
   esac
 
   DEST="${APP_DIR}/${FILE}"
