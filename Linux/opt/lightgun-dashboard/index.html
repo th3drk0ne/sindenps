@@ -300,17 +300,16 @@
             <option value="ps1">PlayStation 1</option>
           </select>
         </div>
-
         <div class="group">
           <label for="profile-select">Profile:</label>
           <select id="profile-select">
             <option value="">(none)</option>
           </select>
         </div>
-
         <div class="group">
           <button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
           <button id="btn-save-profile" class="btn-secondary">Save as Profile</button>
+		  <button id="btn-delete-profile" class="btn-secondary" style="background:#600;">Delete Profile</button>
           <label style="display:flex; align-items:center; gap:6px;">
             <input type="checkbox" id="chk-restore-mode"/> Restore
           </label>
@@ -899,6 +898,42 @@
 			updateModeIndicator();
 		}
 	}, 2000); // <-- check every 2 seconds
+	
+	// Delete profile
+	const btnDelete = document.getElementById('btn-delete-profile');
+	if (btnDelete) btnDelete.onclick = async () => {
+		const platform = selPlatform.value;
+		const profile = selProfile.value;
+
+		if (!profile) {
+			alert("Select a profile to delete.");
+			return;
+		}
+
+		if (!confirm(`Delete profile "${profile}"? This cannot be undone.`)) return;
+
+		try {
+			const res = await fetch("/api/config/profile/delete", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ platform, name: profile })
+			});
+
+			const data = await res.json();
+			if (!data.ok) {
+				alert("Delete failed: " + (data.error || "unknown error"));
+				return;
+			}
+
+			alert(`Profile "${profile}" deleted.`);
+			refreshProfilesUI(platform);
+			selProfile.value = "";
+		} catch (e) {
+			alert("Delete error: " + e.message);
+		}
+	};
+	
+	
 	
     function updateActivateButtonLabel() {
         btnActivate.textContent = chkRestore.checked ? 'Restore Backup' : 'Activate Profile';
