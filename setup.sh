@@ -684,7 +684,7 @@ LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/li
 LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2.png"
 LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/load.png"
 OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/offline.png"
-FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/offline.png"
+FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/favicon.ico"
 
 for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico; do
   case "$FILE" in

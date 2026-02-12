@@ -884,6 +884,10 @@ def load_png():
 def offline_png():
     return send_from_directory("/opt/lightgun-dashboard", "offline.png")
     
+@app.route("/favicon.ico")
+def favicon_ico():
+    return send_from_directory("/opt/lightgun-dashboard", "favicon.ico")
+    
 @app.route("/")
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
