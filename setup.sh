@@ -201,7 +201,7 @@ else
   log "Creating ${svc1}."
   cat > "${SYSTEMD_DIR}/${svc1}" <<'EOF'
 [Unit]
-Description=Sinden LightGun Service
+Description=Sinden Lightgun Service
 After=network.target systemd-tmpfiles-setup.service
 
 [Service]
