@@ -698,11 +698,9 @@ for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico; do
 
   DEST="${APP_DIR}/${FILE}"
 
-  if [ ! -f "$DEST" ]; then
-    sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
-  fi
-
-  sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
+	sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
+	sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
+	
 done
 
 log "=== 13) Enable & restart dashboard ==="
