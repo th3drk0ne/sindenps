@@ -14,7 +14,7 @@ Run the below command from a remote SSH session, you will be prompted to select 
 sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
 
-Or with these if you want a specific version version
+Or with these if you want a specific version
 
 
 Install latest official Sinden driver
