@@ -1,10 +1,8 @@
 ![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
 ## Install by running the following command on Raspberry Pi OS Lite 32-bit
----
 [script working now for 64-bit Debian Trixie Pi OS Lite - for testing]
 
-[SindenPS Base OS Install PDF](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Documents/sindenps-base-os-install.pdf)
-
+## [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
 
 
 Run the below command from a remote SSH session, you will be prompted to select the version
