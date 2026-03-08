@@ -6,95 +6,71 @@ APP_USER="fanctl"
 INSTALL_DIR="/opt/${APP_NAME}"
 DST_SCRIPT="${INSTALL_DIR}/fan_controller.py"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
+FAN_OFF_HELPER="/usr/local/sbin/fan_off.sh"
 
-# Source URL (as provided)
 SCRIPT_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/fan-ctrl/fan_controller.py"
 
-echo "==> Installing ${APP_NAME} from:"
-echo "    ${SCRIPT_URL}"
+echo "==> Installing ${APP_NAME}"
+echo "    Source: ${SCRIPT_URL}"
 
 # --- must be root ---
 if [[ "${EUID}" -ne 0 ]]; then
-  echo "ERROR: Please run as root: sudo $0"
+  echo "ERROR: Run as root: sudo $0"
   exit 1
 fi
 
-echo "==> Installing OS dependencies..."
+# ------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------
+echo "==> Installing dependencies..."
 apt-get update -y
 apt-get install -y python3 python3-gpiozero curl
 
-# --- create service user if missing ---
+# ------------------------------------------------------------
+# Service user + GPIO access
+# ------------------------------------------------------------
 if ! id "${APP_USER}" >/dev/null 2>&1; then
-  echo "==> Creating system user ${APP_USER}..."
+  echo "==> Creating system user ${APP_USER}"
   useradd --system --no-create-home --shell /usr/sbin/nologin "${APP_USER}"
 fi
 
-# --- ensure gpio group exists and add user ---
 if ! getent group gpio >/dev/null 2>&1; then
-  echo "==> Creating gpio group (was missing)..."
   groupadd --system gpio
 fi
 
-echo "==> Adding ${APP_USER} to gpio group..."
 usermod -aG gpio "${APP_USER}"
 
-# --- install directory ---
-echo "==> Creating ${INSTALL_DIR}..."
+# ------------------------------------------------------------
+# Install application
+# ------------------------------------------------------------
+echo "==> Installing application files..."
 mkdir -p "${INSTALL_DIR}"
-
-# --- download script (follow redirects) ---
-echo "==> Downloading fan controller script..."
 curl -fsSL -L "${SCRIPT_URL}" -o "${DST_SCRIPT}"
-
-# --- permissions ---
 chmod 0755 "${DST_SCRIPT}"
 chown -R "${APP_USER}:${APP_USER}" "${INSTALL_DIR}"
 
-# --- ensure SIGTERM cleanup exists (systemd stop) ---
-# Adds SIGTERM handler if not already present.
-echo "==> Ensuring SIGTERM cleanup is present..."
-python3 - <<'PY'
-import pathlib, re
+# ------------------------------------------------------------
+# Fan OFF helper (runs after service stops)
+# ------------------------------------------------------------
+echo "==> Installing fan OFF helper..."
+cat > "${FAN_OFF_HELPER}" <<'SH'
+#!/bin/sh
+# Force GPIO18 LOW so PWM fans do NOT default to 100% speed
+# Works on Pi 4 (raspi-gpio) and Pi 5 (pinctrl)
 
-p = pathlib.Path("/opt/fan-controller/fan_controller.py")
-txt = p.read_text(encoding="utf-8", errors="replace")
+if command -v pinctrl >/dev/null 2>&1; then
+  pinctrl 18 op dl || true
+elif command -v raspi-gpio >/dev/null 2>&1; then
+  raspi-gpio set 18 op dl || true
+fi
+SH
 
-if "signal.signal(signal.SIGTERM" in txt:
-    raise SystemExit(0)
+chmod 0755 "${FAN_OFF_HELPER}"
 
-lines = txt.splitlines(True)
-
-# Insert after gpiozero import if present, else after last import
-insert_block = (
-    "\nimport signal\n"
-    "\n"
-    "def cleanup(*_):\n"
-    "    fan.off()\n"
-    "    sys.exit(0)\n"
-    "\n"
-    "signal.signal(signal.SIGTERM, cleanup)\n"
-    "signal.signal(signal.SIGINT, cleanup)\n"
-)
-
-idx = None
-for i, line in enumerate(lines):
-    if line.strip().startswith("from gpiozero"):
-        idx = i + 1
-        break
-
-if idx is None:
-    last_import = 0
-    for i, line in enumerate(lines):
-        if re.match(r'^\s*(import|from)\s+\S+', line):
-            last_import = i + 1
-    idx = last_import
-
-lines.insert(idx, insert_block + "\n")
-p.write_text("".join(lines), encoding="utf-8")
-PY
-
-# --- create systemd unit ---
-echo "==> Writing systemd service unit ${SERVICE_FILE}..."
+# ------------------------------------------------------------
+# systemd service
+# ------------------------------------------------------------
+echo "==> Installing systemd service..."
 cat > "${SERVICE_FILE}" <<EOF
 [Unit]
 Description=Raspberry Pi Fan Controller (PWM GPIO18)
@@ -107,16 +83,22 @@ User=${APP_USER}
 Group=${APP_USER}
 SupplementaryGroups=gpio
 WorkingDirectory=${INSTALL_DIR}
+
 ExecStart=/usr/bin/python3 -u ${DST_SCRIPT}
+
+# Ensure graceful shutdown
+KillSignal=SIGTERM
+
+# CRITICAL: force PWM pin LOW after service stops
+ExecStopPost=${FAN_OFF_HELPER}
+
 Restart=always
 RestartSec=2
 
-# Hardening (safe-ish defaults)
+# Safe hardening
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
-
-# Make FS read-only except what we need; allow CPU temp read explicitly.
 ProtectSystem=strict
 ReadOnlyPaths=/sys/class/thermal/thermal_zone0/temp
 ReadWritePaths=${INSTALL_DIR}
@@ -125,13 +107,15 @@ ReadWritePaths=${INSTALL_DIR}
 WantedBy=multi-user.target
 EOF
 
-# --- enable and start ---
-echo "==> Enabling and starting ${APP_NAME}..."
+# ------------------------------------------------------------
+# Enable + start
+# ------------------------------------------------------------
+echo "==> Enabling and starting service..."
 systemctl daemon-reload
 systemctl enable "${APP_NAME}.service"
 systemctl restart "${APP_NAME}.service"
 
 echo
-echo "Done."
-echo "Status: systemctl status ${APP_NAME} --no-pager"
-echo "Logs:   journalctl -u ${APP_NAME} -f"
+echo "✅ Installation complete."
+echo "   Status: systemctl status ${APP_NAME} --no-pager"
+echo "   Logs:   journalctl -u ${APP_NAME} -f"
