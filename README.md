@@ -82,8 +82,8 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ## 📦 Software Requirements
 - Sinden Lightgun driver (included in this repo)  
-- Arduino firmware (Pro Micro + Nano builds) (Firmware downloadable from Sinden support site) 
-- Sinden Lightgun software (for calibration and raw HID output) 
+- Arduino firmware (Pro Micro + Nano builds) (Download from the Sinden support site) 
+- Sinden Lightgun software (for calibration and raw HID output) (Download from the Sinden support site)
 
 ---
 
