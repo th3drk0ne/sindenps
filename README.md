@@ -18,7 +18,7 @@ SindenPS turns a pair of Arduinos into fully‑fledged lightgun devices that the
 
 ### G-Con2 Mode (Arduino Pro Micro)
 - Emulates official GunCon2 USB descriptors  
-- Translates Sinden Lightgun HID reports into GunCon2 input packets  
+- Translates Sinden Lightgun HID reports into G-Con2 input packets  
 - Supports trigger, buttons, D‑pad, and screen‑positioning  
 
 ### G-Con45 Mode (Arduino Nano)
