@@ -774,7 +774,7 @@ if [ "$ARCH" != "x86_64" ]; then
 # -----------------------------
 # Defaults (generic fallback)
 # -----------------------------
-GPU_MEM_TARGET="256"                  # gpu_mem MB target
+GPU_MEM_TARGET="192"                  # gpu_mem MB target
 DISABLE_BLUETOOTH="1"                 # 1=disable bluetooth/hciuart
 DISABLE_BACKGROUND_SERVICES="0"       # 1=disable avahi-daemon, triggerhappy (and optionally rsyslog)
 
@@ -810,7 +810,7 @@ backup_file() {
   local ts; ts="$(timestamp)"
   local b="${f}.${ts}.bak"
   cp -a -- "$f" "$b" 2>/dev/null || true
-  log "$b"
+  echo "$b"
 }
 
 detect_boot_config() {
@@ -886,7 +886,7 @@ check_usb_fallback_warn() {
 # -----------------------------
 # Main flow
 # -----------------------------
-log "== Sinden Performance Tweaks (Pi model presets) =="
+log "=== Sinden Performance Tweaks (Pi model presets) ==="
 
 # 1) CPU governor performance (now + persistent)
 create_cpu_governor_service
@@ -924,7 +924,7 @@ check_usb_fallback_warn
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
 PREFIX1="ttyGCON2S_1"   # Secondary UART alias
-BAUD="${BAUD:-115200}"
+BAUD="${BAUD:-115200}set_kv_in_boot_config"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-gcon2-serial.rules"
 PROFILE_SNIPPET="/etc/profile.d/gcon2-serial.sh"
 CONFIG_FILE="/boot/firmware/config.txt"
