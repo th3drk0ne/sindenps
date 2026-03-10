@@ -1033,10 +1033,20 @@ EOF
 }
 
 show_status() {
-  log "Symlink status"
-  for link in "/dev/${PREFIX0}" "/dev/${PREFIX1}"; do
-    [[ -e "$link" ]] && log "  Found: $link -> $(readlink -f "$link")" || log "  Missing: $link"
-  done
+	links=( "/dev/${PREFIX0}" )
+
+	if [[ "$PI_MODEL" == "Pi5" || "$PI_MODEL" == "Pi4" ]]; then
+	  links+=( "/dev/${PREFIX1}" )
+	fi
+
+	log "Symlink status"
+	for link in "${links[@]}"; do
+	  if [[ -e "$link" ]]; then
+		log "  Found: $link -> $(readlink -f "$link")"
+	  else
+		log "  Missing: $link"
+	  fi
+	done
 }
 
 prompt_reboot() {
