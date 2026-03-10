@@ -6,6 +6,11 @@ SindenPS is a custom hardware–software bridge that lets modern Sinden Lightgun
 If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 lightgun games on real hardware, this project makes it happen.
 
 ---
+### Install on Raspberry Pi OS Lite 32-bit
+
+## [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
+
+---
 
 ## 🎯 What SindenPS Does
 
