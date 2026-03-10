@@ -1,6 +1,6 @@
 ![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
  
-### Real G-Con2 & G-Con45 Emulation for PLaystation 1 and 2 Lightgun Gaming using a Sinden Lightgun
+### Real G-Con2 & G-Con45 Emulation for PlayStation 1 and 2 Lightgun Gaming using a Sinden Lightgun
 
 SindenPS is a custom hardware–software bridge that lets modern Sinden Lightguns behave like authentic PlayStation 1 or 2 lightguns — including full G-Con2 and G-Con45 emulation, real‑time input translation, and automatic mode switching.  
 If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 lightgun games on real hardware, this project makes it happen.
