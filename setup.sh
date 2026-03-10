@@ -836,7 +836,7 @@ set_kv_in_boot_config() {
   echo "${key}=${value}" >> "$tmp"
   install -m 644 "$tmp" "$file"
   rm -f "$tmp"
-  echo "  • ${key} set to '${value}' (backup: $bak)"
+  log "  • ${key} set to '${value}' (backup: $bak)"
 }
 
 service_disable_now_and_boot() {
