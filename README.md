@@ -93,7 +93,8 @@ The SindenPS Dashboard provides:
 - Live input monitoring  
 - Mode‑aware configuration  
 - Service control (start/stop/restart)  
-- Profile management for different games or emulators  
+- Profile management for driver configurations including recoil
+- Future driver release management to upgrade Lightgun driver without a need to reinstall 
 
 Designed to be simple, fast, and console‑friendly.
 
