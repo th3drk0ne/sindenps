@@ -1,3 +1,4 @@
+![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
 # SindenPS  
 ### Real USB G-Con2 & G-Con45 Emulation for PLaystation 1 and 2 Lightgun Gaming
 
