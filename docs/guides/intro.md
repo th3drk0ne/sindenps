@@ -1,7 +1,7 @@
 # SindenPS  
-### Real USB GunCon2 & GCon45 Emulation for PLaystation 1 and 2 Lightgun Gaming
+### Real USB G-Con2 & G-Con45 Emulation for PLaystation 1 and 2 Lightgun Gaming
 
-SindenPS is a custom hardware–software bridge that lets modern Sinden Lightguns behave like authentic PlayStation 1 or 2 lightguns — including full GunCon2 and GCon45 emulation, real‑time input translation, and automatic mode switching.  
+SindenPS is a custom hardware–software bridge that lets modern Sinden Lightguns behave like authentic PlayStation 1 or 2 lightguns — including full G-Con2 and G-Con45 emulation, real‑time input translation, and automatic mode switching.  
 If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 lightgun games on real hardware, this project makes it happen.
 
 ---
@@ -16,7 +16,7 @@ SindenPS turns a pair of Arduinos into fully‑fledged USB lightgun devices that
 - Supports trigger, buttons, D‑pad, and screen‑positioning  
 
 ### GCon45 Mode (Arduino Nano)
-- Emulates the original GCon45 protocol for PS1/early PS2 titles  
+- Emulates the original G-Con45 protocol for PS1/early PS2 titles  
 - Lightweight, low‑latency serial translation  
 - Ideal for games expecting the older Namco protocol  
 
@@ -76,18 +76,18 @@ The SindenPS Dashboard provides:
 - Service control (start/stop/restart)  
 - Profile management for different games or emulators  
 
-Designed to be simple, fast, and console‑friendly — perfect for Pi‑based builds.
+Designed to be simple, fast, and console‑friendly.
 
 ---
 
 ## 🎮 Supported Games
 
 Any PS2 or PS1 title that supports:
-- **GunCon2**  
-- **GCon45**  
+- **G-Con2**  
+- **G-Con45**  
 
 Examples include:
-- Time Crisis II & 3  
+- Time Crisis 1, II & 3  
 - Virtua Cop: Elite Edition  
 - Vampire Night  
 - Crisis Zone  
@@ -98,9 +98,9 @@ Examples include:
 
 ## 📚 Documentation
 
-See the `/docs` folder for:
-- Wiring diagrams  
-- USB descriptor breakdowns  
+See the **wiki** folder for:
+- G-Con45 and G-Con2 Hardware Guide
+- Installation Guide  
 - Firmware architecture  
 - Dashboard usage  
 - Troubleshooting  
