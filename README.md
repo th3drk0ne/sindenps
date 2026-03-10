@@ -58,6 +58,16 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ---
 
+## 🛠 Hardware Requirements
+- Sinden Lightgun  
+- Arduino Pro Micro (G-Con2 mode)  
+- Arduino Nano (G-Con45 mode)  
+- USB cables
+- Raspberry Pi  
+- Optional: G-Con45 and G-Con Hardware Adapters (see Wiki)
+
+---
+
 ## ✅ Raspberry Pi Model Compatability
 
 | Pi Model | G-Con45 Mode | G-Con2 Mode | G-Con45 Mode x 2| G-Con2 Mode x 2 |
@@ -73,18 +83,9 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ---
 
-## 🛠 Hardware Requirements
-- Sinden Lightgun  
-- Arduino Pro Micro (G-Con2 mode)  
-- Arduino Nano (G-Con45 mode)  
-- USB cables
-- Raspberry Pi  
-- Optional: G-Con45 and G-Con Hardware Adapters (see Wiki)
-
----
-
 ## 📦 Software Requirements
-- Sinden Lightgun driver (included in this repo)  
+- Raspberry Pi OS Lite 32-bit (trixie) [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
+- Sinden Lightgun driver (installed automatically as part of SindenPS install)  
 - Arduino firmware (Pro Micro + Nano builds) (Download from the Sinden support site) 
 - Sinden Lightgun software (for calibration and raw HID output) (Download from the Sinden support site)
 
