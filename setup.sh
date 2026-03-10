@@ -903,9 +903,9 @@ create_cpu_governor_service
 BOOT_CFG="$(detect_boot_config)"
 if [ -f "$BOOT_CFG" ]; then
 	if [ "$PI_MODEL" == "Pi5" ]; then
-		  log "Pi5 Detected skipping GPU_MEM"
+		 log "  Pi5 Detected skipping GPU_MEM"
 	else
-		  set_kv_in_boot_config "$BOOT_CFG" "gpu_mem" "$GPU_MEM_TARGET"
+		 set_kv_in_boot_config "$BOOT_CFG" "gpu_mem" "$GPU_MEM_TARGET"
 	fi 
   
 else
