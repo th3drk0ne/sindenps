@@ -429,7 +429,7 @@ if [[ -f "$PS1_SOURCE" ]]; then
   cp "$PS1_SOURCE" "$PS1_BACKUP_DIR/$(basename "$PS1_SOURCE").${TIMESTAMP}-upgrade.bak"
   log "PS1 config backed up."
 else
-  warn "PS1 config missing, skipping backup."
+  info "PS1 config missing, skipping backup."
 fi
 
 if [[ -f "$PS2_SOURCE" ]]; then
@@ -437,7 +437,7 @@ if [[ -f "$PS2_SOURCE" ]]; then
   cp "$PS2_SOURCE" "$PS2_BACKUP_DIR/$(basename "$PS2_SOURCE").${TIMESTAMP}-upgrade.bak"
   log "PS2 config backed up."
 else
-  warn "PS2 config missing, skipping backup."
+  info "PS2 config missing, skipping backup."
 fi
 
 log "Backup complete."
