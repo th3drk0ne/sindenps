@@ -62,8 +62,8 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 | Pi Model | G-Con45 Mode | G-Con2 Mode | G-Con45 Mode x 2| G-Con2 Mode x 2 |
 |--------|--------------|-------------|--------------|-------------|
-| Pi 5 B+ | ✔️ | ✔️ | ✔️ | ✔️ |
-| Pi 4 B+ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Pi 5 1GB | ✔️ | ✔️ | ✔️ | ✔️ |
+| Pi 4 1GB | ✔️ | ✔️ | ✔️ | ✔️ |
 | Pi 3 B+ | ✔️ | ✔️ | ✔️ | ❌ |
 | Pi 0 2W | ✔️ | ✔️ | ❌ | ❌ |
 
