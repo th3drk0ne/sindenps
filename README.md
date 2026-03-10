@@ -16,12 +16,12 @@ If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 light
 
 SindenPS turns a pair of Arduinos into fully‑fledged USB lightgun devices that the PlayStation 1 or 2 ecosystem recognises as the real thing.
 
-### GunCon2 Mode (Arduino Pro Micro)
+### G-Con2 Mode (Arduino Pro Micro)
 - Emulates official GunCon2 USB descriptors  
 - Translates Sinden Lightgun HID reports into GunCon2 input packets  
 - Supports trigger, buttons, D‑pad, and screen‑positioning  
 
-### GCon45 Mode (Arduino Nano)
+### G-Con45 Mode (Arduino Nano)
 - Emulates the original G-Con45 protocol for PS1/early PS2 titles  
 - Lightweight, low‑latency serial translation  
 - Ideal for games expecting the older Namco protocol  
