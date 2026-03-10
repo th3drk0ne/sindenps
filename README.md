@@ -84,7 +84,7 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 ---
 
 ## 📦 Software Requirements
-- Raspberry Pi OS Lite 32-bit (trixie) [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
+- Raspberry Pi OS Lite 32-bit (Debian Trixie) [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
 - Sinden Lightgun driver (installed automatically as part of SindenPS install)  
 - Arduino firmware (Pro Micro + Nano builds) (Download from the Sinden support site) 
 - Sinden Lightgun software (for calibration and raw HID output) (Download from the Sinden support site)
