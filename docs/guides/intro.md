@@ -1,5 +1,5 @@
 ![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
-# SindenPS  
+ 
 ### Real USB G-Con2 & G-Con45 Emulation for PLaystation 1 and 2 Lightgun Gaming
 
 SindenPS is a custom hardware–software bridge that lets modern Sinden Lightguns behave like authentic PlayStation 1 or 2 lightguns — including full G-Con2 and G-Con45 emulation, real‑time input translation, and automatic mode switching.  
@@ -22,7 +22,7 @@ SindenPS turns a pair of Arduinos into fully‑fledged USB lightgun devices that
 - Ideal for games expecting the older Namco protocol  
 
 ### Automatic Mode Switching
-SindenPS detects which Arduino is connected and switches the driver channel accordingly — no manual toggling or scripts.
+SindenPS detects which Arduino is connected and switches the Lightgun Emulation mode accordingly — no manual toggling or scripts.
 
 ---
 
@@ -99,7 +99,7 @@ Examples include:
 
 ## 📚 Documentation
 
-See the **wiki** folder for:
+See the **wiki** for:
 - G-Con45 and G-Con2 Hardware Guide
 - Installation Guide  
 - Firmware architecture  
@@ -111,10 +111,9 @@ See the **wiki** folder for:
 ## 🤝 Contributing
 
 Pull requests are welcome — especially for:
-- Additional emulator profiles  
-- Firmware improvements  
-- Dashboard enhancements  
-- Platform testing  
+- Additional recoil profiles  
+- Dashboard enhancements
+- Hardware improvements 
 
 ---
 
