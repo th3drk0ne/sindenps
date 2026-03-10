@@ -8,9 +8,9 @@
 
 set -euo pipefail
 
-log()  { echo "[INFO] $*"; }
-warn() { echo "[WARN] $*" >&2; }
-err()  { echo "[ERROR] $*" >&2; }
+log()  { echo "✅[INFO] $*"; }
+warn() { echo "❌[WARN] $*" >&2; }
+err()  { echo "❌[ERROR] $*" >&2; }
 
 UNAME_ARCH="$(uname -m)"
 DEB_ARCH="$(dpkg --print-architecture)"
