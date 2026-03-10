@@ -774,29 +774,31 @@ if [ "$ARCH" != "x86_64" ]; then
 # -----------------------------
 # Defaults (generic fallback)
 # -----------------------------
-GPU_MEM_TARGET="192"                  # gpu_mem MB target
+GPU_MEM_TARGET="128"                  # gpu_mem MB target
 DISABLE_BLUETOOTH="1"                 # 1=disable bluetooth/hciuart
 DISABLE_BACKGROUND_SERVICES="0"       # 1=disable avahi-daemon, triggerhappy (and optionally rsyslog)
 
 # -----------------------------
 # Apply Pi-model specific presets (Pi4 / Pi5)
 # -----------------------------
-if [ "$PI_MODEL" = "Pi5" ]; then
-  # Pi5 has plenty of headroom—keep fewer service cuts, slightly lower exposure
+# Apply Pi-model specific presets
+if [ "$PI_MODEL" = "PiZero2W" ]; then
+  # Pi Zero 2 W: keep GPU split low, free RAM for camera + mono/.NET
+  GPU_MEM_TARGET="32"
+  DISABLE_BLUETOOTH="1"
+  DISABLE_BACKGROUND_SERVICES="0"
+  log "Applying PiZero2W presets"
+elif [ "$PI_MODEL" = "Pi5" ]; then
+  # Pi5 ignores gpu_mem in many setups; keep your intent here if you want
   GPU_MEM_TARGET="256"
   DISABLE_BLUETOOTH="1"
   DISABLE_BACKGROUND_SERVICES="0"
-
   log "Applying Pi5 presets"
-
 elif [ "$PI_MODEL" = "Pi4" ]; then
-  # Pi4 benefits more from trimming background services & a touch more brightness
   GPU_MEM_TARGET="256"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="1"
-
+  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi4 presets"
-
 else
   log "Unknown model: applying generic defaults (no model-specific cuts)."
 fi
@@ -851,7 +853,7 @@ create_cpu_governor_service() {
   # Immediate
   if ls /sys/devices/system/cpu/cpu*[0-9]/cpufreq/scaling_governor >/dev/null 2>&1; then
     for g in /sys/devices/system/cpu/cpu*[0-9]/cpufreq/scaling_governor; do
-      log performance > "$g" 2>/dev/null || true
+      echo performance > "$g" 2>/dev/null || true
     done
     log "  • CPU governor set to 'performance' (immediate)"
   fi
@@ -930,7 +932,7 @@ check_usb_fallback_warn
 
 PREFIX0="ttyGCON2S_0"   # Primary UART alias
 PREFIX1="ttyGCON2S_1"   # Secondary UART alias
-BAUD="${BAUD:-115200}set_kv_in_boot_config"
+BAUD="${BAUD:-115200}"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-gcon2-serial.rules"
 PROFILE_SNIPPET="/etc/profile.d/gcon2-serial.sh"
 CONFIG_FILE="/boot/firmware/config.txt"
