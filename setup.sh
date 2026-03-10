@@ -774,7 +774,7 @@ if [ "$ARCH" != "x86_64" ]; then
 # -----------------------------
 # Defaults (generic fallback)
 # -----------------------------
-GPU_MEM_TARGET="128"                  # gpu_mem MB target
+GPU_MEM_TARGET="64"                  # gpu_mem MB target
 DISABLE_BLUETOOTH="1"                 # 1=disable bluetooth/hciuart
 DISABLE_BACKGROUND_SERVICES="0"       # 1=disable avahi-daemon, triggerhappy (and optionally rsyslog)
 
@@ -790,12 +790,12 @@ if [ "$PI_MODEL" = "PiZero2W" ]; then
   log "Applying PiZero2W presets"
 elif [ "$PI_MODEL" = "Pi5" ]; then
   # Pi5 ignores gpu_mem in many setups; keep your intent here if you want
-  GPU_MEM_TARGET="256"
+  GPU_MEM_TARGET="128"
   DISABLE_BLUETOOTH="1"
   DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi5 presets"
 elif [ "$PI_MODEL" = "Pi4" ]; then
-  GPU_MEM_TARGET="256"
+  GPU_MEM_TARGET="128"
   DISABLE_BLUETOOTH="1"
   DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi4 presets"
@@ -902,7 +902,12 @@ create_cpu_governor_service
 # 2) GPU mem split
 BOOT_CFG="$(detect_boot_config)"
 if [ -f "$BOOT_CFG" ]; then
-  set_kv_in_boot_config "$BOOT_CFG" "gpu_mem" "$GPU_MEM_TARGET"
+	if [ "$PI_MODEL" == "Pi5" ]; then
+		  log "Pi5 Detected skipping GPU_MEM"
+	else
+		  set_kv_in_boot_config "$BOOT_CFG" "gpu_mem" "$GPU_MEM_TARGET"
+	fi 
+  
 else
   warn "/boot config not found (checked /boot/firmware/config.txt and /boot/config.txt)"
 fi
