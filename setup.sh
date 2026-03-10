@@ -875,11 +875,17 @@ EOF
 }
 
 check_usb_fallback_warn() {
-  if command -v lsusb >/dev/null 2>&1; then
-    if lsusb -t 2>/dev/null | grep -q "12M"; then
-      warn "USB 1.1 (12M) link detected. If it's the Sinden camera, expect lag."
-      log "      Try a different port/cable and avoid hubs/adapters."
-    fi
+  command -v lsusb >/dev/null 2>&1 || return 0
+
+  local tree
+  tree="$(lsusb -t 2>/dev/null)" || return 0
+
+  if echo "$tree" | grep -qE 'Driver=uvcvideo, 12M|Class=Video.*\b12M\b|\b12M\b.*Class=Video'; then
+    warn "USB full-speed (12M) VIDEO link detected (camera fallback)."
+    echo "$tree" | grep -E 'uvcvideo|Class=Video' | while IFS= read -r line; do
+      log "  $line"
+    done
+    log "  Try a different port/cable and avoid hubs/adapters."
   fi
 }
 
