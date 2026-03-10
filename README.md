@@ -34,9 +34,9 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 ## 🧩 Architecture Overview
 
 ```
-[Sinden Lightgun] → [SindenPS Driver] → [Arduino Pro Micro] → GunCon2 USB Device
+[Sinden Lightgun] → [SindenPS Driver] → [Arduino Pro Micro] → G-Con2 USB Device
                                                ↓
-                                        [Arduino Nano] → GCon45 Device
+                                        [Arduino Nano] → G-Con45 Device
 ```
 
 - **Sinden Lightgun Driver**: Listens to Sinden HID reports and forwards them to the correct Arduino.  
@@ -72,8 +72,8 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ## 🛠 Hardware Requirements
 - Sinden Lightgun  
-- Arduino Pro Micro (GunCon2 mode)  
-- Arduino Nano (GCon45 mode)  
+- Arduino Pro Micro (G-Con2 mode)  
+- Arduino Nano (G-Con45 mode)  
 - USB cables
 - Raspberry Pi  
 - Optional: G-Con45 and G-Con Hardware Adapters (see Wiki)
@@ -82,7 +82,7 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ## 📦 Software Requirements
 - Sinden Lightgun driver (included in this repo)  
-- Arduino firmware (Pro Micro + Nano builds included)  
+- Arduino firmware (Pro Micro + Nano builds) (Firmware downloadable from Sinden support site) 
 - Sinden Lightgun software (for calibration and raw HID output) 
 
 ---
