@@ -1042,7 +1042,7 @@ prompt_reboot() {
       reboot
       ;;
     *)
-      log "Reboot skipped. Please reboot manually later."
+      warn "Reboot skipped. Please reboot manually later."
       ;;
   esac
 }
