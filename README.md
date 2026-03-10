@@ -67,7 +67,10 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 | Pi 3 B+ | ✔️ | ✔️ | ✔️ | ❌ |
 | Pi 0 2W | ✔️ | ✔️ | ❌ | ❌ |
 
-⚠️ Use the official PSU from the Raspberry Pi Foundation, active cooling on the Pi 4 and 5 is highly reccomended to prevent thermal throttling.
+⚠️ 
+- Use the official PSU from the Raspberry Pi Foundation
+- Active cooling on the Pi 4 and 5 is highly reccomended to prevent thermal throttling.
+- Passive cooling on the Pi 3 and 0 is optional but reccomended to prevent thermal throttling.
 
 ---
 
