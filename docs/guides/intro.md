@@ -41,9 +41,9 @@ SindenPS detects which Arduino is connected and switches the driver channel acco
 
 ## 🚀 Features at a Glance
 
-| Feature | GunCon2 Mode | GCon45 Mode |
+| Feature | G-Con2 Mode | G-Con45 Mode |
 |--------|--------------|-------------|
-| USB Descriptor Emulation | ✔️ | N/A |
+| Lightgun Emulation | ✔️ | ✔️ |
 | Real‑time Input Translation | ✔️ | ✔️ |
 | Automatic Mode Switching | ✔️ | ✔️ |
 | Dashboard Integration | ✔️ | ✔️ |
@@ -57,7 +57,7 @@ SindenPS detects which Arduino is connected and switches the driver channel acco
 - Arduino Pro Micro (GunCon2 mode)  
 - Arduino Nano (GCon45 mode)  
 - USB cables  
-- Optional: Raspberry Pi for a compact console‑style setup  
+- Raspberry Pi  
 
 ---
 
