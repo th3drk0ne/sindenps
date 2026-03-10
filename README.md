@@ -1,51 +1,125 @@
 ![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
-## Install by running the following command on Raspberry Pi OS Lite 32-bit
-[script working now for 64-bit Debian Trixie Pi OS Lite - for testing]
+ 
+### Real USB G-Con2 & G-Con45 Emulation for PLaystation 1 and 2 Lightgun Gaming
 
-## [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
+SindenPS is a custom hardware–software bridge that lets modern Sinden Lightguns behave like authentic PlayStation 1 or 2 lightguns — including full G-Con2 and G-Con45 emulation, real‑time input translation, and automatic mode switching.  
+If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 lightgun games on real hardware, this project makes it happen.
 
-
-Run the below command from a remote SSH session, you will be prompted to select the version
-
-
-```bash
-sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
-```
-
-Or with these if you want a specific version
-
-
-Install latest official Sinden driver
-```bash
-VERSION=latest sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
-```
-
-Install psiloc uberlag patched driver
-```bash
-VERSION=psiloc sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
-```
 ---
-For Linux installs that do not have a sinden user please specify a password below, replace StrongP@ssw0rd! with one of your choosing
 
+## 🎯 What SindenPS Does
 
-Install latest official Sinden driver
-```bash
-VERSION=latest SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+SindenPS turns a pair of Arduinos into fully‑fledged USB lightgun devices that the PlayStation 1 or 2 ecosystem recognises as the real thing.
+
+### GunCon2 Mode (Arduino Pro Micro)
+- Emulates official GunCon2 USB descriptors  
+- Translates Sinden Lightgun HID reports into GunCon2 input packets  
+- Supports trigger, buttons, D‑pad, and screen‑positioning  
+
+### GCon45 Mode (Arduino Nano)
+- Emulates the original G-Con45 protocol for PS1/early PS2 titles  
+- Lightweight, low‑latency serial translation  
+- Ideal for games expecting the older Namco protocol  
+
+### Automatic Mode Switching
+SindenPS detects which Arduino is connected and switches the Lightgun Emulation mode accordingly — no manual toggling or scripts.
+
+---
+
+## 🧩 Architecture Overview
+
+```
+[Sinden Lightgun] → [SindenPS Driver] → [Arduino Pro Micro] → GunCon2 USB Device
+                                               ↓
+                                        [Arduino Nano] → GCon45 Device
 ```
 
-Install psiloc uberlag patched driver
-```bash
-VERSION=psiloc SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
-```
+- **Sinden Lightgun Driver**: Listens to Sinden HID reports and forwards them to the correct Arduino.  
+- **Arduinos**: Each exposes the correct USB/Conroller interface and handles real‑time input translation.  
+- **Dashboard**: A clean UI for switching profiles, managing services, and monitoring input.
 
+---
 
+## 🚀 Features at a Glance
 
+| Feature | G-Con2 Mode | G-Con45 Mode |
+|--------|--------------|-------------|
+| Lightgun Emulation | ✔️ | ✔️ |
+| Real‑time Input Translation | ✔️ | ✔️ |
+| Automatic Mode Switching | ✔️ | ✔️ |
+| Dashboard Integration | ✔️ | ✔️ |
+| Multi‑Gun Support | ✔️ | ✔️ |
+| Raspberry Pi Compatible | ✔️ | ✔️ |
 
+---
 
+## 🛠 Hardware Requirements
+- Sinden Lightgun  
+- Arduino Pro Micro (GunCon2 mode)  
+- Arduino Nano (GCon45 mode)  
+- USB cables  
+- Raspberry Pi  
 
+---
 
+## 📦 Software Requirements
+- Sinden Lightgun driver (included in this repo)  
+- Arduino firmware (Pro Micro + Nano builds included)  
+- Sinden Lightgun software (for calibration and raw HID output) 
 
+---
 
+## 🖥 Dashboard
 
+The SindenPS Dashboard provides:
+- Live input monitoring  
+- Mode‑aware configuration  
+- Service control (start/stop/restart)  
+- Profile management for different games or emulators  
 
+Designed to be simple, fast, and console‑friendly.
 
+---
+
+## 🎮 Supported Games
+
+Any PS2 or PS1 title that supports:
+- **G-Con2**  
+- **G-Con45**  
+
+Examples include:
+- Time Crisis 1, II & 3  
+- Virtua Cop: Elite Edition  
+- Vampire Night  
+- Crisis Zone  
+- Point Blank series  
+- Many more  
+
+---
+
+## 📚 Documentation
+
+See the **wiki** for:
+- G-Con45 and G-Con2 Hardware Guide
+- Installation Guide  
+- Firmware architecture  
+- Dashboard usage  
+- Troubleshooting  
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome — especially for:
+- Additional recoil profiles  
+- Dashboard enhancements
+- Hardware improvements 
+
+---
+
+## 🧡 Why SindenPS Exists
+
+Lightgun gaming deserves to feel authentic.  
+SindenPS bridges modern hardware with classic console expectations, giving you the closest thing to a real GunCon experience without needing original hardware.
+
+If you love lightgun games, this project is built for you.
