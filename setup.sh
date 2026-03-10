@@ -8,8 +8,8 @@
 
 set -euo pipefail
 
-log()  { echo "✅[INFO] $*"; }
-warn() { echo "❌[WARN] $*" >&2; }
+log()  { echo "✅ $*"; }
+warn() { echo "❌ $*" >&2; }
 err()  { echo "❌[ERROR] $*" >&2; }
 
 UNAME_ARCH="$(uname -m)"
@@ -836,7 +836,7 @@ set_kv_in_boot_config() {
   echo "${key}=${value}" >> "$tmp"
   install -m 644 "$tmp" "$file"
   rm -f "$tmp"
-  log "  • ${key} set to '${value}' (backup: $bak)"
+  echo "  • ${key} set to '${value}' (backup: $bak)"
 }
 
 service_disable_now_and_boot() {
