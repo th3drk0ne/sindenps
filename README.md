@@ -1,6 +1,6 @@
 ![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
  
-### Real G-Con2 & G-Con45 Emulation for PLaystation 1 and 2 Lightgun Gaming using a Sinden Lightgun
+### Real G-Con45 & G-Con2 Emulation for PlayStation 1 and 2 Lightgun Gaming using a Sinden Lightgun
 
 SindenPS is a custom hardware–software bridge that lets modern Sinden Lightguns behave like authentic PlayStation 1 or 2 lightguns — including full G-Con2 and G-Con45 emulation, real‑time input translation, and automatic mode switching.  
 If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 lightgun games on real hardware, this project makes it happen.
@@ -14,14 +14,14 @@ If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 light
 
 ## 🎯 What SindenPS Does
 
-SindenPS turns a pair of Arduinos into fully‑fledged USB lightgun devices that the PlayStation 1 or 2 ecosystem recognises as the real thing.
+SindenPS turns a pair of Arduinos into fully‑fledged lightgun devices that the PlayStation 1 or 2 ecosystem recognises as the real thing.
 
-### GunCon2 Mode (Arduino Pro Micro)
+### G-Con2 Mode (Arduino Pro Micro)
 - Emulates official GunCon2 USB descriptors  
-- Translates Sinden Lightgun HID reports into GunCon2 input packets  
+- Translates Sinden Lightgun HID reports into G-Con2 input packets  
 - Supports trigger, buttons, D‑pad, and screen‑positioning  
 
-### GCon45 Mode (Arduino Nano)
+### G-Con45 Mode (Arduino Nano)
 - Emulates the original G-Con45 protocol for PS1/early PS2 titles  
 - Lightweight, low‑latency serial translation  
 - Ideal for games expecting the older Namco protocol  
@@ -63,7 +63,8 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 - Arduino Pro Micro (G-Con2 mode)  
 - Arduino Nano (G-Con45 mode)  
 - USB cables
-- Raspberry Pi  
+- Raspberry Pi 
+- 32GB Micro SD Card 
 - Optional: G-Con45 and G-Con Hardware Adapters (see Wiki)
 
 ---
@@ -77,14 +78,14 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 | Pi 3 B+ | ✔️ | ✔️ | ✔️ | ❌ |
 | Pi 0 2W | ✔️ | ✔️ | ❌ | ❌ |
 
-- Use the official Power Supply from the Raspberry Pi Foundation. 
+- Use the Official Power Supply from the Raspberry Pi Foundation. 
 - Active cooling on the Pi 4 and 5 is highly reccomended to prevent thermal throttling.
 - Passive cooling on the Pi 3 and 0 is optional but reccomended to prevent thermal throttling.
 
 ---
 
 ## 📦 Software Requirements
-- Raspberry Pi OS Lite 32-bit (trixie) [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
+- Raspberry Pi OS Lite 32-bit (Debian Trixie) [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
 - Sinden Lightgun driver (installed automatically as part of SindenPS install)  
 - Arduino firmware (Pro Micro + Nano builds) (Download from the Sinden support site) 
 - Sinden Lightgun software (for calibration and raw HID output) (Download from the Sinden support site)

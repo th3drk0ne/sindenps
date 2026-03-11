@@ -8,9 +8,9 @@
 
 set -euo pipefail
 
-log()  { echo "[INFO] $*"; }
-warn() { echo "[WARN] $*" >&2; }
-err()  { echo "[ERROR] $*" >&2; }
+log()  { echo "✅ $*"; }
+warn() { echo "❌ $*" >&2; }
+err()  { echo "❌[ERROR] $*" >&2; }
 
 UNAME_ARCH="$(uname -m)"
 DEB_ARCH="$(dpkg --print-architecture)"
@@ -429,7 +429,7 @@ if [[ -f "$PS1_SOURCE" ]]; then
   cp "$PS1_SOURCE" "$PS1_BACKUP_DIR/$(basename "$PS1_SOURCE").${TIMESTAMP}-upgrade.bak"
   log "PS1 config backed up."
 else
-  warn "PS1 config missing, skipping backup."
+  log "PS1 config missing, skipping backup."
 fi
 
 if [[ -f "$PS2_SOURCE" ]]; then
@@ -437,7 +437,7 @@ if [[ -f "$PS2_SOURCE" ]]; then
   cp "$PS2_SOURCE" "$PS2_BACKUP_DIR/$(basename "$PS2_SOURCE").${TIMESTAMP}-upgrade.bak"
   log "PS2 config backed up."
 else
-  warn "PS2 config missing, skipping backup."
+  log "PS2 config missing, skipping backup."
 fi
 
 log "Backup complete."
@@ -774,29 +774,31 @@ if [ "$ARCH" != "x86_64" ]; then
 # -----------------------------
 # Defaults (generic fallback)
 # -----------------------------
-GPU_MEM_TARGET="256"                  # gpu_mem MB target
+GPU_MEM_TARGET="64"                  # gpu_mem MB target
 DISABLE_BLUETOOTH="1"                 # 1=disable bluetooth/hciuart
 DISABLE_BACKGROUND_SERVICES="0"       # 1=disable avahi-daemon, triggerhappy (and optionally rsyslog)
 
 # -----------------------------
 # Apply Pi-model specific presets (Pi4 / Pi5)
 # -----------------------------
-if [ "$PI_MODEL" = "Pi5" ]; then
-  # Pi5 has plenty of headroom—keep fewer service cuts, slightly lower exposure
-  GPU_MEM_TARGET="256"
+# Apply Pi-model specific presets
+if [ "$PI_MODEL" = "PiZero2W" ]; then
+  # Pi Zero 2 W: keep GPU split low, free RAM for camera + mono/.NET
+  GPU_MEM_TARGET="32"
   DISABLE_BLUETOOTH="1"
   DISABLE_BACKGROUND_SERVICES="0"
-
-  log "Applying Pi5 presets"
-
-elif [ "$PI_MODEL" = "Pi4" ]; then
-  # Pi4 benefits more from trimming background services & a touch more brightness
-  GPU_MEM_TARGET="256"
+  log "Applying PiZero2W presets"
+elif [ "$PI_MODEL" = "Pi5" ]; then
+  # Pi5 ignores gpu_mem in many setups; keep your intent here if you want
+  GPU_MEM_TARGET="128"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="1"
-
+  DISABLE_BACKGROUND_SERVICES="0"
+  log "Applying Pi5 presets"
+elif [ "$PI_MODEL" = "Pi4" ]; then
+  GPU_MEM_TARGET="128"
+  DISABLE_BLUETOOTH="1"
+  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi4 presets"
-
 else
   log "Unknown model: applying generic defaults (no model-specific cuts)."
 fi
@@ -810,7 +812,7 @@ backup_file() {
   local ts; ts="$(timestamp)"
   local b="${f}.${ts}.bak"
   cp -a -- "$f" "$b" 2>/dev/null || true
-  log "$b"
+  echo "$b"
 }
 
 detect_boot_config() {
@@ -851,7 +853,7 @@ create_cpu_governor_service() {
   # Immediate
   if ls /sys/devices/system/cpu/cpu*[0-9]/cpufreq/scaling_governor >/dev/null 2>&1; then
     for g in /sys/devices/system/cpu/cpu*[0-9]/cpufreq/scaling_governor; do
-      log performance > "$g" 2>/dev/null || true
+      echo performance > "$g" 2>/dev/null || true
     done
     log "  • CPU governor set to 'performance' (immediate)"
   fi
@@ -864,7 +866,7 @@ After=multi-user.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do log performance > "$f" 2>/dev/null || true; done'
+ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do echo performance > "$f" 2>/dev/null || true; done'
 
 [Install]
 WantedBy=multi-user.target
@@ -875,18 +877,24 @@ EOF
 }
 
 check_usb_fallback_warn() {
-  if command -v lsusb >/dev/null 2>&1; then
-    if lsusb -t 2>/dev/null | grep -q "12M"; then
-      warn "USB 1.1 (12M) link detected. If it's the Sinden camera, expect lag."
-      log "      Try a different port/cable and avoid hubs/adapters."
-    fi
+  command -v lsusb >/dev/null 2>&1 || return 0
+
+  local tree
+  tree="$(lsusb -t 2>/dev/null)" || return 0
+
+  if echo "$tree" | grep -qE 'Driver=uvcvideo, 12M|Class=Video.*\b12M\b|\b12M\b.*Class=Video'; then
+    warn "USB full-speed (12M) VIDEO link detected (camera fallback)."
+    echo "$tree" | grep -E 'uvcvideo|Class=Video' | while IFS= read -r line; do
+      log "  $line"
+    done
+    log "  Try a different port/cable and avoid hubs/adapters."
   fi
 }
 
 # -----------------------------
 # Main flow
 # -----------------------------
-log "== Sinden Performance Tweaks (Pi model presets) =="
+log "=== Sinden Performance Tweaks (Pi model presets) ==="
 
 # 1) CPU governor performance (now + persistent)
 create_cpu_governor_service
@@ -894,7 +902,12 @@ create_cpu_governor_service
 # 2) GPU mem split
 BOOT_CFG="$(detect_boot_config)"
 if [ -f "$BOOT_CFG" ]; then
-  set_kv_in_boot_config "$BOOT_CFG" "gpu_mem" "$GPU_MEM_TARGET"
+	if [ "$PI_MODEL" == "Pi5" ]; then
+		 log "  • Pi5 Detected skipping GPU_MEM"
+	else
+		 set_kv_in_boot_config "$BOOT_CFG" "gpu_mem" "$GPU_MEM_TARGET"
+	fi 
+  
 else
   warn "/boot config not found (checked /boot/firmware/config.txt and /boot/config.txt)"
 fi
@@ -1027,10 +1040,20 @@ EOF
 }
 
 show_status() {
-  log "Symlink status"
-  for link in "/dev/${PREFIX0}" "/dev/${PREFIX1}"; do
-    [[ -e "$link" ]] && log "  Found: $link -> $(readlink -f "$link")" || log "  Missing: $link"
-  done
+	links=( "/dev/${PREFIX0}" )
+
+	if [[ "$PI_MODEL" == "Pi5" || "$PI_MODEL" == "Pi4" ]]; then
+	  links+=( "/dev/${PREFIX1}" )
+	fi
+
+	log "Symlink status"
+	for link in "${links[@]}"; do
+	  if [[ -e "$link" ]]; then
+		log "  Found: $link -> $(readlink -f "$link")"
+	  else
+		log "  Missing: $link"
+	  fi
+	done
 }
 
 prompt_reboot() {
@@ -1042,7 +1065,7 @@ prompt_reboot() {
       reboot
       ;;
     *)
-      log "Reboot skipped. Please reboot manually later."
+      warn "Reboot skipped. Please reboot manually later."
       ;;
   esac
 }
