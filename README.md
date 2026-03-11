@@ -144,7 +144,7 @@ Pull requests are welcome — especially for:
 ## 🧾 Credits
 
 Community Contributors that made this project possible
-- Prof_gLX & TitchGamer: Original Raspberry Pi Image that made all this possible.
+- Prof_gLX & Giggity Titch: Original Raspberry Pi Image that made all this possible.
 - Psiloc: Created the base image for the Raspberry Pi that I uses to start this project.
 - RayneX: Created a 3D Printable case for the PS1 adapter.
 
