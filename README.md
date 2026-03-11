@@ -17,7 +17,7 @@ If you’ve ever wanted your Sinden to *just work* with PlayStation 1 or 2 light
 SindenPS turns a pair of Arduinos into fully‑fledged lightgun devices that the PlayStation 1 or 2 ecosystem recognises as the real thing.
 
 ### G-Con2 Mode (Arduino Pro Micro)
-- Emulates official GunCon2 USB descriptors  
+- Emulates official G-Con2 USB descriptors  
 - Translates Sinden Lightgun HID reports into G-Con2 input packets  
 - Supports trigger, buttons, D‑pad, and screen‑positioning  
 
