@@ -47,14 +47,15 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ## 🚀 Features at a Glance
 
-| Feature | G-Con45 Mode | G-Con2 Mode |
-|--------|--------------|-------------|
-| Lightgun Emulation | ✔️ | ✔️ |
-| Real‑time Input Translation | ✔️ | ✔️ |
-| Automatic Mode Switching | ✔️ | ✔️ |
-| Dashboard Integration | ✔️ | ✔️ |
-| Multi‑Gun Support | ✔️ | ✔️ |
-| Raspberry Pi Compatible | ✔️ | ✔️ |
+| Feature | G‑Con45 Mode | G‑Con2 Mode |
+|--------|:------------:|:-----------:|
+| Lightgun Emulation | ✅ | ✅ |
+| Real‑time Input Translation | ✅ | ✅ |
+| Automatic Mode Switching | ✅ | ✅ |
+| Dashboard Integration | ✅ | ✅ |
+| Multi‑Gun Support | ✅ | ✅ |
+| Raspberry Pi Compatible | ✅ | ✅ |
+
 
 ---
 
