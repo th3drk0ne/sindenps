@@ -148,7 +148,7 @@ Pull requests are welcome — especially for:
 
 Community Contributors that made this project possible
 - MrLightgun: For creating the Sinden Lightguns and the firmwares for the Arduinos.
-- Prof_gLX & Giggity Titch: Created the Original Raspberry Pi Image that made all this possible.
+- Prof_gLX & titchgamer: Created the Original Raspberry Pi Image that made all this possible.
 - Psiloc: Created the base image for the Raspberry Pi that I used to start this project.
 - RayneX: Created a 3D Printable case for the PS1 adapter.
 
