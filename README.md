@@ -149,7 +149,7 @@ Pull requests are welcome — especially for:
 Community Contributors that made this project possible
 - MrLightgun: For creating the Sinden Lightguns and the firmwares for the Arduinos.
 - Prof_gLX & Giggity Titch: Created the Original Raspberry Pi Image that made all this possible.
-- Psiloc: Created the base image for the Raspberry Pi that I uses to start this project.
+- Psiloc: Created the base image for the Raspberry Pi that I used to start this project.
 - RayneX: Created a 3D Printable case for the PS1 adapter.
 
 ---
@@ -157,6 +157,6 @@ Community Contributors that made this project possible
 ## 🧡 Why SindenPS Exists
 
 Lightgun gaming deserves to feel authentic.  
-SindenPS bridges modern hardware with classic console expectations, giving you the closest thing to a real GunCon experience without needing original hardware.
+SindenPS bridges modern hardware with classic console expectations, giving you the closest thing to a real G-Con/GunCon experience without needing original hardware.
 
 If you love lightgun games, this project is built for you.
