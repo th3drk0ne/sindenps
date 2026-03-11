@@ -72,12 +72,14 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ## ✅ Raspberry Pi Model Compatability
 
-| Pi Model | G-Con45 Mode | G-Con2 Mode | G-Con45 Mode x 2| G-Con2 Mode x 2 |
-|--------|--------------|-------------|--------------|-------------|
-| Pi 5 1GB | ✔️ | ✔️ | ✔️ | ✔️ |
-| Pi 4 1GB | ✔️ | ✔️ | ✔️ | ✔️ |
-| Pi 3 B+ | ✔️ | ✔️ | ✔️ | ❌ |
-| Pi 0 2W | ✔️ | ✔️ | ❌ | ❌ |
+
+| Pi Model | G‑Con45 Mode | G‑Con2 Mode | G‑Con45 Mode ×2 | G‑Con2 Mode ×2 |
+|----------|:------------:|:-----------:|:---------------:|:---------------:|
+| Pi 5 1GB | ✅ | ✅ | ✅ | ✅ |
+| Pi 4 1GB | ✅ | ✅ | ✅ | ✅ |
+| Pi 3 B+  | ✅ | ✅ | ✅ | ❌ |
+| Pi 0 2W  | ✅ | ✅ | ❌ | ❌ |
+
 
 - Use the Official Power Supply from the Raspberry Pi Foundation. 
 - Active cooling on the Pi 4 and 5 is highly reccomended to prevent thermal throttling.
