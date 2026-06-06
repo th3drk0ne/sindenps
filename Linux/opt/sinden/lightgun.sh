@@ -32,7 +32,6 @@ echo "# Sinden Lightgun and Arduino udev rules" | sudo tee "$UDEV_FILE" >/dev/nu
 # Known Vendor & Product IDs for Arduino/GCon
 DEVICE_IDS=(
     "2341:0043"  # Arduino Uno
-    "2341:0062"  # Arduino Uno Mini
     "1a86:7523"  # CH340-based Arduino clone
     "0403:6001"  # FTDI-based Arduino clone
     "10c4:ea60"  # CP2102-based Arduino clone
