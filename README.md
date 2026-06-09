@@ -70,7 +70,7 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ---
 
-## ✅ Raspberry Pi Model Compatability
+## ✅ Raspberry Pi Model compatibility
 
 
 | Pi Model | G‑Con45 Mode | G‑Con2 Mode | G‑Con45 Mode ×2 | G‑Con2 Mode ×2 |
