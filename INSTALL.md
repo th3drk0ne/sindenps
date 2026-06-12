@@ -20,10 +20,6 @@ Install latest official Sinden driver
 VERSION=latest sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
 
-Install psiloc uberlag patched driver
-```bash
-VERSION=psiloc sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
-```
 ---
 For Linux installs that do not have a sinden user please specify a password below, replace StrongP@ssw0rd! with one of your choosing
 
@@ -33,10 +29,6 @@ Install latest official Sinden driver
 VERSION=latest SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
 
-Install psiloc uberlag patched driver
-```bash
-VERSION=psiloc SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
-```
 
 
 
