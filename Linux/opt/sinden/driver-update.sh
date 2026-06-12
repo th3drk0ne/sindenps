@@ -59,14 +59,13 @@ fi
 log "Running as root."
 
 #-----------------------------------------------------------
-# Version selection (supports: latest, psiloc, beta, previous)
+# Version selection (supports: latest, beta, previous)
 # 'current' maps to 'latest'
 #-----------------------------------------------------------
 normalize_version() {
   local v="${1,,}"
   case "$v" in
     latest|current|new|1|n)   echo "latest" ;;
-    psiloc|old|legacy|2|o)    echo "psiloc" ;;
     beta|3|b)                   echo "beta" ;;
     previous|prev|4|p)          echo "previous" ;;
     *)                        echo "" ;;
@@ -80,18 +79,16 @@ fi
 if [[ -z "${VERSION:-}" ]]; then
   log "Select Sinden setup version:"
   echo "  [1] latest"
-  echo "  [2] psiloc"
-  echo "  [3] beta"
-  echo "  [4] previous"
+  echo "  [2] beta"
+  echo "  [3] previous"
   while true; do
     read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
       1) VERSION="latest";   break ;;
-      2) VERSION="psiloc";   break ;;
-      3) VERSION="beta";     break ;;
-      4) VERSION="previous"; break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
+      2) VERSION="beta";     break ;;
+      3) VERSION="previous"; break ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1–3." ;;
     esac
   done
 fi
@@ -298,7 +295,6 @@ log "Backup complete."
 map_version_to_repo_folder() {
   case "$VERSION" in
     latest)   echo "latest" ;;
-    psiloc)   echo "psiloc" ;;
     beta)     echo "beta" ;;
     previous) echo "previous" ;;
     ubuntu) echo "ubuntu" ;;
