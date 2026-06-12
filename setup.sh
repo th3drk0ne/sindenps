@@ -71,7 +71,7 @@ log "Running as root."
 
 #-----------------------------------------------------------
 # Step 0) Version selection (no changes to download module)
-# Supported values: latest, psiloc, beta, previous
+# Supported values: latest, beta, previous
 # 'current' now maps to 'latest'
 #-----------------------------------------------------------
 normalize_version() {
@@ -80,7 +80,6 @@ normalize_version() {
     latest|current|new|1|n)   echo "latest"   ;;  # 'current' → 'latest'
     previous|prev|2|p)        echo "previous"   ;;
     beta|3|b)                 echo "beta"     ;;
-    psiloc|old|legacy|4|o)    echo "psiloc" ;;
     *)                        echo ""         ;;
   esac
 }
@@ -90,16 +89,14 @@ if [[ -z "${VERSION:-}" ]]; then
   echo "  [1] latest    (current release)"
   echo "  [2] previous  (prior release)"
   echo "  [3] beta      (pre-release/test)"
-  echo "  [4] psiloc    (community)"
   while true; do
-    read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
+    read -r -p "Enter choice (1/2/3) [default: 1]: " choice
     choice="${choice:-1}"
     case "$choice" in
       1) VERSION="latest";   break ;;
       2) VERSION="previous";   break ;;
       3) VERSION="beta";     break ;;
-      4) VERSION="psiloc"; break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
+      *) warn "Invalid selection: '$choice'. Please choose 1–3." ;;
     esac
   done
 else
@@ -110,16 +107,14 @@ else
     echo "  [1] latest"
     echo "  [2] previous"
     echo "  [3] beta"
-    echo "  [4] psiloc"
-    while true; do
-      read -r -p "Enter choice (1/2/3/4) [default: 1]: " choice
+     while true; do
+      read -r -p "Enter choice (1/2/3) [default: 1]: " choice
       choice="${choice:-1}"
       case "$choice" in
         1) VERSION="latest";   break ;;
         2) VERSION="previous";   break ;;
         3) VERSION="beta";     break ;;
-        4) VERSION="psiloc"; break ;;
-        *) warn "Invalid selection: '$choice'. Please choose 1–4." ;;
+        *) warn "Invalid selection: '$choice'. Please choose 1–3." ;;
       esac
     done
   fi
@@ -446,7 +441,6 @@ log "Backup complete."
 map_version_to_repo_folder() {
   case "$VERSION" in
     latest)   echo "latest" ;;
-    psiloc)   echo "psiloc" ;;
     beta)     echo "beta" ;;
     previous) echo "previous" ;;
     ubuntu) echo "ubuntu" ;;
