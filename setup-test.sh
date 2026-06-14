@@ -294,14 +294,14 @@ install -d -o sinden -g sinden /opt/sinden
 
 USER_HOME="/home/sinden"
 LIGHTGUN_DIR="${USER_HOME}/Lightgun"
-FW_DIR="${USER_HOME}/Firmware"
+FW_DIR="/home/sinden/Firmware"
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}"
 install -d -o sinden -g sinden "${FW_DIR}"
 
 # Download Firmware Files
 
-cd ${FW_DIR}
-  log "Downloading Firmware files  to ${FW_DIR}."
+cd /home/sinden/Firmware
+  log "Downloading Firmware files to /home/sinden/Firmware."
   wget --quiet --show-progress --https-only --timestamping \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
