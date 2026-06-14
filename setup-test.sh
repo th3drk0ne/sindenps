@@ -294,7 +294,19 @@ install -d -o sinden -g sinden /opt/sinden
 
 USER_HOME="/home/sinden"
 LIGHTGUN_DIR="${USER_HOME}/Lightgun"
+FW_DIR="${USER_HOME}/Firmware"
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}"
+install -d -o sinden -g sinden "${FW_DIR}"
+
+# Download Firmware Files
+
+cd ${FW_DIR}
+  log "Downloading Firmware files  to ${FW_DIR}."
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
+	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix2.hex" \
+	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix3.hex"
 
 # Helper: download a set of URLs into a destination, fix perms and exe bit
 download_assets() {
