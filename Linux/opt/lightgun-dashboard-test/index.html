@@ -257,6 +257,21 @@
           <pre class="log-content" id="update-log-content">Loading…</pre>
         </div>
       </div>
+	  
+	<!-- Firmware Update -->  
+		<div class="service-row" id="firmware-flash">
+		  <span class="service-name">Device Firmware</span>
+		  <span class="service-status" id="firmware-status">idle…</span>
+		  <div class="service-buttons">
+			<input type="file" id="firmware-file" accept=".hex" />
+			<button id="btn-flash-firmware">Flash Firmware</button>
+			<button class="log-toggle" id="btn-toggle-fw-logs">Show Logs</button>
+		  </div>
+		  <div class="log-box" id="firmware-logs" style="display:none">
+			<pre class="log-content" id="firmware-log-content">No firmware logs yet</pre>
+		  </div>
+		</div>
+
     </section>
 
     <!-- CONFIG TAB -->
