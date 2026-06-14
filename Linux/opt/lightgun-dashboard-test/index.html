@@ -18,133 +18,69 @@
       --theme-accent: #3385ff;
       --theme-button-danger: #0033aa;
     }
-
     html { box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
     html, body { height: 100%; }
     body { background:#000; color:#fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif; margin:0; -webkit-text-size-adjust: 100%; }
-    input, select, button { font-size: 16px; }
-
-    .page { width: 100%; margin: 0 auto; }
+    input, select, button { font-size:16px; }
+    .page { width:100%; margin:0 auto; }
     header { background:#000; padding:20px; border-bottom:4px solid var(--theme-border); position:sticky; top:0; z-index:10; }
     .header-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .logo-area { display:flex; align-items:center; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
+    .mode-indicator-img { height:28px; width:auto; display:block; }
     .tabs { display:flex; flex-wrap:wrap; gap:10px; }
     .tabs button { background:#222; color:#fff; border:1px solid var(--theme-border); padding:10px 14px; cursor:pointer; border-radius:6px; }
     .tabs button:hover { background: var(--theme-border); }
     .panel-title { color: var(--theme-accent); font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
-
     .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid var(--theme-border); border-radius:6px; }
     .service-name { font-size:18px; font-weight:700; }
     .service-status { font-size:14px; color:#9f9; }
     .service-buttons { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .service-buttons button { padding:10px 12px; font-size:16px; font-weight:700; border:none; border-radius:6px; cursor:pointer; }
     .service-buttons button:nth-child(1) { background:#090; color:#000; }
-    .service-buttons button:nth-child(2) { background: var(--theme-button-danger); color:#fff; }
+    .service-buttons button:nth-child(2) { background:var(--theme-button-danger); color:#fff; }
     .service-buttons button:nth-child(3) { background:#3cf; color:#000; }
     .log-toggle { background:#333 !important; color:#fff !important; }
     .log-box { width:100%; background:#000; border:1px solid var(--theme-border); padding:10px; display:none; max-height:300px; overflow:auto; border-radius:6px; }
     .log-content { white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#ccc; }
-
     .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 16px; }
     .config-toolbar .group { display:flex; gap:10px; align-items:center; }
     .config-path { color:#888; font-size:11px; text-align:left; }
     .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:right; }
-    .config-value { margin-right: 10px; display: inline-block; }
-    .config-comment { margin-left: 10px; opacity: 0.8; }
     .player { font-size:26px; font-weight:800; }
-
     .btn-secondary { background:#444; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
     .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:6px 8px; border:1px solid #444; border-radius:6px; cursor:pointer; }
-    .btn-danger { background: var(--theme-button-danger); color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
-
+    .btn-danger { background:var(--theme-button-danger); color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
     .config-panels { display:flex; gap:16px; flex-wrap:wrap; margin:0 16px 20px; }
     .config-card { flex:1 1 460px; background:#111; border-left:6px solid var(--theme-border); padding:12px; border-radius:6px; }
     .config-form { margin-top:8px; }
-
-    .config-row {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      width: 100%;
-      gap: 6px !important;
-      margin: 10px 0;
-    }
-
-    .config-row label {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      width: 100% !important;
-      font-size: 17px;
-      color: #ccc;
-    }
-
-    .config-row label small {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      width: 100% !important;
-      font-size: 12px;
-      color: #ccc;
-    }
-
-    .config-comment {
-      font-size: 12px;
-      color: #888;
-      opacity: 0.85;
-      margin-left: 2px;
-      width: 100%;
-      line-height: 1.2em;
-    }
-
-    .config-row input {
-      width: 100% !important;
-      max-width: 100% !important;
-      padding: 10px;
-      background: #000;
-      color: #fff;
-      border: 1px solid #444;
-      border-radius: 4px;
-    }
-
-    .mode-indicator-img { height: 28px; width: auto; display: block; }
-    .logo-area { display: flex; align-items: center; gap: 12px; }
-    #platform-select, label[for="platform-select"] { display: none !important; }
-
-    #firmware-file {
-      background:#000;
-      color:#fff;
-      border:1px solid #444;
-      border-radius:6px;
-      padding:8px;
-      max-width: 100%;
-    }
-
-    @media (min-width: 769px) { .page { max-width: none; } }
-
-    @media (max-width: 768px) {
-      .header-row { flex-wrap: wrap; align-items: flex-start; }
-      .logo-area { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px; }
-      .mode-indicator-img { height: 24px; }
+    .config-row { display:flex !important; flex-direction:column !important; align-items:flex-start !important; width:100%; gap:6px !important; margin:10px 0; }
+    .config-row label { display:flex !important; flex-direction:column !important; align-items:flex-start !important; width:100% !important; font-size:17px; color:#ccc; }
+    .config-row label small { display:flex !important; flex-direction:column !important; align-items:flex-start !important; width:100% !important; font-size:12px; color:#888; }
+    .config-row input { width:100% !important; max-width:100% !important; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:4px; }
+    #platform-select, label[for="platform-select"] { display:none !important; }
+    #firmware-select, #firmware-port, #update-channel, #profile-select { background:#000; color:#fff; border:1px solid #444; border-radius:6px; }
+    #firmware-select { min-width:280px; }
+    #firmware-port { min-width:180px; }
+    @media (max-width:768px) {
+      .header-row { flex-wrap:wrap; align-items:flex-start; }
+      .logo-area { flex-direction:row; align-items:center; justify-content:space-between; width:100%; gap:6px; }
+      .mode-indicator-img { height:24px; }
       .log-content { font-size:10px; }
-      .page { width: 100%; padding-bottom: env(safe-area-inset-bottom); }
-      .tabs { flex: 1 1 auto; width: auto; gap: 6px; justify-content: flex-end; }
-      .tabs button { flex: 1 1 auto; min-width: 0; text-align: center; padding: 12px; }
-      .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
-      .service-row { margin: 10px 8px; padding: 10px; }
-      .service-buttons { flex-direction: column; width: 100%; align-items:stretch; }
-      .service-buttons button, .service-buttons select, .service-buttons input { width: 100%; padding: 12px; font-size: 16px; }
-      .config-toolbar { flex-direction: column; align-items: stretch; margin: 10px 8px; }
-      .config-toolbar .group, .config-toolbar select, .config-toolbar button { width: 100%; }
-      .config-panels { margin: 0 8px 20px; }
-      .config-card { flex: 1 1 100%; }
-      .config-row { flex-direction: column; align-items: flex-start; width: 100%; }
-      .config-row input { width: 100% !important; max-width: 100%; padding: 12px; }
-      .config-row label { flex-direction: column; align-items: flex-start; gap: 4px; }
-      .config-row label small { margin: 0; white-space: normal; }
-      #save-restart { width: 100%; padding: 12px; font-size: 16px; }
-      #backup-modal > .dialog { width: 95vw !important; margin-top: 20vh !important; padding: 12px; }
+      .page { width:100%; padding-bottom:env(safe-area-inset-bottom); }
+      .tabs { flex:1 1 auto; width:auto; gap:6px; justify-content:flex-end; }
+      .tabs button { flex:1 1 auto; min-width:0; text-align:center; padding:12px; }
+      .panel-title { font-size:20px; text-align:center; margin-top:10px; }
+      .service-row { margin:10px 8px; padding:10px; }
+      .service-buttons { flex-direction:column; width:100%; align-items:stretch; }
+      .service-buttons button, .service-buttons select { width:100%; padding:12px; font-size:16px; }
+      .config-toolbar { flex-direction:column; align-items:stretch; margin:10px 8px; }
+      .config-toolbar .group, .config-toolbar select, .config-toolbar button { width:100%; }
+      .config-panels { margin:0 8px 20px; }
+      .config-card { flex:1 1 100%; }
+      #save-restart { width:100%; padding:12px; font-size:16px; }
+      #backup-modal > .dialog { width:95vw !important; margin-top:20vh !important; padding:12px; }
     }
   </style>
 </head>
@@ -166,9 +102,7 @@
 
     <section id="tab-sindenlog" style="display:block; padding:10px;">
       <h2 class="panel-title">Lightgun Service Log</h2>
-      <div class="log-box" style="display:block; max-height:500px;">
-        <pre id="sinden-log-content" class="log-content">Loading…</pre>
-      </div>
+      <div class="log-box" style="display:block; max-height:500px;"><pre id="sinden-log-content" class="log-content">Loading…</pre></div>
     </section>
 
     <section id="service-panel" style="display:none;">
@@ -205,7 +139,6 @@
           <button class="btn-secondary" onclick="confirmSystemAction('reboot')">Reboot OS</button>
           <button class="btn-danger" onclick="confirmSystemAction('shutdown')">Shutdown OS</button>
         </div>
-        <div class="log-box" style="display:none;"></div>
       </div>
 
       <div class="service-row" id="software-update">
@@ -221,59 +154,44 @@
           <button id="btn-update-now" disabled>Update Now</button>
           <button class="log-toggle" id="btn-toggle-logs">Show Logs</button>
         </div>
-        <div class="log-box" id="update-logs" style="display:none">
-          <pre class="log-content" id="update-log-content">Loading…</pre>
-        </div>
+        <div class="log-box" id="update-logs" style="display:none"><pre class="log-content" id="update-log-content">Loading…</pre></div>
       </div>
 
       <div class="service-row" id="firmware-flash">
         <span class="service-name">Device Firmware</span>
         <span class="service-status" id="firmware-status">idle…</span>
         <div class="service-buttons">
-          <input type="file" id="firmware-file" accept=".hex" />
+          <select id="firmware-select" aria-label="Firmware file"><option value="">Loading firmware…</option></select>
+          <select id="firmware-port" aria-label="TTY alias"><option value="">Loading ports…</option></select>
           <button id="btn-flash-firmware">Flash Firmware</button>
           <button class="log-toggle" id="btn-toggle-fw-logs">Show Logs</button>
         </div>
-        <div class="log-box" id="firmware-logs" style="display:none">
-          <pre class="log-content" id="firmware-log-content">No firmware logs yet</pre>
-        </div>
+        <div class="log-box" id="firmware-logs" style="display:none"><pre class="log-content" id="firmware-log-content">No firmware logs</pre></div>
       </div>
     </section>
 
     <section id="tab-config" style="display:none; padding:10px;">
       <h2 class="panel-title">Sinden Lightgun Driver Configuration</h2>
-
       <div class="config-toolbar">
         <div class="group">
           <label>Platform:</label>
           <span id="platform-display" style="font-weight:700;color:#fff;">loading…</span>
-          <select id="platform-select" style="display:none;">
-            <option value="ps2">PlayStation 2</option>
-            <option value="ps1">PlayStation 1</option>
-          </select>
+          <select id="platform-select"><option value="ps2">PlayStation 2</option><option value="ps1">PlayStation 1</option></select>
         </div>
-
         <div class="group">
           <label for="profile-select">Profile:</label>
-          <select id="profile-select">
-            <option value="">(none)</option>
-          </select>
+          <select id="profile-select"><option value="">(none)</option></select>
         </div>
-
         <div class="group">
           <button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
           <button id="btn-save-profile" class="btn-secondary">Save as Profile</button>
           <button id="btn-delete-profile" class="btn-secondary" style="background:#600;">Delete Profile</button>
-          <label style="display:flex; align-items:center; gap:6px;">
-            <input type="checkbox" id="chk-restore-mode"/> Restore
-          </label>
+          <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="chk-restore-mode"/> Restore</label>
         </div>
-
         <span id="config-file-path" class="config-path"></span>
         <span id="config-status" class="config-status-inline"></span>
         <button id="save-restart" class="btn-danger">Save & Restart</button>
       </div>
-
       <div class="config-panels">
         <div class="config-card">
           <div class="player">Player 1</div>
@@ -284,12 +202,9 @@
           <div id="p2-form" class="config-form"></div>
         </div>
       </div>
-
       <div class="config-card">
         <div class="service-name">Assignable Actions Reference</div>
-        <div class="config-form">
-<pre class='log-content' style='display:block; max-height:none; border:1px solid #444; padding:10px;'>
-0 None
+        <div class="config-form"><pre class="log-content" style="display:block; max-height:none; border:1px solid #444; padding:10px;">0 None
 1 MouseLeft
 2 MouseMiddle
 3 MouseRight
@@ -304,9 +219,7 @@
 74–77 Up/Down/Left/Right
 78–81 + , - .
 82–93 F1–F12
-94–113 Joystick Button 1–20
-</pre>
-        </div>
+94–113 Joystick Button 1–20</pre></div>
       </div>
     </section>
 
@@ -322,620 +235,667 @@
     </div>
   </div>
 
-  <script>
-    function showTab(name) {
-      document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
-      document.getElementById('tab-sindenlog').style.display = (name === 'sindenlog') ? 'block' : 'none';
-      document.getElementById('tab-config').style.display = (name === 'config') ? 'block' : 'none';
-      if (name === 'sindenlog') loadSindenLog();
-      if (name === 'config') {
-        const p = document.getElementById('platform-select').value;
-        loadConfig(p).catch(err => {
-          const s = document.getElementById('config-status');
-          if (s) s.textContent = 'Load error: ' + err.message;
-        });
-        refreshProfilesUI(p);
-      }
-    }
+<script>
+let lastFirmwareLog = "";
 
-    function setOfflineUI() {
-      document.body.classList.remove('ps2-mode');
-      const img = document.getElementById('mode-indicator');
-      if (img) { img.src = '/offline.png'; img.alt = 'Offline'; }
-    }
-    function setLoadingUI() {
-      document.body.classList.remove('ps2-mode');
-      const img = document.getElementById('mode-indicator');
-      if (img) { img.src = '/load.png'; img.alt = 'Loading...'; }
-    }
-
-    async function updateModeIndicator() {
-      const img = document.getElementById('mode-indicator');
-      if (!img) return;
-      try {
-        const svc = await (await fetch('/api/services')).json();
-        const lg = (svc['lightgun.service'] || '').toLowerCase();
-        if (lg !== 'active') { setOfflineUI(); return; }
-
-        const platRes = await fetch('/api/platform');
-        if (!platRes.ok) { setLoadingUI(); return; }
-        const plat = await platRes.json();
-        const ok = !!(plat && plat.ok);
-        if (!ok || !(plat.platform === 'ps1' || plat.platform === 'ps2')) { setLoadingUI(); return; }
-
-        if (plat.platform === 'ps1') {
-          document.body.classList.remove('ps2-mode');
-          img.src = '/ps1.png';
-          img.alt = 'PS1 Mode';
-        } else {
-          document.body.classList.add('ps2-mode');
-          img.src = '/ps2.png';
-          img.alt = 'PS2 Mode';
-        }
-      } catch (e) {
-        setOfflineUI();
-      }
-    }
-
-    async function refreshServices() {
-      try {
-        const res = await fetch('/api/services');
-        const data = await res.json();
-        for (const [svc, status] of Object.entries(data)) {
-          const el = document.querySelector(`#service-${svc.replace('.service','')} .service-status`);
-          if (el) el.textContent = status;
-        }
-      } catch (e) {}
-    }
-
-    async function serviceAction(name, action) {
-      await fetch(`/api/service/${name}/${action}`, { method: 'POST' });
-      refreshServices();
-    }
-
-    function toggleLogs(evt, svc) {
-      const box = document.getElementById('logs-' + svc.replace('.service',''));
-      if (box.style.display === 'block') {
-        box.style.display = 'none';
-        evt.target.textContent = 'Show Logs';
-      } else {
-        box.style.display = 'block';
-        evt.target.textContent = 'Hide Logs';
-        loadLogs(svc);
-      }
-    }
-
-    async function loadLogs(svc) {
-      const box = document.querySelector(`#logs-${svc.replace('.service','')} .log-content`);
-      try {
-        const res = await fetch(`/api/logs/${svc}`);
-        const data = await res.json();
-        box.textContent = (data && data.logs) ? data.logs : 'No logs available';
-      } catch (e) {
-        box.textContent = 'Error loading logs: ' + e.message;
-      }
-    }
-
-    async function systemAction(action) {
-      const statusEl = document.getElementById('system-status');
-      try {
-        if (statusEl) statusEl.textContent = (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
-        const res = await fetch(`/api/system/${action}`, { method: 'POST' });
-        let ok = false;
-        try { const data = await res.json(); ok = !!(data && data.ok); } catch (_) {}
-        if (statusEl) {
-          statusEl.textContent = ok ? ((action === 'reboot') ? 'Reboot command sent.' : 'Shutdown command sent.') : 'Command failed (check server logs).';
-        }
-        const btns = document.querySelectorAll('#system-actions .service-buttons button');
-        btns.forEach(b => b.disabled = true);
-      } catch (e) {
-        if (statusEl) statusEl.textContent = 'Request error: ' + e.message;
-      }
-    }
-
-    function confirmSystemAction(action) {
-      if (action === 'shutdown') {
-        if (!confirm('Are you sure you want to SHUT DOWN this system?')) return;
-        if (!confirm('Final confirmation: proceed to SHUT DOWN now?')) return;
-      } else {
-        if (!confirm('Are you sure you want to reboot this system?')) return;
-      }
-      systemAction(action);
-    }
-
-    async function loadSindenLog() {
-      try {
-        const res = await fetch('/api/sinden-log');
-        const data = await res.json();
-        const box = document.getElementById('sinden-log-content');
-        box.textContent = data.logs || '';
-        box.parentElement.scrollTop = box.parentElement.scrollHeight;
-      } catch (e) {}
-    }
-
-    function buildGroupedConfigForm(containerId, groups) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = '';
-      (groups || []).forEach(group => {
-        const heading = document.createElement('div');
-        heading.className = 'service-name';
-        heading.style.marginTop = '10px';
-        heading.textContent = group.name || 'Settings';
-        container.appendChild(heading);
-        (group.items || []).forEach(item => {
-          const row = document.createElement('div');
-          row.className = 'config-row';
-          const label = document.createElement('label');
-          label.setAttribute('for', item.key);
-          label.textContent = item.key;
-          if (item.comment) {
-            const small = document.createElement('small');
-            small.textContent = item.comment;
-            label.appendChild(small);
-          }
-          const input = document.createElement('input');
-          input.value = (item.value ?? '');
-          input.dataset.key = item.key;
-          row.appendChild(label);
-          row.appendChild(input);
-          container.appendChild(row);
-        });
-      });
-    }
-
-    async function loadConfig(platform) {
-      const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Failed to read config');
-      const p1Groups = data.player1Groups || [{ name: 'All Settings', items: data.player1 || [] }];
-      const p2Groups = data.player2Groups || [{ name: 'All Settings', items: data.player2 || [] }];
-      document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
-      buildGroupedConfigForm('p1-form', p1Groups);
-      buildGroupedConfigForm('p2-form', p2Groups);
-    }
-
-    function collectForm(containerId) {
-      return [...document.getElementById(containerId).querySelectorAll('input[data-key]')]
-        .map(i => ({ key: i.dataset.key, value: i.value }));
-    }
-
-    async function saveConfig(platform, p1List, p2List) {
-      const res = await fetch('/api/config/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, player1: p1List, player2: p2List })
-      });
-      return await res.json();
-    }
-
-    async function restartLightgunService() {
-      try {
-        const res = await fetch('/api/service/lightgun.service/restart', { method: 'POST' });
-        const data = await res.json();
-        return data && data.success;
-      } catch (e) { return false; }
-    }
-
-    function setUpdateState(label, canUpdate = false) {
-      const status = document.getElementById('update-status');
-      if (status) status.textContent = label;
-      const btnUpdate = document.getElementById('btn-update-now');
-      if (btnUpdate) btnUpdate.disabled = !canUpdate;
-    }
-
-    async function refreshUpdateStatus() {
-      try {
-        const res = await fetch('/api/update/status');
-        const s = await res.json();
-        if (!s || s.ok === false) { setUpdateState('status error'); return; }
-        const channel = s.installed?.version || 'unknown';
-        setUpdateState(`Channel: ${channel}`, true);
-      } catch (e) {
-        setUpdateState('status error: ' + e.message);
-      }
-    }
-
-    async function checkForUpdates() {
-      try {
-        setUpdateState('checking…');
-        const channel = document.getElementById('update-channel').value;
-        const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
-        const data = await res.json();
-        if (!data || data.ok === false) {
-          setUpdateState('check failed');
-          alert('Check failed: ' + (data?.error || 'unknown'));
-          return;
-        }
-        setUpdateState(`Channel ready: ${channel}`, true);
-      } catch (e) {
-        setUpdateState('check error: ' + e.message);
-      }
-    }
-
-    async function applyUpdate() {
-      if (!confirm('Apply the selected update channel now? Services may restart.')) return;
-      try {
-        setUpdateState('applying…');
-        const channel = document.getElementById('update-channel').value;
-        const res = await fetch('/api/update/apply', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel })
-        });
-        const data = await res.json();
-        if (!data || data.ok === false) { setUpdateState('update failed'); alert('Update failed: ' + (data && data.error ? data.error : 'unknown error')); return; }
-        await refreshUpdateStatus();
-        loadUpdateLogs();
-        if (typeof refreshServices === 'function') refreshServices();
-      } catch (e) { setUpdateState('update error: ' + e.message); }
-    }
-
-    function toggleUpdateLogs() {
-      const box = document.getElementById('update-logs');
-      const btn = document.getElementById('btn-toggle-logs');
-      if (box.style.display === 'block') { box.style.display = 'none'; btn.textContent = 'Show Logs'; }
-      else { box.style.display = 'block'; btn.textContent = 'Hide Logs'; loadUpdateLogs(); }
-    }
-
-    async function loadUpdateLogs() {
-      const pre = document.getElementById('update-log-content');
-      try {
-        const res = await fetch('/api/update/logs');
-        const data = await res.json();
-        pre.textContent = (data && data.logs) ? data.logs : 'No update logs available';
-      } catch (e) {
-        pre.textContent = 'Error loading update logs: ' + e.message;
-      }
-    }
-
-    function setFirmwareState(label) {
-      const el = document.getElementById('firmware-status');
-      if (el) el.textContent = label;
-    }
-
-    async function refreshFirmwareStatus() {
-      try {
-        const res = await fetch('/api/firmware/status');
-        const data = await res.json();
-        if (!data || data.ok === false) {
-          setFirmwareState('status error');
-          return;
-        }
-        const msg = data.message || data.state || 'idle';
-        setFirmwareState(msg);
-      } catch (e) {
-        setFirmwareState('status error: ' + e.message);
-      }
-    }
-
-    async function loadFirmwareLogs() {
-      const pre = document.getElementById('firmware-log-content');
-      try {
-        const res = await fetch('/api/firmware/logs');
-        const data = await res.json();
-        pre.textContent = (data && data.logs) ? data.logs : 'No firmware logs available';
-      } catch (e) {
-        pre.textContent = 'Error loading firmware logs: ' + e.message;
-      }
-    }
-
-    function toggleFirmwareLogs() {
-      const box = document.getElementById('firmware-logs');
-      const btn = document.getElementById('btn-toggle-fw-logs');
-      if (box.style.display === 'block') {
-        box.style.display = 'none';
-        btn.textContent = 'Show Logs';
-      } else {
-        box.style.display = 'block';
-        btn.textContent = 'Hide Logs';
-        loadFirmwareLogs();
-      }
-    }
-
-    async function flashFirmware() {
-      const fileInput = document.getElementById('firmware-file');
-      if (!fileInput || !fileInput.files || !fileInput.files.length) {
-        alert('Please choose a .hex file first.');
-        return;
-      }
-
-      const file = fileInput.files[0];
-      if (!file.name.toLowerCase().endsWith('.hex')) {
-        alert('Only .hex firmware files are supported.');
-        return;
-      }
-
-      if (!confirm(`Flash firmware "${file.name}" now? This will overwrite the device firmware.`)) {
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('firmware', file);
-
-      try {
-        setFirmwareState('Uploading firmware…');
-
-        const res = await fetch('/api/firmware/flash', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await res.json();
-
-        if (!data || data.ok === false) {
-          setFirmwareState('Flash failed');
-          alert('Firmware flash failed: ' + (data?.error || 'unknown error'));
-          loadFirmwareLogs();
-          return;
-        }
-
-        setFirmwareState('Firmware flash complete');
-        loadFirmwareLogs();
-        refreshServices();
-      } catch (e) {
-        setFirmwareState('Flash error: ' + e.message);
-        loadFirmwareLogs();
-      }
-    }
-
-    async function listProfiles(platform) {
-      const res = await fetch(`/api/config/profiles?platform=${encodeURIComponent(platform)}`);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Failed to list profiles');
-      return data.profiles || [];
-    }
-
-    function populateProfileSelect(items) {
-      const sel = document.getElementById('profile-select');
-      sel.innerHTML = '';
-      const optNone = document.createElement('option');
-      optNone.value = '';
-      optNone.textContent = '(none)';
-      sel.appendChild(optNone);
-      (items || []).forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.name;
-        opt.textContent = p.name;
-        opt.title = `${p.path || ''}`;
-        sel.appendChild(opt);
-      });
-    }
-
-    async function refreshProfilesUI(platform) {
-      try {
-        const profiles = await listProfiles(platform);
-        profiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-        populateProfileSelect(profiles);
-      } catch (e) {
-        const s = document.getElementById('config-status');
-        if (s) s.textContent = 'Profiles load error: ' + e.message;
-      }
-    }
-
-    async function saveCurrentAsProfile(platform) {
-      const name = prompt('Enter a profile name (letters, digits, _ or -, max 60 chars):');
-      if (!name) return;
-      const res = await fetch('/api/config/profile/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name }) });
-      const data = await res.json();
-      if (!data.ok) { alert('Save failed: ' + (data.error || 'unknown error')); return; }
-      await refreshProfilesUI(platform);
-      document.getElementById('profile-select').value = name;
-    }
-
-    async function activateProfile(platform, name) {
-      if (!name) { alert('Select a profile first.'); return; }
+function showTab(name) {
+  document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
+  document.getElementById('tab-sindenlog').style.display = (name === 'sindenlog') ? 'block' : 'none';
+  document.getElementById('tab-config').style.display = (name === 'config') ? 'block' : 'none';
+  if (name === 'sindenlog') loadSindenLog();
+  if (name === 'config') {
+    const p = document.getElementById('platform-select').value;
+    loadConfig(p).catch(err => {
       const s = document.getElementById('config-status');
+      if (s) s.textContent = 'Load error: ' + err.message;
+    });
+    refreshProfilesUI(p);
+  }
+  if (name === 'services') {
+    loadFirmwareList();
+    loadFirmwarePorts();
+  }
+}
+
+function setOfflineUI() {
+  document.body.classList.remove('ps2-mode');
+  const img = document.getElementById('mode-indicator');
+  if (img) { img.src = '/offline.png'; img.alt = 'Offline'; }
+}
+
+function setLoadingUI() {
+  document.body.classList.remove('ps2-mode');
+  const img = document.getElementById('mode-indicator');
+  if (img) { img.src = '/load.png'; img.alt = 'Loading...'; }
+}
+
+async function updateModeIndicator() {
+  const img = document.getElementById('mode-indicator');
+  if (!img) return;
+  try {
+    const svc = await (await fetch('/api/services')).json();
+    const lg = (svc['lightgun.service'] || '').toLowerCase();
+    if (lg !== 'active') { setOfflineUI(); return; }
+    const platRes = await fetch('/api/platform');
+    if (!platRes.ok) { setLoadingUI(); return; }
+    const plat = await platRes.json();
+    const ok = !!(plat && plat.ok);
+    if (!ok || !(plat.platform === 'ps1' || plat.platform === 'ps2')) { setLoadingUI(); return; }
+    if (plat.platform === 'ps1') {
+      document.body.classList.remove('ps2-mode');
+      img.src = '/ps1.png';
+      img.alt = 'PS1 Mode';
+    } else {
+      document.body.classList.add('ps2-mode');
+      img.src = '/ps2.png';
+      img.alt = 'PS2 Mode';
+    }
+  } catch (e) {
+    setOfflineUI();
+  }
+}
+
+async function refreshServices() {
+  try {
+    const res = await fetch('/api/services');
+    const data = await res.json();
+    for (const [svc, status] of Object.entries(data)) {
+      const el = document.querySelector(`#service-${svc.replace('.service','')} .service-status`);
+      if (el) el.textContent = status;
+    }
+  } catch (e) {}
+}
+
+async function serviceAction(name, action) {
+  await fetch(`/api/service/${name}/${action}`, { method: 'POST' });
+  refreshServices();
+}
+
+function toggleLogs(evt, svc) {
+  const box = document.getElementById('logs-' + svc.replace('.service',''));
+  if (box.style.display === 'block') {
+    box.style.display = 'none';
+    evt.target.textContent = 'Show Logs';
+  } else {
+    box.style.display = 'block';
+    evt.target.textContent = 'Hide Logs';
+    loadLogs(svc);
+  }
+}
+
+async function loadLogs(svc) {
+  const box = document.querySelector(`#logs-${svc.replace('.service','')} .log-content`);
+  try {
+    const res = await fetch(`/api/logs/${svc}`);
+    const data = await res.json();
+    box.textContent = (data && data.logs) ? data.logs : 'No logs available';
+  } catch (e) {
+    box.textContent = 'Error loading logs: ' + e.message;
+  }
+}
+
+async function systemAction(action) {
+  const statusEl = document.getElementById('system-status');
+  try {
+    if (statusEl) statusEl.textContent = (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
+    const res = await fetch(`/api/system/${action}`, { method: 'POST' });
+    let ok = false;
+    try { const data = await res.json(); ok = !!(data && data.ok); } catch (_) {}
+    if (statusEl) {
+      statusEl.textContent = ok ? ((action === 'reboot') ? 'Reboot command sent.' : 'Shutdown command sent.') : 'Command failed (check server logs).';
+    }
+    document.querySelectorAll('#system-actions .service-buttons button').forEach(b => b.disabled = true);
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Request error: ' + e.message;
+  }
+}
+
+function confirmSystemAction(action) {
+  if (action === 'shutdown') {
+    if (!confirm('Are you sure you want to SHUT DOWN this system?')) return;
+    if (!confirm('Final confirmation: proceed to SHUT DOWN now?')) return;
+  } else {
+    if (!confirm('Are you sure you want to reboot this system?')) return;
+  }
+  systemAction(action);
+}
+
+async function loadSindenLog() {
+  try {
+    const res = await fetch('/api/sinden-log');
+    const data = await res.json();
+    const box = document.getElementById('sinden-log-content');
+    box.textContent = data.logs || '';
+    box.parentElement.scrollTop = box.parentElement.scrollHeight;
+  } catch (e) {}
+}
+
+function buildGroupedConfigForm(containerId, groups) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  (groups || []).forEach(group => {
+    const heading = document.createElement('div');
+    heading.className = 'service-name';
+    heading.style.marginTop = '10px';
+    heading.textContent = group.name || 'Settings';
+    container.appendChild(heading);
+    (group.items || []).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'config-row';
+      const label = document.createElement('label');
+      label.setAttribute('for', item.key);
+      label.textContent = item.key;
+      if (item.comment) {
+        const small = document.createElement('small');
+        small.textContent = item.comment;
+        label.appendChild(small);
+      }
+      const input = document.createElement('input');
+      input.value = (item.value ?? '');
+      input.dataset.key = item.key;
+      row.appendChild(label);
+      row.appendChild(input);
+      container.appendChild(row);
+    });
+  });
+}
+
+async function loadConfig(platform) {
+  const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Failed to read config');
+  const p1Groups = data.player1Groups || [{ name: 'All Settings', items: data.player1 || [] }];
+  const p2Groups = data.player2Groups || [{ name: 'All Settings', items: data.player2 || [] }];
+  document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
+  buildGroupedConfigForm('p1-form', p1Groups);
+  buildGroupedConfigForm('p2-form', p2Groups);
+}
+
+function collectForm(containerId) {
+  return [...document.getElementById(containerId).querySelectorAll('input[data-key]')]
+    .map(i => ({ key: i.dataset.key, value: i.value }));
+}
+
+async function saveConfig(platform, p1List, p2List) {
+  const res = await fetch('/api/config/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ platform, player1: p1List, player2: p2List })
+  });
+  return await res.json();
+}
+
+async function restartLightgunService() {
+  try {
+    const res = await fetch('/api/service/lightgun.service/restart', { method: 'POST' });
+    const data = await res.json();
+    return data && data.success;
+  } catch (e) { return false; }
+}
+
+function setUpdateState(label, canUpdate = false) {
+  const status = document.getElementById('update-status');
+  if (status) status.textContent = label;
+  const btnUpdate = document.getElementById('btn-update-now');
+  if (btnUpdate) btnUpdate.disabled = !canUpdate;
+}
+
+async function refreshUpdateStatus() {
+  try {
+    const res = await fetch('/api/update/status');
+    const s = await res.json();
+    if (!s || s.ok === false) { setUpdateState('status error'); return; }
+    const channel = s.installed?.version || 'unknown';
+    setUpdateState(`Channel: ${channel}`, true);
+  } catch (e) {
+    setUpdateState('status error: ' + e.message);
+  }
+}
+
+async function checkForUpdates() {
+  try {
+    setUpdateState('checking…');
+    const channel = document.getElementById('update-channel').value;
+    const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
+    const data = await res.json();
+    if (!data || data.ok === false) {
+      setUpdateState('check failed');
+      alert('Check failed: ' + (data?.error || 'unknown'));
+      return;
+    }
+    setUpdateState(`Channel ready: ${channel}`, true);
+  } catch (e) {
+    setUpdateState('check error: ' + e.message);
+  }
+}
+
+async function applyUpdate() {
+  if (!confirm('Apply the selected update channel now? Services may restart.')) return;
+  try {
+    setUpdateState('applying…');
+    const channel = document.getElementById('update-channel').value;
+    const res = await fetch('/api/update/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel }) });
+    const data = await res.json();
+    if (!data || data.ok === false) { setUpdateState('update failed'); alert('Update failed: ' + (data && data.error ? data.error : 'unknown error')); return; }
+    await refreshUpdateStatus();
+    loadUpdateLogs();
+    refreshServices();
+  } catch (e) { setUpdateState('update error: ' + e.message); }
+}
+
+function toggleUpdateLogs() {
+  const box = document.getElementById('update-logs');
+  const btn = document.getElementById('btn-toggle-logs');
+  if (box.style.display === 'block') { box.style.display = 'none'; btn.textContent = 'Show Logs'; }
+  else { box.style.display = 'block'; btn.textContent = 'Hide Logs'; loadUpdateLogs(); }
+}
+
+async function loadUpdateLogs() {
+  const pre = document.getElementById('update-log-content');
+  try {
+    const res = await fetch('/api/update/logs');
+    const data = await res.json();
+    pre.textContent = (data && data.logs) ? data.logs : 'No update logs available';
+  } catch (e) {
+    pre.textContent = 'Error loading update logs: ' + e.message;
+  }
+}
+
+function setFirmwareState(label) {
+  const el = document.getElementById('firmware-status');
+  if (el) el.textContent = label;
+}
+
+async function refreshFirmwareStatus() {
+  try {
+    const res = await fetch('/api/firmware/status');
+    const data = await res.json();
+    if (!data || data.ok === false) {
+      setFirmwareState('status error');
+      return;
+    }
+    const msg = data.message || data.state || 'idle';
+    setFirmwareState(msg);
+  } catch (e) {
+    setFirmwareState('status error: ' + e.message);
+  }
+}
+
+async function loadFirmwareList() {
+  const sel = document.getElementById('firmware-select');
+  sel.innerHTML = '';
+  try {
+    const res = await fetch('/api/firmware/list');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Failed to load firmware list');
+    if (!data.files || !data.files.length) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No firmware found';
+      sel.appendChild(opt);
+      return;
+    }
+    data.files.forEach(file => {
+      const opt = document.createElement('option');
+      opt.value = file;
+      opt.textContent = file.replace(/\.hex$/i, '');
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Error loading firmware';
+    sel.appendChild(opt);
+  }
+}
+
+async function loadFirmwarePorts() {
+  const sel = document.getElementById('firmware-port');
+  sel.innerHTML = '';
+  try {
+    const res = await fetch('/api/firmware/ports');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Failed to load ports');
+    if (!data.ports || !data.ports.length) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No ports';
+      sel.appendChild(opt);
+      return;
+    }
+    data.ports.forEach((port, idx) => {
+      const opt = document.createElement('option');
+      opt.value = port;
+      opt.textContent = port.replace('/dev/', '');
+      if (idx === 0) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Error loading ports';
+    sel.appendChild(opt);
+  }
+}
+
+async function loadFirmwareLogs() {
+  const pre = document.getElementById('firmware-log-content');
+  const parent = pre.parentElement;
+  const wasAtBottom = parent.scrollHeight - parent.scrollTop <= parent.clientHeight + 5;
+  try {
+    const res = await fetch('/api/firmware/logs');
+    const data = await res.json();
+    const newText = (data && data.logs) ? data.logs.trim() : '';
+    if (newText) {
+      lastFirmwareLog = newText;
+      pre.textContent = newText;
+    } else if (!lastFirmwareLog) {
+      pre.textContent = 'No firmware logs';
+    }
+    if (wasAtBottom) {
+      parent.scrollTop = parent.scrollHeight;
+    }
+  } catch (e) {
+    pre.textContent = 'Error loading firmware logs: ' + e.message;
+  }
+}
+
+function toggleFirmwareLogs() {
+  const box = document.getElementById('firmware-logs');
+  const btn = document.getElementById('btn-toggle-fw-logs');
+  if (box.style.display === 'block') {
+    box.style.display = 'none';
+    btn.textContent = 'Show Logs';
+  } else {
+    box.style.display = 'block';
+    btn.textContent = 'Hide Logs';
+    loadFirmwareLogs();
+  }
+}
+
+async function flashFirmware() {
+  const fileSel = document.getElementById('firmware-select');
+  const portSel = document.getElementById('firmware-port');
+  const filename = fileSel.value;
+  const port = portSel.value;
+  if (!filename) return alert('Select firmware');
+  if (!confirm('Flash firmware now?')) return;
+  lastFirmwareLog = '';
+  try {
+    const res = await fetch('/api/firmware/flash', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filename, port })
+    });
+    const data = await res.json();
+    alert(data.ok ? 'Success' : data.error);
+    loadFirmwareLogs();
+  } catch (e) {
+    alert('Firmware flash error: ' + e.message);
+  }
+}
+
+async function listProfiles(platform) {
+  const res = await fetch(`/api/config/profiles?platform=${encodeURIComponent(platform)}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Failed to list profiles');
+  return data.profiles || [];
+}
+
+function populateProfileSelect(items) {
+  const sel = document.getElementById('profile-select');
+  sel.innerHTML = '';
+  const optNone = document.createElement('option');
+  optNone.value = '';
+  optNone.textContent = '(none)';
+  sel.appendChild(optNone);
+  (items || []).forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name;
+    opt.title = `${p.path || ''}`;
+    sel.appendChild(opt);
+  });
+}
+
+async function refreshProfilesUI(platform) {
+  try {
+    const profiles = await listProfiles(platform);
+    profiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    populateProfileSelect(profiles);
+  } catch (e) {
+    const s = document.getElementById('config-status');
+    if (s) s.textContent = 'Profiles load error: ' + e.message;
+  }
+}
+
+async function saveCurrentAsProfile(platform) {
+  const name = prompt('Enter a profile name (letters, digits, _ or -, max 60 chars):');
+  if (!name) return;
+  const res = await fetch('/api/config/profile/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name }) });
+  const data = await res.json();
+  if (!data.ok) { alert('Save failed: ' + (data.error || 'unknown error')); return; }
+  await refreshProfilesUI(platform);
+  document.getElementById('profile-select').value = name;
+}
+
+async function activateProfile(platform, name) {
+  if (!name) { alert('Select a profile first.'); return; }
+  const s = document.getElementById('config-status');
+  try {
+    if (s) s.textContent = 'Applying profile...';
+    const res = await fetch('/api/config/profile/load', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name }) });
+    const data = await res.json();
+    if (!data.ok) { if (s) s.textContent = 'Apply failed: ' + (data.error || 'unknown error'); return; }
+    if (s) s.textContent = `Applied profile "${name}". Backup: ${data.backup || 'n/a'}. Restarting...`;
+    setLoadingUI();
+    const ok = await restartLightgunService();
+    if (s) s.textContent = ok ? 'Profile applied and service restarted.' : 'Profile applied. Restart failed.';
+    refreshServices();
+    await loadConfig(platform);
+  } catch (e) { if (s) s.textContent = 'Apply error: ' + e.message; }
+}
+
+function openBackupModal() { document.getElementById('backup-modal').style.display = 'block'; }
+function closeBackupModal() { document.getElementById('backup-modal').style.display = 'none'; }
+
+async function listBackups(platform) {
+  const res = await fetch(`/api/config/backups?platform=${encodeURIComponent(platform)}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Failed to list backups');
+  return data.backups || [];
+}
+
+function renderBackupList(backups, platform) {
+  const box = document.getElementById('backup-list');
+  const status = document.getElementById('backup-list-status');
+  box.innerHTML = '';
+  status.textContent = '';
+  if (!backups.length) { status.textContent = 'No backups found.'; return; }
+  backups.forEach(b => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:8px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; gap:8px;';
+    const meta = document.createElement('div');
+    const when = b.mtime ? new Date(b.mtime * 1000).toLocaleString() : '';
+    meta.innerHTML = `<div style="font-weight:700; color:#fff">${b.name}</div><div style="color:#888; font-size:12px">${when} · ${b.size || 0} bytes</div>`;
+    const act = document.createElement('button');
+    act.className = 'btn-danger';
+    act.textContent = 'Restore';
+    act.onclick = async () => {
+      if (!confirm(`Restore backup ${b.name}?`)) return;
       try {
-        if (s) s.textContent = 'Applying profile...';
-        const res = await fetch('/api/config/profile/load', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name }) });
+        const res = await fetch('/api/config/backup/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, filename: b.name }) });
         const data = await res.json();
-        if (!data.ok) { if (s) s.textContent = 'Apply failed: ' + (data.error || 'unknown error'); return; }
-        if (s) s.textContent = `Applied profile "${name}". Backup: ${data.backup || 'n/a'}. Restarting...`;
+        if (!data.ok) { alert('Restore failed: ' + (data.error || 'unknown error')); return; }
+        const s = document.getElementById('config-status');
+        if (s) s.textContent = 'Backup restored. Restarting service...';
         setLoadingUI();
         const ok = await restartLightgunService();
-        if (s) s.textContent = ok ? 'Profile applied and service restarted.' : 'Profile applied. Restart failed.';
-        refreshServices();
+        if (s) s.textContent = ok ? 'Backup restored and service restarted.' : 'Backup restored. Restart failed.';
+        closeBackupModal();
         await loadConfig(platform);
-      } catch (e) { if (s) s.textContent = 'Apply error: ' + e.message; }
+        refreshServices();
+      } catch (e) { alert('Restore error: ' + e.message); }
+    };
+    const right = document.createElement('div');
+    right.appendChild(act);
+    row.appendChild(meta);
+    row.appendChild(right);
+    box.appendChild(row);
+  });
+}
+
+async function loadBackupDialog(platform) {
+  openBackupModal();
+  const status = document.getElementById('backup-list-status');
+  status.textContent = 'Loading backups...';
+  try {
+    const backups = await listBackups(platform);
+    renderBackupList(backups, platform);
+  } catch (e) { status.textContent = 'Error loading backups: ' + e.message; }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const status = document.getElementById('config-status');
+  const selPlatform = document.getElementById('platform-select');
+  const selProfile = document.getElementById('profile-select');
+  const btnSaveProfile = document.getElementById('btn-save-profile');
+  const btnActivate = document.getElementById('btn-activate-profile');
+  const btnSaveRestart = document.getElementById('save-restart');
+  const chkRestore = document.getElementById('chk-restore-mode');
+  const platDisplay = document.getElementById('platform-display');
+
+  let detected = null;
+  try {
+    const r = await fetch('/api/platform');
+    if (r.ok) {
+      const d = await r.json();
+      if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) detected = d.platform;
     }
+  } catch {}
+  if (selPlatform && detected) selPlatform.value = detected;
+  if (platDisplay) platDisplay.textContent = (detected || 'loading…').toUpperCase();
 
-    function openBackupModal() { document.getElementById('backup-modal').style.display = 'block'; }
-    function closeBackupModal() { document.getElementById('backup-modal').style.display = 'none'; }
+  const initialPlatform = selPlatform.value || 'ps2';
+  loadConfig(initialPlatform).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
+  refreshProfilesUI(initialPlatform);
+  refreshUpdateStatus();
+  refreshFirmwareStatus();
+  loadFirmwareList();
+  loadFirmwarePorts();
 
-    async function listBackups(platform) {
-      const res = await fetch(`/api/config/backups?platform=${encodeURIComponent(platform)}`);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Failed to list backups');
-      return data.backups || [];
-    }
+  updateModeIndicator();
+  setInterval(updateModeIndicator, 2000);
 
-    function renderBackupList(backups, platform) {
-      const box = document.getElementById('backup-list');
-      const status = document.getElementById('backup-list-status');
-      box.innerHTML = '';
-      status.textContent = '';
-      if (!backups.length) { status.textContent = 'No backups found.'; return; }
-      backups.forEach(b => {
-        const row = document.createElement('div');
-        row.style.cssText = 'padding:8px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; gap:8px;';
-        const meta = document.createElement('div');
-        const when = b.mtime ? new Date(b.mtime * 1000).toLocaleString() : '';
-        meta.innerHTML = `<div style="font-weight:700; color:#fff">${b.name}</div><div style="color:#888; font-size:12px">${when} · ${b.size || 0} bytes</div>`;
-        const act = document.createElement('button');
-        act.className = 'btn-danger';
-        act.textContent = 'Restore';
-        act.onclick = async () => {
-          if (!confirm(`Restore backup ${b.name}?`)) return;
-          try {
-            const res = await fetch('/api/config/backup/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, filename: b.name }) });
-            const data = await res.json();
-            if (!data.ok) { alert('Restore failed: ' + (data.error || 'unknown error')); return; }
-            const s = document.getElementById('config-status');
-            if (s) s.textContent = 'Backup restored. Restarting service...';
-            setLoadingUI();
-            const ok = await restartLightgunService();
-            if (s) s.textContent = ok ? 'Backup restored and service restarted.' : 'Backup restored. Restart failed.';
-            closeBackupModal();
-            await loadConfig(platform);
-            refreshServices();
-          } catch (e) { alert('Restore error: ' + e.message); }
-        };
-        const right = document.createElement('div');
-        right.appendChild(act);
-        row.appendChild(meta); row.appendChild(right);
-        box.appendChild(row);
-      });
-    }
+  setInterval(async () => {
+    try {
+      const svc = await (await fetch('/api/services')).json();
+      const lg = (svc['lightgun.service'] || '').toLowerCase();
+      if (lg !== 'active') { setOfflineUI(); return; }
 
-    async function loadBackupDialog(platform) {
-      openBackupModal();
-      const status = document.getElementById('backup-list-status');
-      status.textContent = 'Loading backups...';
-      try {
-        const backups = await listBackups(platform);
-        renderBackupList(backups, platform);
-      } catch (e) { status.textContent = 'Error loading backups: ' + e.message; }
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const status = document.getElementById('config-status');
-      const selPlatform = document.getElementById('platform-select');
-      const selProfile = document.getElementById('profile-select');
-      const btnSaveProfile = document.getElementById('btn-save-profile');
-      const btnActivate = document.getElementById('btn-activate-profile');
-      const btnSaveRestart = document.getElementById('save-restart');
-      const chkRestore = document.getElementById('chk-restore-mode');
-      const platDisplay = document.getElementById('platform-display');
-
-      let detected = null;
+      let platform = null;
       try {
         const r = await fetch('/api/platform');
         if (r.ok) {
           const d = await r.json();
-          if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) detected = d.platform;
+          if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) platform = d.platform;
         }
       } catch {}
-      if (selPlatform && detected) selPlatform.value = detected;
-      if (platDisplay) platDisplay.textContent = (detected || 'loading…').toUpperCase();
+      if (!platform) { setLoadingUI(); return; }
 
-      const initialPlatform = selPlatform.value || 'ps2';
-      loadConfig(initialPlatform).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
-      refreshProfilesUI(initialPlatform);
-      refreshUpdateStatus();
-      refreshFirmwareStatus();
-
-      updateModeIndicator();
-      setInterval(updateModeIndicator, 2000);
-
-      setInterval(async () => {
-        try {
-          const svc = await (await fetch('/api/services')).json();
-          const lg = (svc['lightgun.service'] || '').toLowerCase();
-          if (lg !== 'active') { setOfflineUI(); return; }
-
-          let platform = null;
-          try {
-            const r = await fetch('/api/platform');
-            if (r.ok) {
-              const d = await r.json();
-              if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) platform = d.platform;
-            }
-          } catch {}
-          if (!platform) { setLoadingUI(); return; }
-
-          if (selPlatform && selPlatform.value !== platform) {
-            selPlatform.value = platform;
-            if (platDisplay) platDisplay.textContent = platform.toUpperCase();
-            loadConfig(platform).catch(() => {});
-            refreshProfilesUI(platform);
-          }
-
-          await updateModeIndicator();
-        } catch (e) { setOfflineUI(); }
-      }, 2000);
-
-      const btnDelete = document.getElementById('btn-delete-profile');
-      if (btnDelete) btnDelete.onclick = async () => {
-        const platform = selPlatform.value;
-        const profile = selProfile.value;
-        if (!profile) { alert('Select a profile to delete.'); return; }
-        if (!confirm(`Delete profile "${profile}"? This cannot be undone.`)) return;
-        try {
-          const res = await fetch('/api/config/profile/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name: profile }) });
-          const data = await res.json();
-          if (!data.ok) { alert('Delete failed: ' + (data.error || 'unknown error')); return; }
-          alert(`Profile "${profile}" deleted.`);
-          refreshProfilesUI(platform);
-          selProfile.value = '';
-        } catch (e) { alert('Delete error: ' + e.message); }
-      };
-
-      function updateActivateButtonLabel() { btnActivate.textContent = chkRestore.checked ? 'Restore Backup' : 'Activate Profile'; }
-      chkRestore.addEventListener('change', updateActivateButtonLabel);
-      updateActivateButtonLabel();
-
-      selPlatform.addEventListener('change', () => {
-        const p = selPlatform.value;
-        loadConfig(p).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
-        refreshProfilesUI(p);
-        selProfile.value = '';
-        if (platDisplay) platDisplay.textContent = p.toUpperCase();
-      });
-
-      if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
-
-      if (btnActivate) btnActivate.onclick = () => {
-        const platform = selPlatform.value;
-        const profile = selProfile.value;
-        if (chkRestore.checked) { loadBackupDialog(platform); }
-        else { activateProfile(platform, profile); }
-      };
-
-      if (btnSaveRestart) btnSaveRestart.onclick = async () => {
-        btnSaveRestart.disabled = true;
-        try {
-          if (status) status.textContent = 'Saving configuration...';
-          const resp = await saveConfig(selPlatform.value, collectForm('p1-form'), collectForm('p2-form'));
-          if (!resp.ok) { if (status) status.textContent = 'Error saving: ' + (resp.error || 'unknown'); return; }
-          if (status) status.textContent = `Saved. Backup: ${resp.backup || 'n/a'}. Restarting lightgun.service...`;
-          setLoadingUI();
-          const ok = await restartLightgunService();
-          if (status) status.textContent = ok ? 'Saved and restarted.' : 'Saved. Restart failed.';
-          refreshServices();
-        } finally { btnSaveRestart.disabled = false; }
-      };
-
-      document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
-      document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
-      document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
-      document.getElementById('btn-flash-firmware').addEventListener('click', flashFirmware);
-      document.getElementById('btn-toggle-fw-logs').addEventListener('click', toggleFirmwareLogs);
-    });
-
-    setInterval(() => {
-      ['lightgun.service','lightgun-monitor.service'].forEach(svc => {
-        const box = document.getElementById('logs-' + svc.replace('.service',''));
-        if (box && box.style.display === 'block') loadLogs(svc);
-      });
-      if (document.getElementById('tab-sindenlog').style.display === 'block') loadSindenLog();
-    }, 1000);
-
-    setInterval(refreshServices, 1000);
-
-    setInterval(() => {
-      const panel = document.getElementById('service-panel');
-      if (panel && panel.style.display === 'block') {
-        refreshUpdateStatus();
-        refreshFirmwareStatus();
-
-        const updateBox = document.getElementById('update-logs');
-        if (updateBox && updateBox.style.display === 'block') loadUpdateLogs();
-
-        const fwBox = document.getElementById('firmware-logs');
-        if (fwBox && fwBox.style.display === 'block') loadFirmwareLogs();
+      if (selPlatform && selPlatform.value !== platform) {
+        selPlatform.value = platform;
+        if (platDisplay) platDisplay.textContent = platform.toUpperCase();
+        loadConfig(platform).catch(() => {});
+        refreshProfilesUI(platform);
       }
-    }, 5000);
 
-    showTab('sindenlog');
-    refreshServices();
-  </script>
+      await updateModeIndicator();
+    } catch (e) { setOfflineUI(); }
+  }, 2000);
+
+  const btnDelete = document.getElementById('btn-delete-profile');
+  if (btnDelete) btnDelete.onclick = async () => {
+    const platform = selPlatform.value;
+    const profile = selProfile.value;
+    if (!profile) { alert('Select a profile to delete.'); return; }
+    if (!confirm(`Delete profile "${profile}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch('/api/config/profile/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name: profile }) });
+      const data = await res.json();
+      if (!data.ok) { alert('Delete failed: ' + (data.error || 'unknown error')); return; }
+      alert(`Profile "${profile}" deleted.`);
+      refreshProfilesUI(platform);
+      selProfile.value = '';
+    } catch (e) { alert('Delete error: ' + e.message); }
+  };
+
+  function updateActivateButtonLabel() { btnActivate.textContent = chkRestore.checked ? 'Restore Backup' : 'Activate Profile'; }
+  chkRestore.addEventListener('change', updateActivateButtonLabel);
+  updateActivateButtonLabel();
+
+  selPlatform.addEventListener('change', () => {
+    const p = selPlatform.value;
+    loadConfig(p).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
+    refreshProfilesUI(p);
+    selProfile.value = '';
+    if (platDisplay) platDisplay.textContent = p.toUpperCase();
+  });
+
+  if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
+
+  if (btnActivate) btnActivate.onclick = () => {
+    const platform = selPlatform.value;
+    const profile = selProfile.value;
+    if (chkRestore.checked) { loadBackupDialog(platform); }
+    else { activateProfile(platform, profile); }
+  };
+
+  if (btnSaveRestart) btnSaveRestart.onclick = async () => {
+    btnSaveRestart.disabled = true;
+    try {
+      if (status) status.textContent = 'Saving configuration...';
+      const resp = await saveConfig(selPlatform.value, collectForm('p1-form'), collectForm('p2-form'));
+      if (!resp.ok) { if (status) status.textContent = 'Error saving: ' + (resp.error || 'unknown'); return; }
+      if (status) status.textContent = `Saved. Backup: ${resp.backup || 'n/a'}. Restarting lightgun.service...`;
+      setLoadingUI();
+      const ok = await restartLightgunService();
+      if (status) status.textContent = ok ? 'Saved and restarted.' : 'Saved. Restart failed.';
+      refreshServices();
+    } finally { btnSaveRestart.disabled = false; }
+  };
+
+  document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
+  document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
+  document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
+  document.getElementById('btn-flash-firmware').addEventListener('click', flashFirmware);
+  document.getElementById('btn-toggle-fw-logs').addEventListener('click', toggleFirmwareLogs);
+});
+
+setInterval(() => {
+  ['lightgun.service','lightgun-monitor.service'].forEach(svc => {
+    const box = document.getElementById('logs-' + svc.replace('.service',''));
+    if (box && box.style.display === 'block') loadLogs(svc);
+  });
+  if (document.getElementById('tab-sindenlog').style.display === 'block') loadSindenLog();
+}, 1000);
+
+setInterval(refreshServices, 1000);
+
+setInterval(() => {
+  const panel = document.getElementById('service-panel');
+  if (panel && panel.style.display === 'block') {
+    refreshUpdateStatus();
+    refreshFirmwareStatus();
+    const updateBox = document.getElementById('update-logs');
+    if (updateBox && updateBox.style.display === 'block') loadUpdateLogs();
+    const fwBox = document.getElementById('firmware-logs');
+    if (fwBox && fwBox.style.display === 'block') loadFirmwareLogs();
+  }
+}, 5000);
+
+showTab('sindenlog');
+refreshServices();
+</script>
 </body>
 </html>
