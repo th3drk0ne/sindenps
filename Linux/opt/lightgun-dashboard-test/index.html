@@ -7,30 +7,25 @@
   <title>SindenPS</title>
   <style>
     :root {
-      --theme-main: #cc0000; /* red default (PS1) */
+      --theme-main: #cc0000;
       --theme-border: #c00;
       --theme-accent: #f33;
       --theme-button-danger: #a00;
     }
     body.ps2-mode {
-      --theme-main: #0040ff; /* blue */
+      --theme-main: #0040ff;
       --theme-border: #0040ff;
       --theme-accent: #3385ff;
       --theme-button-danger: #0033aa;
     }
 
-    /* ===== Base & iOS/Safari normalizations ===== */
     html { box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
     html, body { height: 100%; }
     body { background:#000; color:#fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif; margin:0; -webkit-text-size-adjust: 100%; }
-    /* Prevent iOS 16+ zoom on form controls */
     input, select, button { font-size: 16px; }
 
-    /* Page container */
     .page { width: 100%; margin: 0 auto; }
-
-    /* Header */
     header { background:#000; padding:20px; border-bottom:4px solid var(--theme-border); position:sticky; top:0; z-index:10; }
     .header-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
@@ -39,112 +34,97 @@
     .tabs button:hover { background: var(--theme-border); }
     .panel-title { color: var(--theme-accent); font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
 
-    /* Services */
     .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid var(--theme-border); border-radius:6px; }
     .service-name { font-size:18px; font-weight:700; }
     .service-status { font-size:14px; color:#9f9; }
-    .service-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+    .service-buttons { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .service-buttons button { padding:10px 12px; font-size:16px; font-weight:700; border:none; border-radius:6px; cursor:pointer; }
     .service-buttons button:nth-child(1) { background:#090; color:#000; }
     .service-buttons button:nth-child(2) { background: var(--theme-button-danger); color:#fff; }
     .service-buttons button:nth-child(3) { background:#3cf; color:#000; }
-    .log-toggle { background:#333; color:#fff !important; }
+    .log-toggle { background:#333 !important; color:#fff !important; }
     .log-box { width:100%; background:#000; border:1px solid var(--theme-border); padding:10px; display:none; max-height:300px; overflow:auto; border-radius:6px; }
     .log-content { white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#ccc; }
 
-    /* Config */
     .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 16px; }
     .config-toolbar .group { display:flex; gap:10px; align-items:center; }
     .config-path { color:#888; font-size:11px; text-align:left; }
     .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:right; }
     .config-value { margin-right: 10px; display: inline-block; }
     .config-comment { margin-left: 10px; opacity: 0.8; }
-	.player { font-size:26px; font-weight:800; }
-	/* Space key ↔ comment inside the label (desktop) */
-		
+    .player { font-size:26px; font-weight:800; }
+
     .btn-secondary { background:#444; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
     .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:6px 8px; border:1px solid #444; border-radius:6px; cursor:pointer; }
     .btn-danger { background: var(--theme-button-danger); color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
 
-    /* Forms */
     .config-panels { display:flex; gap:16px; flex-wrap:wrap; margin:0 16px 20px; }
     .config-card { flex:1 1 460px; background:#111; border-left:6px solid var(--theme-border); padding:12px; border-radius:6px; }
     .config-form { margin-top:8px; }
-   /* ================================
-   CLEAN CONFIG LAYOUT (FINAL)
-   Label
-   # comment
-   [input field]
-   ================================ */
 
-	/* Force vertical stacking for every config row */
-	.config-row {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: flex-start !important;
-		width: 100%;
-		gap: 6px !important;
-		margin: 10px 0;
-	}
+    .config-row {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      width: 100%;
+      gap: 6px !important;
+      margin: 10px 0;
+    }
 
-	/* Label always sits at the top */
-	.config-row label {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: flex-start !important;
-		width: 100% !important;
-		font-size: 17px;
-		color: #ccc;
-	}
-	
-	/* Label always sits at the top */
-	.config-row label small {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: flex-start !important;
-		width: 100% !important;
-		font-size: 12px;
-		color: #ccc;
-	}
+    .config-row label {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      width: 100% !important;
+      font-size: 17px;
+      color: #ccc;
+    }
 
-	/* Comment appears directly under the label */
-	.config-comment {
-		font-size: 12px;
-		color: #888;
-		opacity: 0.85;
-		margin-left: 2px;
-		width: 100%;
-		line-height: 1.2em;
-	}
+    .config-row label small {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      width: 100% !important;
+      font-size: 12px;
+      color: #ccc;
+    }
 
-	/* The input spans the full width under the comment */
-	.config-row input {
-		width: 100% !important;
-		max-width: 100% !important;
-		padding: 10px;
-		background: #000;
-		color: #fff;
-		border: 1px solid #444;
-		border-radius: 4px;
-	}
+    .config-comment {
+      font-size: 12px;
+      color: #888;
+      opacity: 0.85;
+      margin-left: 2px;
+      width: 100%;
+      line-height: 1.2em;
+    }
 
-    /* Image-based mode indicator */
+    .config-row input {
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 10px;
+      background: #000;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+
     .mode-indicator-img { height: 28px; width: auto; display: block; }
-
-    /* Desktop keeps it inline beside logo */
     .logo-area { display: flex; align-items: center; gap: 12px; }
-
-    /* Hide the old dropdown by default (we keep a hidden select for state) */
     #platform-select, label[for="platform-select"] { display: none !important; }
 
-    /* Desktop full-width fix */
+    #firmware-file {
+      background:#000;
+      color:#fff;
+      border:1px solid #444;
+      border-radius:6px;
+      padding:8px;
+      max-width: 100%;
+    }
+
     @media (min-width: 769px) { .page { max-width: none; } }
 
-    /* ===== Mobile (iPhone/Android) ===== */
     @media (max-width: 768px) {
-      /* Single-row header: logo + buttons */
       .header-row { flex-wrap: wrap; align-items: flex-start; }
-      /* Keep logo + indicator on a single row, indicator aligned right */
       .logo-area { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px; }
       .mode-indicator-img { height: 24px; }
       .log-content { font-size:10px; }
@@ -153,25 +133,17 @@
       .tabs button { flex: 1 1 auto; min-width: 0; text-align: center; padding: 12px; }
       .panel-title { font-size: 20px; text-align: center; margin-top: 10px; }
       .service-row { margin: 10px 8px; padding: 10px; }
-      .service-buttons { flex-direction: column; width: 100%; }
-      .service-buttons button { width: 100%; padding: 12px; font-size: 16px; }
+      .service-buttons { flex-direction: column; width: 100%; align-items:stretch; }
+      .service-buttons button, .service-buttons select, .service-buttons input { width: 100%; padding: 12px; font-size: 16px; }
       .config-toolbar { flex-direction: column; align-items: stretch; margin: 10px 8px; }
       .config-toolbar .group, .config-toolbar select, .config-toolbar button { width: 100%; }
       .config-panels { margin: 0 8px 20px; }
       .config-card { flex: 1 1 100%; }
       .config-row { flex-direction: column; align-items: flex-start; width: 100%; }
       .config-row input { width: 100% !important; max-width: 100%; padding: 12px; }
-	  .config-row label {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 4px;
-	  }
-	  .config-row label small {
-		margin: 0;
-		white-space: normal; /* allow wrap on small screens */
-	  }
+      .config-row label { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .config-row label small { margin: 0; white-space: normal; }
       #save-restart { width: 100%; padding: 12px; font-size: 16px; }
-      /* Modal sizing fix on iOS */
       #backup-modal > .dialog { width: 95vw !important; margin-top: 20vh !important; padding: 12px; }
     }
   </style>
@@ -192,7 +164,6 @@
       </div>
     </header>
 
-    <!-- SINDEN LOG TAB -->
     <section id="tab-sindenlog" style="display:block; padding:10px;">
       <h2 class="panel-title">Lightgun Service Log</h2>
       <div class="log-box" style="display:block; max-height:500px;">
@@ -200,7 +171,6 @@
       </div>
     </section>
 
-    <!-- SERVICES TAB -->
     <section id="service-panel" style="display:none;">
       <h2 class="panel-title">Services</h2>
 
@@ -228,7 +198,6 @@
         <div class="log-box" id="logs-lightgun-monitor"><pre class="log-content">Loading…</pre></div>
       </div>
 
-      <!-- SYSTEM ACTIONS -->
       <div class="service-row" id="system-actions">
         <span class="service-name">System</span>
         <span id="system-status" class="service-status"></span>
@@ -239,7 +208,6 @@
         <div class="log-box" style="display:none;"></div>
       </div>
 
-      <!-- SOFTWARE UPDATE -->
       <div class="service-row" id="software-update">
         <span class="service-name">Driver Update</span>
         <span class="service-status" id="update-status">idle…</span>
@@ -257,29 +225,25 @@
           <pre class="log-content" id="update-log-content">Loading…</pre>
         </div>
       </div>
-	  
-	<!-- Firmware Update -->  
-		<div class="service-row" id="firmware-flash">
-		  <span class="service-name">Device Firmware</span>
-		  <span class="service-status" id="firmware-status">idle…</span>
-		  <div class="service-buttons">
-			<input type="file" id="firmware-file" accept=".hex" />
-			<button id="btn-flash-firmware">Flash Firmware</button>
-			<button class="log-toggle" id="btn-toggle-fw-logs">Show Logs</button>
-		  </div>
-		  <div class="log-box" id="firmware-logs" style="display:none">
-			<pre class="log-content" id="firmware-log-content">No firmware logs yet</pre>
-		  </div>
-		</div>
 
+      <div class="service-row" id="firmware-flash">
+        <span class="service-name">Device Firmware</span>
+        <span class="service-status" id="firmware-status">idle…</span>
+        <div class="service-buttons">
+          <input type="file" id="firmware-file" accept=".hex" />
+          <button id="btn-flash-firmware">Flash Firmware</button>
+          <button class="log-toggle" id="btn-toggle-fw-logs">Show Logs</button>
+        </div>
+        <div class="log-box" id="firmware-logs" style="display:none">
+          <pre class="log-content" id="firmware-log-content">No firmware logs yet</pre>
+        </div>
+      </div>
     </section>
 
-    <!-- CONFIG TAB -->
     <section id="tab-config" style="display:none; padding:10px;">
       <h2 class="panel-title">Sinden Lightgun Driver Configuration</h2>
 
       <div class="config-toolbar">
-        <!-- Read-only platform display + hidden select for state -->
         <div class="group">
           <label>Platform:</label>
           <span id="platform-display" style="font-weight:700;color:#fff;">loading…</span>
@@ -346,7 +310,6 @@
       </div>
     </section>
 
-    <!-- BACKUP RESTORE MODAL -->
     <div id="backup-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;">
       <div class="dialog" style="background:#111; border:1px solid #c00; border-left:6px solid var(--theme-border); width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -360,7 +323,6 @@
   </div>
 
   <script>
-    // ===== Tabs =====
     function showTab(name) {
       document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
       document.getElementById('tab-sindenlog').style.display = (name === 'sindenlog') ? 'block' : 'none';
@@ -376,30 +338,28 @@
       }
     }
 
-    // ===== Header state helpers =====
     function setOfflineUI() {
-      document.body.classList.remove('ps2-mode'); // default red theme
+      document.body.classList.remove('ps2-mode');
       const img = document.getElementById('mode-indicator');
       if (img) { img.src = '/offline.png'; img.alt = 'Offline'; }
     }
     function setLoadingUI() {
-      document.body.classList.remove('ps2-mode'); // default red theme
+      document.body.classList.remove('ps2-mode');
       const img = document.getElementById('mode-indicator');
       if (img) { img.src = '/load.png'; img.alt = 'Loading...'; }
     }
 
-    // ===== Mode indicator (Option C logic) =====
     async function updateModeIndicator() {
       const img = document.getElementById('mode-indicator');
       if (!img) return;
       try {
-        // 1) Service-first
         const svc = await (await fetch('/api/services')).json();
         const lg = (svc['lightgun.service'] || '').toLowerCase();
         if (lg !== 'active') { setOfflineUI(); return; }
 
-        // 2) Service active => check platform
-        const plat = await (await fetch('/api/platform')).json();
+        const platRes = await fetch('/api/platform');
+        if (!platRes.ok) { setLoadingUI(); return; }
+        const plat = await platRes.json();
         const ok = !!(plat && plat.ok);
         if (!ok || !(plat.platform === 'ps1' || plat.platform === 'ps2')) { setLoadingUI(); return; }
 
@@ -417,7 +377,6 @@
       }
     }
 
-    // ===== Services =====
     async function refreshServices() {
       try {
         const res = await fetch('/api/services');
@@ -426,7 +385,7 @@
           const el = document.querySelector(`#service-${svc.replace('.service','')} .service-status`);
           if (el) el.textContent = status;
         }
-      } catch (e) { /* no-op */ }
+      } catch (e) {}
     }
 
     async function serviceAction(name, action) {
@@ -463,7 +422,7 @@
         if (statusEl) statusEl.textContent = (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
         const res = await fetch(`/api/system/${action}`, { method: 'POST' });
         let ok = false;
-        try { const data = await res.json(); ok = !!(data && data.ok); } catch (_) { /* may fail if going down */ }
+        try { const data = await res.json(); ok = !!(data && data.ok); } catch (_) {}
         if (statusEl) {
           statusEl.textContent = ok ? ((action === 'reboot') ? 'Reboot command sent.' : 'Shutdown command sent.') : 'Command failed (check server logs).';
         }
@@ -475,7 +434,6 @@
     }
 
     function confirmSystemAction(action) {
-      const label = (action === 'reboot') ? 'Reboot' : 'Shutdown';
       if (action === 'shutdown') {
         if (!confirm('Are you sure you want to SHUT DOWN this system?')) return;
         if (!confirm('Final confirmation: proceed to SHUT DOWN now?')) return;
@@ -485,7 +443,6 @@
       systemAction(action);
     }
 
-    // ===== Sinden log =====
     async function loadSindenLog() {
       try {
         const res = await fetch('/api/sinden-log');
@@ -493,10 +450,9 @@
         const box = document.getElementById('sinden-log-content');
         box.textContent = data.logs || '';
         box.parentElement.scrollTop = box.parentElement.scrollHeight;
-      } catch (e) { /* no-op */ }
+      } catch (e) {}
     }
 
-    // ===== Config helpers =====
     function buildGroupedConfigForm(containerId, groups) {
       const container = document.getElementById(containerId);
       container.innerHTML = '';
@@ -560,7 +516,6 @@
       } catch (e) { return false; }
     }
 
-    // ===== Software Update (channel-only) =====
     function setUpdateState(label, canUpdate = false) {
       const status = document.getElementById('update-status');
       if (status) status.textContent = label;
@@ -631,7 +586,96 @@
       }
     }
 
-    // ===== Profiles =====
+    function setFirmwareState(label) {
+      const el = document.getElementById('firmware-status');
+      if (el) el.textContent = label;
+    }
+
+    async function refreshFirmwareStatus() {
+      try {
+        const res = await fetch('/api/firmware/status');
+        const data = await res.json();
+        if (!data || data.ok === false) {
+          setFirmwareState('status error');
+          return;
+        }
+        const msg = data.message || data.state || 'idle';
+        setFirmwareState(msg);
+      } catch (e) {
+        setFirmwareState('status error: ' + e.message);
+      }
+    }
+
+    async function loadFirmwareLogs() {
+      const pre = document.getElementById('firmware-log-content');
+      try {
+        const res = await fetch('/api/firmware/logs');
+        const data = await res.json();
+        pre.textContent = (data && data.logs) ? data.logs : 'No firmware logs available';
+      } catch (e) {
+        pre.textContent = 'Error loading firmware logs: ' + e.message;
+      }
+    }
+
+    function toggleFirmwareLogs() {
+      const box = document.getElementById('firmware-logs');
+      const btn = document.getElementById('btn-toggle-fw-logs');
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        btn.textContent = 'Show Logs';
+      } else {
+        box.style.display = 'block';
+        btn.textContent = 'Hide Logs';
+        loadFirmwareLogs();
+      }
+    }
+
+    async function flashFirmware() {
+      const fileInput = document.getElementById('firmware-file');
+      if (!fileInput || !fileInput.files || !fileInput.files.length) {
+        alert('Please choose a .hex file first.');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      if (!file.name.toLowerCase().endsWith('.hex')) {
+        alert('Only .hex firmware files are supported.');
+        return;
+      }
+
+      if (!confirm(`Flash firmware "${file.name}" now? This will overwrite the device firmware.`)) {
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('firmware', file);
+
+      try {
+        setFirmwareState('Uploading firmware…');
+
+        const res = await fetch('/api/firmware/flash', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (!data || data.ok === false) {
+          setFirmwareState('Flash failed');
+          alert('Firmware flash failed: ' + (data?.error || 'unknown error'));
+          loadFirmwareLogs();
+          return;
+        }
+
+        setFirmwareState('Firmware flash complete');
+        loadFirmwareLogs();
+        refreshServices();
+      } catch (e) {
+        setFirmwareState('Flash error: ' + e.message);
+        loadFirmwareLogs();
+      }
+    }
+
     async function listProfiles(platform) {
       const res = await fetch(`/api/config/profiles?platform=${encodeURIComponent(platform)}`);
       const data = await res.json();
@@ -685,7 +729,6 @@
         const data = await res.json();
         if (!data.ok) { if (s) s.textContent = 'Apply failed: ' + (data.error || 'unknown error'); return; }
         if (s) s.textContent = `Applied profile "${name}". Backup: ${data.backup || 'n/a'}. Restarting...`;
-        // Prevent flash immediately
         setLoadingUI();
         const ok = await restartLightgunService();
         if (s) s.textContent = ok ? 'Profile applied and service restarted.' : 'Profile applied. Restart failed.';
@@ -694,7 +737,6 @@
       } catch (e) { if (s) s.textContent = 'Apply error: ' + e.message; }
     }
 
-    // ===== Backups =====
     function openBackupModal() { document.getElementById('backup-modal').style.display = 'block'; }
     function closeBackupModal() { document.getElementById('backup-modal').style.display = 'none'; }
 
@@ -716,8 +758,7 @@
         row.style.cssText = 'padding:8px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; gap:8px;';
         const meta = document.createElement('div');
         const when = b.mtime ? new Date(b.mtime * 1000).toLocaleString() : '';
-        meta.innerHTML = `<div style="font-weight:700; color:#fff">${b.name}</div>
-          <div style="color:#888; font-size:12px">${when} · ${b.size || 0} bytes</div>`;
+        meta.innerHTML = `<div style="font-weight:700; color:#fff">${b.name}</div><div style="color:#888; font-size:12px">${when} · ${b.size || 0} bytes</div>`;
         const act = document.createElement('button');
         act.className = 'btn-danger';
         act.textContent = 'Restore';
@@ -754,7 +795,6 @@
       } catch (e) { status.textContent = 'Error loading backups: ' + e.message; }
     }
 
-    // ===== Wire-up =====
     document.addEventListener('DOMContentLoaded', async () => {
       const status = document.getElementById('config-status');
       const selPlatform = document.getElementById('platform-select');
@@ -765,12 +805,13 @@
       const chkRestore = document.getElementById('chk-restore-mode');
       const platDisplay = document.getElementById('platform-display');
 
-      // Initial platform fetch (do not force ps2 fallback)
       let detected = null;
       try {
         const r = await fetch('/api/platform');
-        const d = await r.json();
-        if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) detected = d.platform;
+        if (r.ok) {
+          const d = await r.json();
+          if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) detected = d.platform;
+        }
       } catch {}
       if (selPlatform && detected) selPlatform.value = detected;
       if (platDisplay) platDisplay.textContent = (detected || 'loading…').toUpperCase();
@@ -779,12 +820,11 @@
       loadConfig(initialPlatform).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
       refreshProfilesUI(initialPlatform);
       refreshUpdateStatus();
+      refreshFirmwareStatus();
 
-      // Paint header immediately then start the timer
       updateModeIndicator();
       setInterval(updateModeIndicator, 2000);
 
-      // Service-aware platform sync (Option C: offline when service down, loading when unknown)
       setInterval(async () => {
         try {
           const svc = await (await fetch('/api/services')).json();
@@ -794,8 +834,10 @@
           let platform = null;
           try {
             const r = await fetch('/api/platform');
-            const d = await r.json();
-            if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) platform = d.platform;
+            if (r.ok) {
+              const d = await r.json();
+              if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) platform = d.platform;
+            }
           } catch {}
           if (!platform) { setLoadingUI(); return; }
 
@@ -810,7 +852,6 @@
         } catch (e) { setOfflineUI(); }
       }, 2000);
 
-      // Delete profile
       const btnDelete = document.getElementById('btn-delete-profile');
       if (btnDelete) btnDelete.onclick = async () => {
         const platform = selPlatform.value;
@@ -831,7 +872,6 @@
       chkRestore.addEventListener('change', updateActivateButtonLabel);
       updateActivateButtonLabel();
 
-      // Platform change handler (won't fire from UI; select is hidden, but kept for codepaths)
       selPlatform.addEventListener('change', () => {
         const p = selPlatform.value;
         loadConfig(p).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
@@ -842,7 +882,6 @@
 
       if (btnSaveProfile) btnSaveProfile.onclick = () => saveCurrentAsProfile(selPlatform.value);
 
-      // Activate/Restore
       if (btnActivate) btnActivate.onclick = () => {
         const platform = selPlatform.value;
         const profile = selProfile.value;
@@ -850,7 +889,6 @@
         else { activateProfile(platform, profile); }
       };
 
-      // Save & Restart
       if (btnSaveRestart) btnSaveRestart.onclick = async () => {
         btnSaveRestart.disabled = true;
         try {
@@ -865,13 +903,13 @@
         } finally { btnSaveRestart.disabled = false; }
       };
 
-      // Software update buttons
       document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
       document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
       document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
+      document.getElementById('btn-flash-firmware').addEventListener('click', flashFirmware);
+      document.getElementById('btn-toggle-fw-logs').addEventListener('click', toggleFirmwareLogs);
     });
 
-    // Polling for logs and services
     setInterval(() => {
       ['lightgun.service','lightgun-monitor.service'].forEach(svc => {
         const box = document.getElementById('logs-' + svc.replace('.service',''));
@@ -882,17 +920,20 @@
 
     setInterval(refreshServices, 1000);
 
-    // Service/Update polling while visible
     setInterval(() => {
       const panel = document.getElementById('service-panel');
       if (panel && panel.style.display === 'block') {
         refreshUpdateStatus();
-        const box = document.getElementById('update-logs');
-        if (box && box.style.display === 'block') loadUpdateLogs();
+        refreshFirmwareStatus();
+
+        const updateBox = document.getElementById('update-logs');
+        if (updateBox && updateBox.style.display === 'block') loadUpdateLogs();
+
+        const fwBox = document.getElementById('firmware-logs');
+        if (fwBox && fwBox.style.display === 'block') loadFirmwareLogs();
       }
     }, 5000);
 
-    // Default tab
     showTab('sindenlog');
     refreshServices();
   </script>
