@@ -255,6 +255,7 @@
 
 <script>
 let lastFirmwareLog = "";
+let sindenpsUpdating = false;
 
 function showTab(name) {
   document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
@@ -393,19 +394,19 @@ async function updateSindenps() {
   if (!confirm("Update SindenPS platform now?")) return;
 
   try {
-    status.textContent = "updating…";
+    sindenpsUpdating = true;
+    status.textContent = "Updating…";
 
     const res = await fetch('/api/sindenps/update', { method: 'POST' });
     const data = await res.json();
 
-    if (data.ok) {
-      status.textContent = "Updating...";
-    } else {
-      status.textContent = "Update failed";
+    if (!data.ok) {
+      status.textContent = data.error || "Update failed";
+      sindenpsUpdating = false;
     }
-
   } catch (e) {
     status.textContent = "error";
+    sindenpsUpdating = false;
   }
 }
 
