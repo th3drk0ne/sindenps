@@ -1,32 +1,30 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-LOG="/var/log/platform-update.log"
+LOG="/var/log/sindenps-update.log"
 LOCK="/tmp/sindenps-update.lock"
 
-# ensure log file dir exists
-install -d -m 0755 /var/log
+mkdir -p "$(dirname "$LOG")"
+touch "$LOG"
+chown sinden:sinden "$LOG" || true
+chmod 644 "$LOG" || true
+
+# truncate for a fresh run
 : > "$LOG"
-chmod 0644 "$LOG"
-truncate -s 0 "$LOG"
 
-sudo chown sinden:sinden "$LOG"
-sudo chown sinden:sinden "$LOCK"
+# send ALL output from this script and its children into the log
+exec >>"$LOG" 2>&1
 
-# create lock
-touch "$LOCK"
+echo "=== SindenPS update started $(date) ==="
 
-# always clean lock
-trap 'rm -f "$LOCK"' EXIT
+# always remove lock and write finish marker
+trap 'rm -f "$LOCK"; echo "=== SindenPS update finished $(date) ==="' EXIT
 
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
-echo "=== SindenPS update started $(date) ===" >> "$LOG"
+# run update
+TMP_SCRIPT="$(mktemp)"
+wget -qO "$TMP_SCRIPT" https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup-test.sh
+sudo -E bash "$
 
-# run update as root (same process, not nested)
-sudo -E bash -c '
-  VERSION=latest
-  wget -qO- https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup-test.sh | bash
-' >> "$LOG" 2>&1
-
-echo "=== SindenPS update finished $(date) ===" >> "$LOG"
 
