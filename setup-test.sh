@@ -270,6 +270,7 @@ systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "$
 log "Installing prerequisites via apt."
 sudo apt-get update -y
 sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev curl jq avrdude
+sudo apt-get upgrade -y
 log "Prerequisites installed."
 
 #-----------------------------------------------------------
