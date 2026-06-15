@@ -715,7 +715,7 @@ done
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
-sudo systemctl restart lightgun-dashboard.service
+(sh -c "sleep 3; systemctl restart lightgun-dashboard.service") &
 
 log "=== Done! Browse: http://sindenps.local ==="
 
