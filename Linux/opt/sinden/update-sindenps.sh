@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "SCRIPT STARTED $(date)" >> /var/log/sindenps-update.log
+
 LOG="/var/log/platform-update.log"
 LOCK="/tmp/sindenps-update.lock"
 

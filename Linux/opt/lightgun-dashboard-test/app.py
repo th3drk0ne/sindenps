@@ -906,10 +906,13 @@ def api_sindenps_update():
     try:
         open(SINDENPS_LOCK, "w").close()
 
-        subprocess.Popen(
-            ["/bin/bash", "/opt/sinden/update-sindenps.sh"],
-            close_fds=True
-        )
+subprocess.Popen(
+    ["/bin/bash", "-c", "/opt/sinden/update-sindenps.sh"],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+    stdin=subprocess.DEVNULL,
+    start_new_session=True
+)
 
         return jsonify({"ok": True})
     except Exception as e:
