@@ -4,11 +4,8 @@ set -e
 LOG="/var/log/platform-update.log"
 LOCK="/tmp/sindenps-update.lock"
 
-# ensure log file dir exists
-install -d -m 0755 /var/log
-: > "$LOG"
-chmod 0644 "$LOG"
-truncate -s 0 "$LOG"
+sudo chmod sinden:sinden "$LOG"
+sudo chmod sinden:sinden "$LOCK"
 
 # create lock
 touch "$LOCK"
