@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 set -e
 
 echo "SCRIPT STARTED $(date)" >> /var/log/sindenps-update.log
