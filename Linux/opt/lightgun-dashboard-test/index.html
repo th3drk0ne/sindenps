@@ -171,6 +171,20 @@
         </div>
         <div class="log-box" id="firmware-logs" style="display:none"><pre class="log-content" id="firmware-log-content">No firmware logs</pre></div>
       </div>
+	  <div class="service-row" id="sindenps-update">
+	  <span class="service-name">SindenPS Platform</span>
+	  <span class="service-status" id="sindenps-update-status">idle…</span>
+
+	  <div class="service-buttons">
+		<button onclick="checkSindenpsUpdate()">Check</button>
+		<button onclick="updateSindenps()">Update</button>
+		<button class="log-toggle" onclick="toggleSindenpsLogs()">Show Logs</button>
+	  </div>
+
+	  <div class="log-box" id="sindenps-update-logs">
+		<pre class="log-content" id="sindenps-update-log-content">Loading…</pre>
+	  </div>
+	</div>
     </section>
 
     <section id="tab-config" style="display:none; padding:10px;">
@@ -334,6 +348,80 @@ async function loadLogs(svc) {
     box.textContent = (data && data.logs) ? data.logs : 'No logs available';
   } catch (e) {
     box.textContent = 'Error loading logs: ' + e.message;
+  }
+}
+
+async function checkSindenpsUpdate() {
+  const status = document.getElementById('sindenps-update-status');
+
+  try {
+    const localRes = await fetch('/api/version');
+    const localData = await localRes.json();
+
+    if (!localData.ok) {
+      status.textContent = "check failed";
+      return;
+    }
+
+    const local = localData.sindenps_version;
+
+    const remote = await fetch(
+      "https://raw.githubusercontent.com/th3drk0ne/sindenps/main/VERSION"
+    ).then(r => r.text());
+
+    if (remote.trim() !== local) {
+      status.textContent = `Update available (${local} → ${remote.trim()})`;
+    } else {
+      status.textContent = "Up to date";
+    }
+
+  } catch (e) {
+    status.textContent = "error";
+  }
+}
+
+async function updateSindenps() {
+  const status = document.getElementById('sindenps-update-status');
+
+  if (!confirm("Update SindenPS platform now?")) return;
+
+  try {
+    status.textContent = "updating…";
+
+    const res = await fetch('/api/sindenps/update', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.ok) {
+      status.textContent = "Update started";
+    } else {
+      status.textContent = "Update failed";
+    }
+
+  } catch (e) {
+    status.textContent = "error";
+  }
+}
+
+function toggleSindenpsLogs() {
+  const box = document.getElementById('sindenps-update-logs');
+
+  if (box.style.display === 'block') {
+    box.style.display = 'none';
+  } else {
+    box.style.display = 'block';
+    loadSindenpsLogs();
+  }
+}
+
+async function loadSindenpsLogs() {
+  const pre = document.getElementById('sindenps-update-log-content');
+
+  try {
+    const res = await fetch('/api/sindenps/logs');
+    const data = await res.json();
+    pre.textContent = data.logs || "No logs";
+  } catch (e) {
+    pre.textContent = "Error loading logs";
   }
 }
 

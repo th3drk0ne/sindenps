@@ -89,6 +89,7 @@ def system_power_action(action: str) -> bool:
 UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"
 UPDATE_LOGF = "/var/log/sindenps-update.log"
 VERSION_FILE = "/home/sinden/Lightgun/VERSION"
+SINDENPS_UPDATE_LOG = "/var/log/sindenps-update.log"
 
 
 def _read_version_marker():
@@ -892,6 +893,23 @@ def api_version():
         "ok": True,
         "sindenps_version": _read_sindenps_version()
     })
+    
+@app.route("/api/sindenps/update", methods=["POST"])
+def api_sindenps_update():
+    try:
+        subprocess.Popen(["/opt/sinden/update-sindenps.sh"])
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+        
+
+@app.route("/api/sindenps/logs")
+def api_sindenps_logs():
+    try:
+        with open(SINDENPS_UPDATE_LOG, "r", encoding="utf-8", errors="replace") as f:
+            return jsonify({"logs": f.read()})
+    except:
+        return jsonify({"logs": "No logs available"})
 
 @app.route("/healthz")
 def healthz():

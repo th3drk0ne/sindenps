@@ -294,10 +294,11 @@ install -d -o sinden -g sinden /opt/sinden
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh"
+	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh" \
+	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh"
 
-  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh
-  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh
+  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh
 )
 
 USER_HOME="/home/sinden"
