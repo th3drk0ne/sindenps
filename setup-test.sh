@@ -311,6 +311,25 @@ cd /home/sinden/Firmware
 #	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix2.hex" \
 #	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix3.hex"
 
+
+LOG="/var/log/platform-update.log"
+
+echo "Preparing update log file..."
+
+# create if missing
+touch "$LOG"
+
+# correct ownership (matches your runtime user)
+chown sinden:sinden "$LOG"
+
+# safe permissions
+chmod 644 "$LOG"
+
+# optional: clear it during install
+: > "$LOG"
+
+echo "=== Log initialised $(date) ===" >> "$LOG"
+
 # Helper: download a set of URLs into a destination, fix perms and exe bit
 download_assets() {
   local dest="$1"; shift
