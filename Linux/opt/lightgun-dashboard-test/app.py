@@ -38,6 +38,18 @@ DEFAULT_PLATFORM = "ps2"
 # ---------------------------
 SINDEN_LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
 
+# ---------------------------
+# SindenPS Version
+# ---------------------------
+SINDENPS_VERSION_FILE = "/opt/sinden/VERSION"
+
+def _read_sindenps_version():
+    try:
+        with open(SINDENPS_VERSION_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except:
+        return "unknown"
+
 # ===========================
 # Systemd helpers
 # ===========================
@@ -873,6 +885,13 @@ def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
 
+
+@app.route("/api/version")
+def api_version():
+    return jsonify({
+        "ok": True,
+        "sindenps_version": _read_sindenps_version()
+    })
 
 @app.route("/healthz")
 def healthz():
