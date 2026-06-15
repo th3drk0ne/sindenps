@@ -23,4 +23,3 @@ sudo -E bash -c '
 ' >> "$LOG" 2>&1
 
 echo "=== SindenPS update finished $(date) ===" >> "$LOG"
-
