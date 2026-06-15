@@ -4,8 +4,8 @@ set -e
 LOG="/var/log/platform-update.log"
 LOCK="/tmp/sindenps-update.lock"
 
-sudo chmod sinden:sinden "$LOG"
-sudo chmod sinden:sinden "$LOCK"
+sudo chown sinden:sinden "$LOG"
+sudo chown sinden:sinden "$LOCK"
 
 # create lock
 touch "$LOCK"
