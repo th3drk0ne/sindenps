@@ -906,7 +906,7 @@ def api_sindenps_update():
     try:
         open(SINDENPS_LOCK, "w").close()
 
-        cmd = f"/bin/bash /opt/sinden/update-sindenps.sh > {SINDENPS_UPDATE_LOG} 2>&1"
+        cmd = f"sudo /bin/bash /opt/sinden/update-sindenps.sh > {SINDENPS_UPDATE_LOG} 2>&1"
         subprocess.Popen(cmd, shell=True)
 
 
