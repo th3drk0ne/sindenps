@@ -9,7 +9,7 @@ err()  { echo "❌[ERROR] $*" >&2; }
 LOCKFILE="/tmp/sindenps-update.lock"
 LOGFILE="/var/log/sindenps-update.log"
 
-: > "$LOGFILE"
+echo "" > "$LOGFILE"
 
 # Prevent double execution
 if [ -f "$LOCKFILE" ]; then
