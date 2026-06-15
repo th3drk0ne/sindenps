@@ -180,6 +180,7 @@ else
   exit 1
 fi
 
+
 #-----------------------------------------------------------
 # Step 4) Install systemd services
 #-----------------------------------------------------------
@@ -269,6 +270,7 @@ systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "$
 log "Installing prerequisites via apt."
 sudo apt-get update -y
 sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-dev libjpeg-dev curl jq avrdude
+sudo apt-get upgrade -y
 log "Prerequisites installed."
 
 #-----------------------------------------------------------
@@ -286,15 +288,45 @@ install -d -o sinden -g sinden /opt/sinden
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh"
+	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh" \
+	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh"
 
-  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh
-  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh
+  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh
 )
 
 USER_HOME="/home/sinden"
 LIGHTGUN_DIR="${USER_HOME}/Lightgun"
+FW_DIR="/home/sinden/Firmware"
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}"
+install -d -o sinden -g sinden "${FW_DIR}"
+
+# Download Firmware Files
+
+cd /home/sinden/Firmware
+  log "Downloading Firmware files to /home/sinden/Firmware."
+  wget --quiet --show-progress --https-only --timestamping \
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex"  
+	#\
+	#"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix2.hex" \
+	#"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix3.hex"
+
+
+LOG="/var/log/platform-update.log"
+
+echo "Preparing update log file..."
+
+# create if missing
+touch "$LOG"
+
+# correct ownership (matches your runtime user)
+chown sinden:sinden "$LOG"
+
+# safe permissions
+chmod 644 "$LOG"
+
+echo "=== Log initialised $(date) ===" >> "$LOG"
 
 # Helper: download a set of URLs into a destination, fix perms and exe bit
 download_assets() {
@@ -531,8 +563,8 @@ SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
 SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 
 log "=== 1) Install OS packages ==="
-sudo apt update
-sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
+sudo apt-get update -y
+sudo apt-get install -y python3 python3-pip python3-venv git nginx wget lsof jq
 
 log "=== 2) Ensure app directory and ownership ==="
 sudo mkdir -p "${APP_DIR}"
@@ -700,13 +732,10 @@ done
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
-sudo systemctl restart lightgun-dashboard.service
 
 log "=== Done! Browse: http://sindenps.local ==="
 
-# 7) restart services
-sudo systemctl restart lightgun.service
-sudo systemctl restart lightgun-monitor.service
+
 
 # ------------------------------------------------------------
 # step 8) libjpeg8 (libjpeg.so.8) symlink to 62 turbo on aarch64
@@ -747,6 +776,7 @@ sudo ldconfig
 log "Symlink created successfully."
 log "libjpeg.so.8 now points to: $LIBJPEG_PATH"
 fi
+
 
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules and performance tweaks for Pi4 and Pi5
@@ -1077,7 +1107,18 @@ main() {
   log "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   log "  • Check:   gcon2_serial_status"
   log "  • Dashboard: Running at http://sindenps.local/"
-  prompt_reboot
 }
 main
 fi
+
+# Set Version file
+
+URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/VERSION"
+LOCAL_FILE="/opt/sinden/VERSION"
+remote_version=$(curl -fsSL "$URL" | tr -d '\r\n')
+log "Setting Version Number - $remote_version"
+curl -fsSL "$URL" -o "$LOCAL_FILE"
+
+#  restart services
+(sh -c "sleep 3; systemctl restart lightgun-dashboard.service") &
+sudo systemctl restart lightgun-monitor.service

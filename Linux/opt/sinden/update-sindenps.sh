@@ -25,6 +25,6 @@ export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 # run update
 sudo -E bash -c '
   VERSION=latest
-  wget -qO- https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup-test.sh | bash
+  wget -qO- https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh | bash
 '
 
