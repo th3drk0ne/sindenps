@@ -906,12 +906,9 @@ def api_sindenps_update():
     try:
         open(SINDENPS_LOCK, "w").close()
 
-        #cmd = f"/bin/bash /opt/sinden/update-sindenps.sh > {SINDENPS_UPDATE_LOG} 2>&1"
-        #subprocess.Popen(cmd, shell=True)
-        subprocess.Popen(
-        ["/bin/bash", "/opt/sinden/update-sindenps.sh"],
-        close_fds=True
-)
+        cmd = f"/bin/bash /opt/sinden/update-sindenps.sh > {SINDENPS_UPDATE_LOG} 2>&1"
+        subprocess.Popen(cmd, shell=True)
+
 
         return jsonify({"ok": True})
     except Exception as e:
