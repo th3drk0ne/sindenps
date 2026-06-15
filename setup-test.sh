@@ -566,8 +566,8 @@ SINDEN_LOG_DIR="/home/${APP_USER}/Lightgun/log"
 SINDEN_LOG_FILE="${SINDEN_LOG_DIR}/sinden.log"
 
 log "=== 1) Install OS packages ==="
-sudo apt update
-sudo apt install -y python3 python3-pip python3-venv git nginx wget lsof jq
+sudo apt-get update -y
+sudo apt-get install -y python3 python3-pip python3-venv git nginx wget lsof jq
 
 log "=== 2) Ensure app directory and ownership ==="
 sudo mkdir -p "${APP_DIR}"
