@@ -402,16 +402,22 @@ async function updateSindenps() {
   }
 }
 
+function closeAllLogs() {
+  document.querySelectorAll('.log-box').forEach(b => b.style.display = 'none');
+}
+
 function toggleSindenpsLogs() {
   const box = document.getElementById('sindenps-update-logs');
 
   if (box.style.display === 'block') {
     box.style.display = 'none';
   } else {
+    closeAllLogs();
     box.style.display = 'block';
     loadSindenpsLogs();
   }
 }
+
 
 async function loadSindenpsLogs() {
   const pre = document.getElementById('sindenps-update-log-content');
@@ -995,22 +1001,28 @@ setInterval(refreshServices, 1000);
 
 setInterval(() => {
   const panel = document.getElementById('service-panel');
+
   if (panel && panel.style.display === 'block') {
+
     refreshUpdateStatus();
     refreshFirmwareStatus();
+
     const updateBox = document.getElementById('update-logs');
-    if (updateBox && updateBox.style.display === 'block') loadUpdateLogs();
     const fwBox = document.getElementById('firmware-logs');
-    if (fwBox && fwBox.style.display === 'block') loadFirmwareLogs();
+    const sindenBox = document.getElementById('sindenps-update-logs');
+
+    if (updateBox && updateBox.style.display === 'block') {
+      loadUpdateLogs();
+    }
+    else if (fwBox && fwBox.style.display === 'block') {
+      loadFirmwareLogs();
+    }
+    else if (sindenBox && sindenBox.style.display === 'block') {
+      loadSindenpsLogs();
+    }
   }
 }, 5000);
 
-setInterval(() => {
-  const box = document.getElementById('sindenps-update-logs');
-  if (box && box.style.display === 'block') {
-    loadSindenpsLogs();
-  }
-}, 5000);
 
 showTab('sindenlog');
 refreshServices();

@@ -90,6 +90,8 @@ UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"
 UPDATE_LOGF = "/var/log/sindenps-update.log"
 VERSION_FILE = "/home/sinden/Lightgun/VERSION"
 SINDENPS_UPDATE_LOG = "/var/log/sindenps-update.log"
+SINDENPS_LOCK = "/tmp/sindenps-update.lock"
+
 
 
 def _read_version_marker():
@@ -887,21 +889,32 @@ def index():
         return render_template_string(f.read())
 
 
+# --- only showing the corrected/additional parts ---
+
+SINDENPS_UPDATE_LOG = "/var/log/sindenps-update.log"
+SINDENPS_LOCK = "/tmp/sindenps-update.lock"
+
 @app.route("/api/version")
 def api_version():
     return jsonify({
         "ok": True,
         "sindenps_version": _read_sindenps_version()
     })
-    
+
 @app.route("/api/sindenps/update", methods=["POST"])
 def api_sindenps_update():
+    if os.path.exists(SINDENPS_LOCK):
+        return jsonify({"ok": False, "error": "Update already running"}), 409
+
     try:
-        subprocess.Popen(["/opt/sinden/update-sindenps.sh"])
+        open(SINDENPS_LOCK, "w").close()
+
+        cmd = f"/bin/bash /opt/sinden/update-sindenps.sh > {SINDENPS_UPDATE_LOG} 2>&1"
+        subprocess.Popen(cmd, shell=True)
+
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
-        
 
 @app.route("/api/sindenps/logs")
 def api_sindenps_logs():
@@ -910,6 +923,7 @@ def api_sindenps_logs():
             return jsonify({"logs": f.read()})
     except:
         return jsonify({"logs": "No logs available"})
+        
 
 @app.route("/healthz")
 def healthz():
