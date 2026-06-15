@@ -255,7 +255,6 @@
 
 <script>
 let lastFirmwareLog = "";
-let sindenpsUpdating = false;
 
 function showTab(name) {
   document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
@@ -354,32 +353,7 @@ async function loadLogs(svc) {
 }
 
 async function checkSindenpsUpdate() {
-  if (sindenpsUpdating) return;   
-
-  const status = document.getElementById('sindenps-update-status');
-
-  try {
-    const localRes = await fetch('/api/version');
-    const localData = await localRes.json();
-
-    if (!localData.ok) {
-      status.textContent = "check failed";
-      return;
-    }
-
-    const local = localData.sindenps_version;
-    const remote = await fetch(
-      "https://raw.githubusercontent.com/th3drk0ne/sindenps/main/VERSION"
-    ).then(r => r.text());
-
-    if (remote.trim() !== local) {
-      status.textContent = `Update available (${local} → ${remote.trim()})`;
-    } else {
-      status.textContent = "Up to date";
-    }
-  } catch (e) {
-    status.textContent = "error";
-  }
+  await refreshSindenpsStatus();
 }
 
 async function updateSindenps() {
@@ -388,7 +362,6 @@ async function updateSindenps() {
   if (!confirm("Update SindenPS platform now?")) return;
 
   try {
-    sindenpsUpdating = true;
     status.textContent = "Updating…";
 
     const res = await fetch('/api/sindenps/update', { method: 'POST' });
@@ -396,11 +369,9 @@ async function updateSindenps() {
 
     if (!data.ok) {
       status.textContent = data.error || "Update failed";
-      sindenpsUpdating = false;
     }
   } catch (e) {
     status.textContent = "error";
-    sindenpsUpdating = false;
   }
 }
 
@@ -868,11 +839,13 @@ async function refreshSindenpsStatus() {
   try {
     const state = await (await fetch('/api/sindenps/status')).json();
 
+    // Runtime state always wins
     if (state.running) {
       status.textContent = "Updating…";
       return;
     }
 
+    // Not running -> compare versions
     const localRes = await fetch('/api/version');
     const localData = await localRes.json();
 
@@ -887,14 +860,14 @@ async function refreshSindenpsStatus() {
       "https://raw.githubusercontent.com/th3drk0ne/sindenps/main/VERSION"
     ).then(r => r.text());
 
-    if (remote.trim() !== local) {
-      status.textContent = `Update available (${local} → ${remote.trim()})`;
-    } else {
+    if (remote.trim() === local) {
       status.textContent = "Up to date";
+    } else {
+      status.textContent = `Update available (${local} → ${remote.trim()})`;
     }
 
   } catch (e) {
-    status.textContent = "error";
+    status.textContent = "...";
   }
 }
 
@@ -938,7 +911,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadFirmwareList();
   loadFirmwarePorts();
   loadSindenpsVersion();
-  checkSindenpsUpdate();
   refreshSindenpsStatus();
 
   updateModeIndicator();
