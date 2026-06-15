@@ -874,12 +874,12 @@ async function refreshSindenpsStatus() {
     const res = await fetch('/api/sindenps/status');
     const data = await res.json();
 
-    if (!data.ok) return;
-
     if (data.running) {
       status.textContent = "Updating…";
     } else {
-      status.textContent = "Completed";   
+      if (status.textContent === "Updating…") {
+        status.textContent = "Completed";
+      }
     }
   } catch {}
 }
