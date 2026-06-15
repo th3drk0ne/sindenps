@@ -9,6 +9,8 @@ err()  { echo "❌[ERROR] $*" >&2; }
 LOCKFILE="/tmp/sindenps-update.lock"
 LOGFILE="/var/log/sindenps-update.log"
 
+: > "$LOGFILE"
+
 # Prevent double execution
 if [ -f "$LOCKFILE" ]; then
     warn "Update already running" | tee -a "$LOGFILE"
