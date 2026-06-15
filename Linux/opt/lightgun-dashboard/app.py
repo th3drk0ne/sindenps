@@ -1,16 +1,17 @@
-
 #!/usr/bin/env python3
 import os
 import re
 import time
+import threading
 import subprocess
 import xml.etree.ElementTree as ET
+from collections import OrderedDict
 from typing import List, Dict, Tuple
 
 from flask import Flask, jsonify, render_template_string, send_from_directory, request
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-
 
 # ---------------------------
 # Services & system utilities
@@ -37,12 +38,22 @@ DEFAULT_PLATFORM = "ps2"
 # ---------------------------
 SINDEN_LOGFILE = "/home/sinden/Lightgun/log/sinden.log"
 
+# ---------------------------
+# SindenPS Version
+# ---------------------------
+SINDENPS_VERSION_FILE = "/opt/sinden/VERSION"
+
+def _read_sindenps_version():
+    try:
+        with open(SINDENPS_VERSION_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except:
+        return "unknown"
+
 # ===========================
 # Systemd helpers
 # ===========================
-
 def get_status(service: str) -> str:
-    """Return systemd service status: 'active', 'inactive', 'failed', 'unknown', etc."""
     try:
         out = subprocess.check_output([SYSTEMCTL, "is-active", service], stderr=subprocess.STDOUT)
         return out.decode().strip()
@@ -51,7 +62,6 @@ def get_status(service: str) -> str:
 
 
 def control_service(service: str, action: str) -> bool:
-    """Run sudo systemctl <action> <service>. Returns True on success."""
     try:
         subprocess.check_output([SUDO, SYSTEMCTL, action, service], stderr=subprocess.STDOUT)
         return True
@@ -62,12 +72,7 @@ def control_service(service: str, action: str) -> bool:
 # ===========================
 # System power actions
 # ===========================
-
 def system_power_action(action: str) -> bool:
-    """
-    action: 'reboot' or 'shutdown'
-    Uses: sudo systemctl reboot|poweroff
-    """
     if action not in ("reboot", "shutdown"):
         return False
     try:
@@ -81,13 +86,12 @@ def system_power_action(action: str) -> bool:
 # ===========================
 # Software Update (Bash-script wrapper)
 # ===========================
-import os, time, subprocess
-from flask import jsonify, request
+UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"
+UPDATE_LOGF = "/var/log/sindenps-update.log"
+VERSION_FILE = "/home/sinden/Lightgun/VERSION"
+SINDENPS_UPDATE_LOG = "/var/log/platform-update.log"
+SINDENPS_LOCK = "/tmp/sindenps-update.lock"
 
-# --- use your chosen script path ---
-UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"        # <<< YOUR SCRIPT PATH
-UPDATE_LOGF   = "/var/log/sindenps-update.log"        # optional if your script writes logs
-VERSION_FILE  = "/home/sinden/Lightgun/VERSION"       # written by the script (channel marker)
 
 def _read_version_marker():
     try:
@@ -96,6 +100,7 @@ def _read_version_marker():
     except Exception:
         return ""
 
+
 UPDATE_STATE = {
     "ok": True,
     "state": "idle",
@@ -103,18 +108,9 @@ UPDATE_STATE = {
     "latest": None,
     "message": ""
 }
-UPDATE_LOG_RING = []  # ring buffer populated from subprocess output
+UPDATE_LOG_RING: List[str] = []
 
-# OLD (prepend server timestamp to each line)
-# def _append_log(lines: str):
-#     if not lines: return
-#     for ln in lines.splitlines():
-#         stamp = time.strftime("%Y-%m-%d %H:%M:%S")
-#         UPDATE_LOG_RING.append(f"{stamp} {ln}")
-#     if len(UPDATE_LOG_RING) > 2000:
-#         UPDATE_LOG_RING.pop(0)
 
-# NEW (store raw lines; no timestamp)
 def _append_log(lines: str):
     if not lines:
         return
@@ -128,16 +124,17 @@ def _set_state(st, msg=""):
     UPDATE_STATE["state"] = st
     UPDATE_STATE["message"] = msg
 
+
 @app.route("/api/update/status")
 def api_update_status():
     UPDATE_STATE["installed"]["version"] = _read_version_marker()
     return jsonify({"ok": True, **UPDATE_STATE})
 
+
 @app.route("/api/update/check")
 def api_update_check():
-    # Your script uses channels; surface the chosen one as "latest"
     channel = (request.args.get("channel") or "latest").lower()
-    allowed = {"latest","beta","previous","ubuntu"}
+    allowed = {"latest", "beta", "previous", "ubuntu"}
     if channel not in allowed:
         _set_state("error", f"unsupported channel: {channel}")
         return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
@@ -145,23 +142,18 @@ def api_update_check():
     _set_state("idle", f"channel {channel} ready")
     return jsonify({"ok": True, "latest": UPDATE_STATE["latest"]})
 
+
 @app.route("/api/update/apply", methods=["POST"])
 def api_update_apply():
     data = request.get_json(force=True) or {}
     channel = (data.get("channel") or "latest").lower()
-    allowed = {"latest","beta","previous","ubuntu"}
+    allowed = {"latest", "beta", "previous", "ubuntu"}
     if channel not in allowed:
         _set_state("error", f"unsupported channel: {channel}")
         return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
 
-    env = os.environ.copy()
-    env["VERSION"] = channel  # pass VERSION to your script
-    # Optional: OWNER/REPO/BRANCH can be passed if you want to override defaults
-    # env["OWNER"] = "th3drk0ne"; env["REPO"] = "sindenps"; env["BRANCH"] = "main"
-
     try:
         _set_state("applying", f"running {UPDATE_SCRIPT} for {channel}")
-        env["VERSION"] = channel
         proc = subprocess.run(
             [SUDO, "-n", "env", f"VERSION={channel}", UPDATE_SCRIPT],
             stdout=subprocess.PIPE,
@@ -169,7 +161,7 @@ def api_update_apply():
             text=True,
             timeout=1800,
         )
-        _append_log(proc.stdout)  # capture script output into ring buffer
+        _append_log(proc.stdout)
 
         if proc.returncode != 0:
             _set_state("error", "update script failed")
@@ -185,38 +177,236 @@ def api_update_apply():
         _set_state("error", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
+
 @app.route("/api/update/logs")
 def api_update_logs():
     try:
         with open(UPDATE_LOGF, "r", encoding="utf-8", errors="replace") as f:
             return jsonify({"logs": f.read()})
     except Exception as e:
-        # Optional: show the in-memory ring if file missing (first run)
         if UPDATE_LOG_RING:
             return jsonify({"logs": "\n".join(UPDATE_LOG_RING)})
         return jsonify({"logs": f"Logs unavailable: {e}"})
-# ===========================
-# Flask routes: services
-# ===========================
 
+# ===========================
+# Firmware flashing
+# ===========================
+AVRDUDE = "/usr/bin/avrdude"
+FIRMWARE_LIBRARY_DIR = "/home/sinden/Firmware"
+FIRMWARE_DEFAULT_MCU = "atmega328p"
+FIRMWARE_DEFAULT_PROGRAMMER = "arduino"
+FIRMWARE_DEFAULT_BAUD = "57600"
+FIRMWARE_LOG_RING: List[str] = []
+FIRMWARE_LOCK = threading.Lock()
+
+FIRMWARE_STATE = {
+    "ok": True,
+    "state": "idle",
+    "message": "",
+    "port": "",
+    "file": "",
+    "baud": FIRMWARE_DEFAULT_BAUD,
+    "last_result": "",
+}
+
+
+def _fw_append_log(text: str):
+    if not text:
+        return
+    for line in text.splitlines():
+        FIRMWARE_LOG_RING.append(line)
+
+
+def _fw_set_state(state: str, message: str = "", **extra):
+    FIRMWARE_STATE["state"] = state
+    FIRMWARE_STATE["message"] = message
+    for k, v in extra.items():
+        FIRMWARE_STATE[k] = v
+
+
+def _fw_detect_port() -> str:
+    for entry in sorted(os.listdir("/dev")):
+        if "ttyGCON45" in entry:
+            return "/dev/" + entry
+    raise RuntimeError("No ttyGCON45 device found")
+
+
+def _fw_reset_port(port: str):
+    try:
+        subprocess.run(["/usr/bin/stty", "-F", port, "1200"], timeout=1, check=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        time.sleep(1)
+    except Exception:
+        pass
+
+
+def _fw_valid_library_file(filename: str) -> str:
+    if not filename:
+        raise ValueError("No firmware selected")
+    safe = secure_filename(filename)
+    if not safe:
+        raise ValueError("Invalid firmware filename")
+    if not safe.lower().endswith(".hex"):
+        raise ValueError("Only .hex firmware files are supported")
+    if ".with_bootloader." in safe.lower():
+        raise ValueError("with_bootloader firmware is not supported for serial uploads")
+    full = os.path.join(FIRMWARE_LIBRARY_DIR, safe)
+    if not os.path.isfile(full):
+        raise FileNotFoundError("Firmware file not found")
+    return full
+
+
+def _fw_flash_hex(path: str, port: str) -> subprocess.CompletedProcess:
+    cmd = [
+        AVRDUDE,
+        "-v",
+        "-p", FIRMWARE_DEFAULT_MCU,
+        "-c", FIRMWARE_DEFAULT_PROGRAMMER,
+        "-P", port,
+        "-b", FIRMWARE_DEFAULT_BAUD,
+        "-D",
+        "-V",
+        "-U", f"flash:w:{path}:i",
+    ]
+    _fw_append_log("Running: " + " ".join(cmd))
+    return subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=300,
+    )
+
+
+@app.route("/api/firmware/status")
+def api_firmware_status():
+    return jsonify({"ok": True, **FIRMWARE_STATE})
+
+
+@app.route("/api/firmware/logs")
+def api_firmware_logs():
+    return jsonify({"logs": "\n".join(FIRMWARE_LOG_RING)})
+
+
+@app.route("/api/firmware/list")
+def api_firmware_list():
+    try:
+        files = []
+        if os.path.isdir(FIRMWARE_LIBRARY_DIR):
+            for f in sorted(os.listdir(FIRMWARE_LIBRARY_DIR)):
+                if f.lower().endswith(".hex") and ".with_bootloader." not in f.lower():
+                    files.append(f)
+        return jsonify({"ok": True, "files": files})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
+@app.route("/api/firmware/ports")
+def api_firmware_ports():
+    try:
+        ports = []
+        for f in sorted(os.listdir("/dev")):
+            if "ttyGCON45" in f:
+                ports.append("/dev/" + f)
+        return jsonify({"ok": True, "ports": ports})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
+@app.route("/api/firmware/flash", methods=["POST"])
+def api_firmware_flash():
+    if not FIRMWARE_LOCK.acquire(False):
+        return jsonify({"ok": False, "error": "Busy"}), 409
+
+    FIRMWARE_LOG_RING.clear()
+
+    try:
+        data = request.get_json(force=True) or {}
+        filename = data.get("filename")
+        port = data.get("port") or _fw_detect_port()
+        full_path = _fw_valid_library_file(filename)
+
+
+
+        name = os.path.splitext(os.path.basename(full_path))[0]
+        port_name = port.replace("/dev/", "")
+
+        _fw_set_state(
+            "flashing",
+            f"Flashing {name} ({port_name})",
+            port=port,
+            file=os.path.basename(full_path),
+            last_result=""
+        )
+
+        
+        control_service("lightgun.service", "stop")
+        _fw_append_log("Stopped lightgun.service")
+
+        _fw_append_log("Starting firmware flash")
+        _fw_append_log(f"File: {os.path.basename(full_path)}")
+        _fw_append_log(f"Port: {port}")
+
+        _fw_reset_port(port)
+        result = _fw_flash_hex(full_path, port)
+        _fw_append_log(result.stdout or "")
+
+        if result.returncode != 0:
+            _fw_set_state("error", "Flash failed", last_result="failed")
+            return jsonify({"ok": False, "error": "Flash failed", "detail": "Check the firmware logs in the dashboard."}), 500
+
+        
+        name = os.path.splitext(os.path.basename(full_path))[0]
+        port_name = port.replace("/dev/", "")
+
+        _fw_set_state(
+            "success",
+            f"Flash complete: {name} ({port_name})",
+            last_result="success"
+        )
+        
+        return jsonify({"ok": True, "message": "Flash complete"})
+    except FileNotFoundError as e:
+        _fw_append_log(f"ERROR: {e}")
+        _fw_set_state("error", str(e), last_result="error")
+        return jsonify({"ok": False, "error": str(e)}), 404
+    except ValueError as e:
+        _fw_append_log(f"ERROR: {e}")
+        _fw_set_state("error", str(e), last_result="error")
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        _fw_append_log(f"ERROR: {e}")
+        _fw_set_state("error", str(e), last_result="error")
+        return jsonify({"ok": False, "error": str(e)}), 500
+    finally:
+        try:
+            control_service("lightgun.service", "start")
+            _fw_append_log("Started lightgun.service")
+        except:
+            _fw_append_log("WARNING: failed to restart lightgun.service")
+
+        FIRMWARE_LOCK.release()
+
+# ===========================
+# Regular app routes
+# ===========================
 @app.route("/api/services")
 def list_services():
     return jsonify({s: get_status(s) for s in SERVICES})
+
 
 @app.route("/api/platform", methods=["GET"])
 def api_platform():
     try:
         modefile = "/run/lightgun/sinden_mode"
         if os.path.exists(modefile):
-            with open(modefile, "r") as f:
+            with open(modefile, "r", encoding="utf-8") as f:
                 mode = f.read().strip().lower()
                 if mode in ("ps1", "ps2"):
                     return jsonify({"ok": True, "platform": mode})
-
-        # fallback (if file missing or corrupted)
-        return jsonify({"ok": True, "platform": "ps2"})
+        return jsonify({"ok": False, "error": "platform unavailable"}), 404
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
@@ -239,10 +429,6 @@ def service_logs(service):
         return jsonify({"logs": e.output.decode(errors="replace")})
 
 
-# ===========================
-# Sinden log passthrough
-# ===========================
-
 @app.route("/api/sinden-log")
 def sinden_log():
     try:
@@ -252,28 +438,29 @@ def sinden_log():
         return jsonify({"logs": f"Error reading log: {e}"})
 
 
+@app.route("/api/system/<action>", methods=["POST"])
+def api_system_action(action):
+    if action not in ("reboot", "shutdown"):
+        return jsonify({"ok": False, "error": "invalid action"}), 400
+    ok = system_power_action(action)
+    return jsonify({"ok": ok})
+
 # ===========================
 # XML config helpers (PS1/PS2)
 # ===========================
-
 def _resolve_platform(p: str) -> str:
     p = (p or "").lower()
     return p if p in CONFIG_PATHS else DEFAULT_PLATFORM
 
 
 def _ensure_stub(path: str) -> None:
-    """Create a minimal XML stub if missing."""
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            f.write(
-                '<?xml version="1.0" encoding="utf-8"?>\n'
-                '<configuration><appSettings></appSettings></configuration>\n'
-            )
+            f.write('<?xml version="1.0" encoding="utf-8"?>\n<configuration><appSettings></appSettings></configuration>\n')
 
 
 def _load_config_tree(path: str) -> ET.ElementTree:
-    """Load XML tree using a parser that preserves comments/PIs."""
     _ensure_stub(path)
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True, insert_pis=True))
     return ET.parse(path, parser=parser)
@@ -287,42 +474,15 @@ def _appsettings_root(tree: ET.ElementTree) -> ET.Element:
     return appsettings
 
 
-def _kv_items(appsettings: ET.Element) -> List[ET.Element]:
-    """Return <add> elements in document order."""
-    return [el for el in list(appsettings) if el.tag == "add" and "key" in el.attrib]
-
-
-def _split_by_player(appsettings: ET.Element) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
-    """Split into player1 and player2 (P2 suffix) lists, preserving order."""
-    p1: List[Dict[str, str]] = []
-    p2: List[Dict[str, str]] = []
-    for el in _kv_items(appsettings):
-        key = el.attrib.get("key", "")
-        val = el.attrib.get("value", "")
-        if key.endswith("P2"):
-            p2.append({"key": key[:-2], "value": val})
-        else:
-            p1.append({"key": key, "value": val})
-    return p1, p2
-
-
-# ===========================
-# STRICT preservation writer
-# ===========================
-
 _ADD_TAG_RE = re.compile(r"<add\b[^>]*>", re.IGNORECASE)
 
+
 def _xml_escape_attr(s: str) -> str:
-    """Escape for XML attribute value."""
     if s is None:
         return ""
     s = str(s)
-    return (s
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-            .replace("'", "&apos;"))
+    return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;"))
+
 
 def _build_desired_map(p1_list, p2_list) -> Dict[str, str]:
     desired: Dict[str, str] = {}
@@ -336,6 +496,7 @@ def _build_desired_map(p1_list, p2_list) -> Dict[str, str]:
             desired[str(k) + "P2"] = str(item.get("value", ""))
     return desired
 
+
 def _detect_add_indentation(text: str) -> str:
     for line in text.splitlines(True):
         if "<add" in line:
@@ -344,21 +505,13 @@ def _detect_add_indentation(text: str) -> str:
                 return m.group(1)
     return "    "
 
-def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
-    """
-    Strictly preserve the original XML layout:
-      - Never rebuild/pretty-print the XML
-      - Patch ONLY the value= attribute of existing <add key="..."> entries
-      - Insert missing keys immediately before </appSettings> (without moving comments)
-    """
-    desired = _build_desired_map(p1_list, p2_list)
 
+def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
+    desired = _build_desired_map(p1_list, p2_list)
     if not os.path.exists(path):
         _ensure_stub(path)
-
     with open(path, "r", encoding="utf-8", errors="replace") as f:
         original = f.read()
-
     updated = original
     found_keys = set()
 
@@ -370,51 +523,35 @@ def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
         key = key_m.group(2)
         if key not in desired:
             return tag
-
         found_keys.add(key)
         new_val = _xml_escape_attr(desired[key])
-
-        # Preserve quote style if possible
         val_m = re.search(r"\bvalue\s*=\s*(['\"])(.*?)\1", tag, re.IGNORECASE)
         if val_m:
-            quote = val_m.group(1)
-            # Replace only the value contents
             start, end = val_m.span(2)
             return tag[:start] + new_val + tag[end:]
-        else:
-            # Insert value after key attribute to minimize disturbance
-            insert_at = key_m.end(0)
-            return tag[:insert_at] + f' value="{new_val}"' + tag[insert_at:]
+        insert_at = key_m.end(0)
+        return tag[:insert_at] + f' value="{new_val}"' + tag[insert_at:]
 
     updated = _ADD_TAG_RE.sub(patch_add_tag, updated)
-
     missing = [k for k in desired.keys() if k not in found_keys]
     if missing:
         indent = _detect_add_indentation(updated)
         close_m = re.search(r"</appSettings\s*>", updated, re.IGNORECASE)
         if not close_m:
             raise ValueError("Could not locate </appSettings> in config; refusing to insert missing keys.")
-
         insert_pos = close_m.start()
         newline = "\r\n" if "\r\n" in updated else "\n"
-
         insertion_lines = []
         for k in missing:
             v = _xml_escape_attr(desired[k])
             insertion_lines.append(f'{indent}<add key="{_xml_escape_attr(k)}" value="{v}" />')
-
         insertion = newline + "\n".join(insertion_lines) + newline
         updated = updated[:insert_pos] + insertion + updated[insert_pos:]
 
     if updated != original:
-        # newline="" preserves existing newlines as much as possible
         with open(path, "w", encoding="utf-8", newline="") as f:
             f.write(updated)
 
-# --- Add near your XML helpers (app.py) ---
-import re
-import xml.etree.ElementTree as ET
-from collections import OrderedDict
 
 CATEGORIES = [
     (r'^(SerialPort|VideoDevice)', 'Device & Ports'),
@@ -426,17 +563,15 @@ CATEGORIES = [
     (r'^(JoystickMode)', 'Joystick Mode'),
 ]
 
+
 def _category_for(key: str) -> str:
     for pat, name in CATEGORIES:
         if re.search(pat, key):
             return name
     return 'Other'
 
+
 def _settings_with_comments(appsettings: ET.Element):
-    """
-    Return [{'key','value','comment'}] in document order.
-    Prefer the FOLLOWING sibling comment; fall back to PREVIOUS if needed.
-    """
     children = list(appsettings)
     out = []
     for i, el in enumerate(children):
@@ -444,29 +579,23 @@ def _settings_with_comments(appsettings: ET.Element):
             continue
         key = el.attrib.get("key", "")
         val = el.attrib.get("value", "")
-
         comment_text = ""
         if i + 1 < len(children) and children[i + 1].tag is ET.Comment:
             comment_text = (children[i + 1].text or "").strip()
         elif i - 1 >= 0 and children[i - 1].tag is ET.Comment:
             comment_text = (children[i - 1].text or "").strip()
-
         out.append({"key": key, "value": val, "comment": comment_text})
     return out
 
+
 def _group_by_category(items):
-    """items: [{'key','value','comment'}] -> [{'name','items':[...]}, ...]"""
     buckets = OrderedDict([(name, []) for _, name in CATEGORIES] + [('Other', [])])
     for it in items:
         buckets[_category_for(it['key'])].append(it)
     return [{"name": k, "items": v} for k, v in buckets.items() if v]
 
+
 def _split_by_player(appsettings: ET.Element):
-    """
-    Return: (p1_list, p2_list, p1_groups, p2_groups)
-    - p1_list/p2_list keep your original shape for backward compatibility
-    - groups include the same items bucketed by category
-    """
     items = _settings_with_comments(appsettings)
     p1 = []
     p2 = []
@@ -478,80 +607,15 @@ def _split_by_player(appsettings: ET.Element):
             p1.append({"key": k, "value": it["value"], "comment": it["comment"]})
     return p1, p2, _group_by_category(p1), _group_by_category(p2)
 
-# --- Add near your XML helpers in app.py ---
-import re
-import xml.etree.ElementTree as ET
-from typing import List, Dict
-
-ASSIGNABLE_HEADER_RE = re.compile(r'^\s*Assignable Actions\s*$', re.I)
-
-def _parse_assignable_actions_block(appsettings: ET.Element) -> List[Dict[str, str]]:
-    """
-    Look for a comment node that starts with 'Assignable Actions' and parse
-    subsequent lines into a list of {code, label}.
-    Handles single values (e.g., '3 MouseRight') and ranges (e.g., '8-17 keyboard 0-9').
-    """
-    actions: List[Dict[str, str]] = []
-
-    # 1) Find the comment node with the header
-    children = list(appsettings)
-    header_idx = -1
-    lines_after_header: List[str] = []
-
-    for i, node in enumerate(children):
-        if node.tag is ET.Comment:
-            comment_text = (node.text or "").strip()
-            # Split into lines and trim
-            raw_lines = [ln.strip() for ln in comment_text.splitlines() if ln.strip()]
-            if not raw_lines:
-                continue
-            if ASSIGNABLE_HEADER_RE.match(raw_lines[0]):
-                header_idx = i
-                # everything after the header line is candidate content
-                lines_after_header = raw_lines[1:]
-                break
-
-    if header_idx < 0:
-        return actions  # Not found; return empty
-
-    # 2) Normalize the collected lines into code/label entries
-    # Supported forms:
-    # - "0 None"
-    # - "1 MouseLeft"
-    # - "8-17 equals keyboard 0-9"
-    for ln in lines_after_header:
-        # Skip lines that don't start with a number/range
-        if not re.match(r'^\d', ln):
-            continue
-
-        # Range form: e.g., "8-17 equals keyboard 0-9"
-        m_range = re.match(r'^(?P<start>\d+)\s*-\s*(?P<end>\d+)\s+(?P<label>.+)$', ln)
-        if m_range:
-            start = int(m_range.group('start'))
-            end = int(m_range.group('end'))
-            label = m_range.group('label')
-            # Expand the range with a friendly label
-            for code in range(start, end + 1):
-                actions.append({"code": str(code), "label": label})
-            continue
-
-        # Single form: e.g., "3 MouseRight"
-        m_single = re.match(r'^(?P<code>\d+)\s+(?P<label>.+)$', ln)
-        if m_single:
-            actions.append({"code": m_single.group('code'), "label": m_single.group('label')})
-
-    return actions
-
-# ===========================
-# Profiles helpers
-# ===========================
 
 PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,60}$")
+
 
 def _profiles_dir_for(path: str) -> str:
     pdir = os.path.join(os.path.dirname(path), "profiles")
     os.makedirs(pdir, exist_ok=True)
     return pdir
+
 
 def _safe_profile_name(name: str) -> str:
     if not name:
@@ -560,18 +624,18 @@ def _safe_profile_name(name: str) -> str:
         raise ValueError("Invalid profile name. Use letters, digits, _ or -, max 60 chars.")
     return name
 
+
 def _profile_path(platform: str, name: str) -> str:
     platform = _resolve_platform(platform)
     live_cfg = CONFIG_PATHS[platform]
     pdir = _profiles_dir_for(live_cfg)
     return os.path.join(pdir, f"{_safe_profile_name(name)}.config")
 
+
 def _list_profiles(platform: str) -> List[Dict[str, str]]:
-    """Enumerate profiles for a platform, sorted by mtime desc (name is extension-stripped correctly)."""
     platform = _resolve_platform(platform)
     live_cfg = CONFIG_PATHS[platform]
     pdir = _profiles_dir_for(live_cfg)
-
     items: List[Dict[str, str]] = []
     if os.path.isdir(pdir):
         for fname in os.listdir(pdir):
@@ -580,60 +644,44 @@ def _list_profiles(platform: str) -> List[Dict[str, str]]:
             full = os.path.join(pdir, fname)
             try:
                 st = os.stat(full)
-                items.append({
-                    "name": os.path.splitext(fname)[0],
-                    "path": full,
-                    "mtime": int(st.st_mtime),
-                })
+                items.append({"name": os.path.splitext(fname)[0], "path": full, "mtime": int(st.st_mtime)})
             except FileNotFoundError:
                 pass
-
     items.sort(key=lambda x: x["mtime"], reverse=True)
     return items
 
-
-# ===========================
-# Flask routes: configuration
-# ===========================
 
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
     try:
         platform = _resolve_platform(request.args.get("platform"))
         profile_name = (request.args.get("profile") or "").strip()
-
         if profile_name:
             path = _profile_path(platform, profile_name)
             source = "profile"
         else:
             path = CONFIG_PATHS[platform]
             source = "live"
-     
         tree = _load_config_tree(path)
         appsettings = _appsettings_root(tree)
         p1, p2, p1_groups, p2_groups = _split_by_player(appsettings)
-
-
-       
         return jsonify({
             "ok": True,
             "platform": platform,
             "path": path,
             "player1": p1,
             "player2": p2,
-            "player1Groups": p1_groups,   # NEW
-            "player2Groups": p2_groups,   # NEW
+            "player1Groups": p1_groups,
+            "player2Groups": p2_groups,
             "source": source,
             "profile": profile_name if profile_name else "",
         })
-
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/api/config/save", methods=["POST"])
 def api_config_save():
-    """Strict-preserve save: patch values in-place without changing comment/order/layout."""
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
@@ -648,7 +696,6 @@ def api_config_save():
         os.makedirs(backup_dir, exist_ok=True)
         backup_path = os.path.join(backup_dir, f"{cfg_base}.{ts}.bak")
 
-        # Byte-for-byte backup
         if not os.path.exists(path):
             _ensure_stub(path)
         with open(path, "rb") as src, open(backup_path, "wb") as dst:
@@ -659,17 +706,6 @@ def api_config_save():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
-@app.route("/api/system/<action>", methods=["POST"])
-def api_system_action(action):
-    if action not in ("reboot", "shutdown"):
-        return jsonify({"ok": False, "error": "invalid action"}), 400
-    ok = system_power_action(action)
-    # NOTE: Response may not be delivered if system goes down quickly—this is normal.
-    return jsonify({"ok": ok})
-
-# ===========================
-# Profiles API
-# ===========================
 
 @app.route("/api/config/profiles", methods=["GET"])
 def api_profiles_list():
@@ -682,19 +718,16 @@ def api_profiles_list():
 
 @app.route("/api/config/profile/save", methods=["POST"])
 def api_profile_save():
-    """Copy LIVE config to profiles/<name>.config (byte-for-byte)."""
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         name = _safe_profile_name((data.get("name") or "").strip())
         overwrite = bool(data.get("overwrite", False))
-
         live_path = CONFIG_PATHS[platform]
         prof_path = _profile_path(platform, name)
 
         if not os.path.exists(live_path):
             _ensure_stub(live_path)
-
         if os.path.exists(prof_path) and not overwrite:
             return jsonify({"ok": False, "error": "Profile already exists"}), 409
 
@@ -710,7 +743,6 @@ def api_profile_save():
 
 @app.route("/api/config/profile/load", methods=["POST"])
 def api_profile_load():
-    """Overwrite LIVE config with selected profile (byte-for-byte), backing up live first."""
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
@@ -718,10 +750,8 @@ def api_profile_load():
 
         live_path = CONFIG_PATHS[platform]
         prof_path = _profile_path(platform, name)
-
         if not os.path.exists(prof_path):
             return jsonify({"ok": False, "error": "Profile not found"}), 404
-
         if not os.path.exists(live_path):
             _ensure_stub(live_path)
 
@@ -734,7 +764,6 @@ def api_profile_load():
 
         with open(live_path, "rb") as src, open(backup_path, "wb") as dst:
             dst.write(src.read())
-
         with open(prof_path, "rb") as src, open(live_path, "wb") as dst:
             dst.write(src.read())
 
@@ -761,17 +790,7 @@ def api_profile_delete():
         return jsonify({"ok": False, "error": str(e)}), 400
 
 
-# ===========================
-# Backups: list & restore (NEW, additive; existing functions unchanged)
-# ===========================
-
 def _backup_dir_for_platform(platform: str) -> Tuple[str, str, str]:
-    """
-    Returns (backup_dir, cfg_base, live_path) for the resolved platform.
-    - backup_dir: <cfg_dir>/backups
-    - cfg_base: e.g. "LightgunMono.exe.config"
-    - live_path: full path to live config
-    """
     platform = _resolve_platform(platform)
     live_path = CONFIG_PATHS[platform]
     cfg_dir = os.path.dirname(live_path)
@@ -782,11 +801,9 @@ def _backup_dir_for_platform(platform: str) -> Tuple[str, str, str]:
 
 @app.route("/api/config/backups", methods=["GET"])
 def api_backup_list():
-    """List backups for a platform, sorted by mtime desc."""
     try:
         platform = _resolve_platform(request.args.get("platform"))
         backup_dir, cfg_base, _ = _backup_dir_for_platform(platform)
-
         items: List[Dict[str, str]] = []
         if os.path.isdir(backup_dir):
             for fname in os.listdir(backup_dir):
@@ -795,15 +812,9 @@ def api_backup_list():
                 full = os.path.join(backup_dir, fname)
                 try:
                     st = os.stat(full)
-                    items.append({
-                        "name": fname,
-                        "path": full,
-                        "mtime": int(st.st_mtime),
-                        "size": st.st_size,
-                    })
+                    items.append({"name": fname, "path": full, "mtime": int(st.st_mtime), "size": st.st_size})
                 except FileNotFoundError:
                     pass
-
         items.sort(key=lambda x: x["mtime"], reverse=True)
         return jsonify({"ok": True, "platform": platform, "backups": items})
     except Exception as e:
@@ -812,19 +823,12 @@ def api_backup_list():
 
 @app.route("/api/config/backup/restore", methods=["POST"])
 def api_backup_restore():
-    """
-    Restore a selected backup file to the live config for the platform.
-    - Validates filename to prevent traversal and cross-platform restores
-    - Makes a safety backup of the current live file before overwriting
-    """
     try:
         data = request.get_json(force=True) or {}
         platform = _resolve_platform(data.get("platform"))
         filename = (data.get("filename") or "").strip()
 
         backup_dir, cfg_base, live_path = _backup_dir_for_platform(platform)
-
-        # Validate filename
         if not filename or "/" in filename or "\\" in filename:
             return jsonify({"ok": False, "error": "Invalid filename"}), 400
         if not (filename.startswith(cfg_base + ".") and filename.endswith(".bak")):
@@ -833,65 +837,98 @@ def api_backup_restore():
         src_path = os.path.join(backup_dir, filename)
         if not os.path.exists(src_path):
             return jsonify({"ok": False, "error": "Backup not found"}), 404
-
-        # Ensure live exists so our safety copy is consistent
         if not os.path.exists(live_path):
             _ensure_stub(live_path)
 
-        # Safety backup of current live (fixed f-string)
         ts = time.strftime("%Y%m%d-%H%M%S")
         safety_backup = os.path.join(backup_dir, f"{cfg_base}.{ts}.restore.bak")
         with open(live_path, "rb") as src, open(safety_backup, "wb") as dst:
             dst.write(src.read())
-
-        # Restore selected backup to live
         with open(src_path, "rb") as src, open(live_path, "wb") as dst:
             dst.write(src.read())
-        os.chmod(live_path, 0o664)
 
-        return jsonify({
-            "ok": True,
-            "platform": platform,
-            "path": live_path,
-            "restored_from": src_path,
-            "safety_backup": safety_backup,
-        })
+        os.chmod(live_path, 0o664)
+        return jsonify({"ok": True, "platform": platform, "path": live_path, "restored_from": src_path, "safety_backup": safety_backup})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
-
-
-# ===========================
-# Static passthroughs & index
-# ===========================
 
 @app.route("/logo.png")
 def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
 
+
 @app.route("/ps1.png")
 def ps1_png():
     return send_from_directory("/opt/lightgun-dashboard", "ps1.png")
 
+
 @app.route("/ps2.png")
 def ps2_png():
     return send_from_directory("/opt/lightgun-dashboard", "ps2.png")
-    
+
+
 @app.route("/load.png")
 def load_png():
     return send_from_directory("/opt/lightgun-dashboard", "load.png")
-    
+
+
 @app.route("/offline.png")
 def offline_png():
     return send_from_directory("/opt/lightgun-dashboard", "offline.png")
-    
+
+
 @app.route("/favicon.ico")
 def favicon_ico():
     return send_from_directory("/opt/lightgun-dashboard", "favicon.ico")
-    
+
+
 @app.route("/")
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
+
+
+# --- only showing the corrected/additional parts ---
+
+
+@app.route("/api/version")
+def api_version():
+    return jsonify({
+        "ok": True,
+        "sindenps_version": _read_sindenps_version()
+    })
+
+@app.route("/api/sindenps/update", methods=["POST"])
+def api_sindenps_update():
+    if os.path.exists(SINDENPS_LOCK):
+        return jsonify({"ok": False, "error": "Update already running"}), 409
+
+    try:
+        open(SINDENPS_LOCK, "w").close()
+
+        subprocess.Popen(
+            ["/bin/bash", "/opt/sinden/update-sindenps.sh"],
+            close_fds=True
+        )
+
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/sindenps/logs")
+def api_sindenps_logs():
+    try:
+        with open(SINDENPS_UPDATE_LOG, "r", encoding="utf-8", errors="replace") as f:
+            return jsonify({"logs": f.read()})
+    except:
+        return jsonify({"logs": "No logs available"})
+        
+@app.route("/api/sindenps/status")
+def api_sindenps_status():
+    return jsonify({
+        "ok": True,
+        "running": os.path.exists("/tmp/platform-update.lock")
+    })
 
 
 @app.route("/healthz")
