@@ -923,6 +923,13 @@ def api_sindenps_logs():
     except:
         return jsonify({"logs": "No logs available"})
         
+@app.route("/api/sindenps/status")
+def api_sindenps_status():
+    return jsonify({
+        "ok": True,
+        "running": os.path.exists("/tmp/sindenps-update.lock")
+    })
+
 
 @app.route("/healthz")
 def healthz():

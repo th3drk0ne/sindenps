@@ -392,7 +392,7 @@ async function updateSindenps() {
     const data = await res.json();
 
     if (data.ok) {
-      status.textContent = "Update started";
+      status.textContent = "Updating...";
     } else {
       status.textContent = "Update failed";
     }
@@ -860,6 +860,23 @@ async function loadSindenpsVersion() {
   }
 }
 
+async function refreshSindenpsStatus() {
+  try {
+    const res = await fetch('/api/sindenps/status');
+    const data = await res.json();
+
+    const status = document.getElementById('sindenps-update-status');
+
+    if (data.running) {
+      status.textContent = "Updating…";
+    } else {
+      if (status.textContent === "Updating…" || status.textContent === "Update started") {
+        status.textContent = "Completed";
+      }
+    }
+  } catch {}
+}
+
 
 async function loadBackupDialog(platform) {
   openBackupModal();
@@ -901,6 +918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadFirmwarePorts();
   loadSindenpsVersion();
   checkSindenpsUpdate();
+  refreshSindenpsStatus();
 
   updateModeIndicator();
   setInterval(updateModeIndicator, 2000);
