@@ -417,7 +417,7 @@ async function loadSindenpsLogs() {
   const pre = document.getElementById('sindenps-update-log-content');
 
   try {
-    const res = await fetch('/api/sindenps/logs');
+    const res = await fetch('/api/sindenps/logs');  
     const data = await res.json();
     pre.textContent = data.logs || "No logs";
   } catch (e) {
@@ -1002,6 +1002,13 @@ setInterval(() => {
     if (updateBox && updateBox.style.display === 'block') loadUpdateLogs();
     const fwBox = document.getElementById('firmware-logs');
     if (fwBox && fwBox.style.display === 'block') loadFirmwareLogs();
+  }
+}, 5000);
+
+setInterval(() => {
+  const box = document.getElementById('sindenps-update-logs');
+  if (box && box.style.display === 'block') {
+    loadSindenpsLogs();
   }
 }, 5000);
 
