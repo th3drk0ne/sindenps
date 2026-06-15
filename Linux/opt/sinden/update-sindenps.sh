@@ -23,8 +23,8 @@ trap 'rm -f "$LOCK"; echo "=== SindenPS update finished $(date) ==="' EXIT
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
 # run update
-TMP_SCRIPT="$(mktemp)"
-wget -qO "$TMP_SCRIPT" https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup-test.sh
-sudo -E bash "$
-
+sudo -E bash -c '
+  VERSION=latest
+  wget -qO- https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup-test.sh | bash
+'
 
