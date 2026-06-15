@@ -91,9 +91,6 @@
       <div class="header-row">
         <div class="logo-area">
           <img src="/logo.png" class="logo" alt="SindenPS Logo">
-		  	<span id="sindenps-version" style="font-size:16px;color:#888;margin-left:10px;">
-			v?
-			</span>
           <img id="mode-indicator" class="mode-indicator-img" src="/load.png" alt="Mode Icon">
         </div>
         <nav class="tabs">
@@ -864,12 +861,12 @@ async function refreshSindenpsStatus() {
     const remote = await fetch(
       "https://raw.githubusercontent.com/th3drk0ne/sindenps/main/VERSION"
     ).then(r => r.text());
-
-    if (remote.trim() === local) {
-      status.textContent = "Up to date";
-    } else {
-      status.textContent = `Update available (${local} → ${remote.trim()})`;
-    }
+	
+	if (remote.trim() === local) {
+	  status.textContent = `Up to date (v${local})`;
+	} else {
+	  status.textContent = `Update available (${local} → ${remote.trim()})`;
+	}
 
   } catch (e) {
     status.textContent = "...";
