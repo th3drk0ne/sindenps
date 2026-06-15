@@ -1104,8 +1104,3 @@ LOCAL_FILE="/opt/sinden/VERSION"
 remote_version=$(curl -fsSL "$URL" | tr -d '\r\n')
 log "Setting Version Number - $remote_version"
 curl -fsSL "$URL" -o "$LOCAL_FILE"
-
-#Remove lock file
-
-SINDENPS_LOCK = "/tmp/sindenps-update.lock"
-rm -f "$SINDENPS_LOCK"
