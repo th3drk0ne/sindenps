@@ -180,6 +180,11 @@ else
   exit 1
 fi
 
+# Set Version file
+URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/VERSION"
+LOCAL_FILE="/opt/sinden/VERSION"
+curl -fsSL "$URL" -o "$LOCAL_FILE"
+
 #-----------------------------------------------------------
 # Step 4) Install systemd services
 #-----------------------------------------------------------
