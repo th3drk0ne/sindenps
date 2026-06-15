@@ -93,7 +93,6 @@ SINDENPS_UPDATE_LOG = "/var/log/platform-update.log"
 SINDENPS_LOCK = "/tmp/sindenps-update.lock"
 
 
-
 def _read_version_marker():
     try:
         with open(VERSION_FILE, "r", encoding="utf-8") as f:
@@ -891,8 +890,6 @@ def index():
 
 # --- only showing the corrected/additional parts ---
 
-SINDENPS_UPDATE_LOG = "/var/log/sindenps-update.log"
-SINDENPS_LOCK = "/tmp/sindenps-update.lock"
 
 @app.route("/api/version")
 def api_version():
@@ -909,8 +906,12 @@ def api_sindenps_update():
     try:
         open(SINDENPS_LOCK, "w").close()
 
-        cmd = f"/bin/bash /opt/sinden/update-sindenps.sh > {SINDENPS_UPDATE_LOG} 2>&1"
-        subprocess.Popen(cmd, shell=True)
+        #cmd = f"/bin/bash /opt/sinden/update-sindenps.sh > {SINDENPS_UPDATE_LOG} 2>&1"
+        #subprocess.Popen(cmd, shell=True)
+        subprocess.Popen(
+        ["/bin/bash", "/opt/sinden/update-sindenps.sh"],
+        close_fds=True
+)
 
         return jsonify({"ok": True})
     except Exception as e:
