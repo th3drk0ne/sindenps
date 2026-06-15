@@ -1,8 +1,13 @@
 #!/bin/bash
-export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+LOG="/var/log/platform-update.log"
+
+# force logging for entire script
+exec >> "$LOG" 2>&1
+
+echo "=== SCRIPT STARTED $(date) ==="
 set -e
 
-echo "SCRIPT STARTED $(date)" >> /var/log/sindenps-update.log
 
 LOG="/var/log/platform-update.log"
 LOCK="/tmp/sindenps-update.lock"

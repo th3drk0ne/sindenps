@@ -907,9 +907,8 @@ def api_sindenps_update():
         open(SINDENPS_LOCK, "w").close()
 
         subprocess.Popen(
-            ["/usr/bin/nohup", "/bin/bash", "/opt/sinden/update-sindenps.sh"],
-            stdout=open("/dev/null", "w"),
-            stderr=subprocess.STDOUT
+            ["/bin/bash", "/opt/sinden/update-sindenps.sh"],
+            close_fds=True
         )
 
         return jsonify({"ok": True})
