@@ -720,7 +720,11 @@ sudo systemctl restart lightgun-dashboard.service
 log "=== Done! Browse: http://sindenps.local ==="
 
 # 7) restart services
-sudo systemctl restart lightgun.service
+log "Scheduling dashboard restart..." 
+
+(sh -c "sleep 3; systemctl restart lightgun-dashboard.service") &
+
+log "Dashboard restart scheduled"
 sudo systemctl restart lightgun-monitor.service
 
 # ------------------------------------------------------------
