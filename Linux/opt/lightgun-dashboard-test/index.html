@@ -862,18 +862,18 @@ async function loadSindenpsVersion() {
 }
 
 async function refreshSindenpsStatus() {
+  const status = document.getElementById('sindenps-update-status');
+
   try {
     const res = await fetch('/api/sindenps/status');
     const data = await res.json();
 
-    const status = document.getElementById('sindenps-update-status');
+    if (!data.ok) return;
 
     if (data.running) {
       status.textContent = "Updating…";
     } else {
-      if (status.textContent === "Updating…" || status.textContent === "Update started") {
-        status.textContent = "Completed";
-      }
+      status.textContent = "Completed";
     }
   } catch {}
 }
