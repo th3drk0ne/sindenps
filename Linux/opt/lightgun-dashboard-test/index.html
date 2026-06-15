@@ -253,6 +253,7 @@
 <script>
 let lastFirmwareLog = "";
 let sindenpsLastRunning = 0;
+let lastFirmwarePorts = [];
 
 function showTab(name) {
   document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
@@ -619,32 +620,49 @@ async function loadFirmwareList() {
 
 async function loadFirmwarePorts() {
   const sel = document.getElementById('firmware-port');
-  sel.innerHTML = '';
+
   try {
     const res = await fetch('/api/firmware/ports');
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Failed to load ports');
-    if (!data.ports || !data.ports.length) {
+
+    const ports = data.ports || [];
+
+    const changed =
+      ports.length !== lastFirmwarePorts.length ||
+      ports.some((p, i) => p !== lastFirmwarePorts[i]);
+
+    if (!changed) return; // nothing new → do not rebuild UI
+
+    lastFirmwarePorts = ports;
+
+    sel.innerHTML = '';
+
+    if (!ports.length) {
       const opt = document.createElement('option');
       opt.value = '';
       opt.textContent = 'No ports';
       sel.appendChild(opt);
       return;
     }
-    data.ports.forEach((port, idx) => {
+
+    ports.forEach((port, idx) => {
       const opt = document.createElement('option');
       opt.value = port;
       opt.textContent = port.replace('/dev/', '');
       if (idx === 0) opt.selected = true;
       sel.appendChild(opt);
     });
+
   } catch (e) {
+    sel.innerHTML = '';
     const opt = document.createElement('option');
     opt.value = '';
     opt.textContent = 'Error loading ports';
     sel.appendChild(opt);
   }
 }
+
 
 async function loadFirmwareLogs() {
   const pre = document.getElementById('firmware-log-content');
@@ -917,6 +935,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   updateModeIndicator();
   setInterval(updateModeIndicator, 2000);
+   
+  setInterval(() => {
+	  const panel = document.getElementById('service-panel');
+	  if (panel && panel.style.display === 'block') {
+		loadFirmwarePorts();
+	  }
+  }, 3000);
 
   setInterval(async () => {
     try {
