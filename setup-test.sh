@@ -764,14 +764,6 @@ log "libjpeg.so.8 now points to: $LIBJPEG_PATH"
 fi
 
 
-# Set Version file
-
-URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/VERSION"
-LOCAL_FILE="/opt/sinden/VERSION"
-remote_version=$(curl -fsSL "$URL" | tr -d '\r\n')
-log "Setting Version Number - $remote_version"
-curl -fsSL "$URL" -o "$LOCAL_FILE"
-
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules and performance tweaks for Pi4 and Pi5
 #-----------------------------------------------------------
