@@ -255,6 +255,7 @@
 
 <script>
 let lastFirmwareLog = "";
+let sindenpsLastRunning = 0;
 
 function showTab(name) {
   document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
@@ -839,13 +840,19 @@ async function refreshSindenpsStatus() {
   try {
     const state = await (await fetch('/api/sindenps/status')).json();
 
-    // Runtime state always wins
     if (state.running) {
+      sindenpsLastRunning = Date.now();
       status.textContent = "Updating…";
       return;
     }
 
-    // Not running -> compare versions
+    // ✅ grace period after running disappears (handles restart gap)
+    if (Date.now() - sindenpsLastRunning < 5000) {
+      status.textContent = "Updating…";
+      return;
+    }
+
+    // ✅ now safe to evaluate version
     const localRes = await fetch('/api/version');
     const localData = await localRes.json();
 
