@@ -866,27 +866,19 @@ async function refreshSindenpsStatus() {
   const status = document.getElementById('sindenps-update-status');
 
   try {
-    const state = await (await fetch('/api/sindenps/status')).json();
+    const res = await fetch('/api/sindenps/status');
+    const data = await res.json();
 
-    if (state.running) {
+    if (data.running) {
+      sindenpsUpdating = true;
       status.textContent = "Updating…";
-      return;
-    }
-
-    const local = await (await fetch('/api/version')).json();
-    const remote = await fetch(
-      "https://raw.githubusercontent.com/th3drk0ne/sindenps/main/VERSION"
-    ).then(r => r.text());
-
-    if (local.ok && remote.trim() === local.sindenps_version) {
-      status.textContent = "Up to date";
     } else {
-      status.textContent = "Completed";
+      if (sindenpsUpdating) {
+        status.textContent = "Completed";
+        sindenpsUpdating = false;
+      }
     }
-
-  } catch {
-    status.textContent = "...";
-  }
+  } catch {}
 }
 
 
