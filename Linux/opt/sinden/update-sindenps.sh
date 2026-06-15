@@ -4,6 +4,12 @@ set -e
 LOG="/var/log/platform-update.log"
 LOCK="/tmp/sindenps-update.lock"
 
+# ensure log file dir exists
+install -d -m 0755 /var/log
+: > "$LOG"
+chmod 0644 "$LOG"
+truncate -s 0 "$LOG"
+
 sudo chown sinden:sinden "$LOG"
 sudo chown sinden:sinden "$LOCK"
 
@@ -23,3 +29,4 @@ sudo -E bash -c '
 ' >> "$LOG" 2>&1
 
 echo "=== SindenPS update finished $(date) ===" >> "$LOG"
+
