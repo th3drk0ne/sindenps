@@ -641,7 +641,7 @@ async function loadFirmwarePorts() {
     if (!ports.length) {
       const opt = document.createElement('option');
       opt.value = '';
-      opt.textContent = 'No ports';
+      opt.textContent = 'No Adapter Connected';
       sel.appendChild(opt);
       return;
     }
