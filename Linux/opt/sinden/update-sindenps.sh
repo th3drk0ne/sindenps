@@ -1,10 +1,10 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-log()  { printf '%s [INFO]  %s\n'  "$(date '+%F %T')" "$*" | tee -a "$LOGF"; }
-warn() { printf '%s [WARN]  %s\n'  "$(date '+%F %T')" "$*" | tee -a "$LOGF" >&2; }
-err()  { printf '%s [ERROR] %s\n'  "$(date '+%F %T')" "$*" | tee -a "$LOGF" >&2; }
+log()  { echo "✅ $*"; }
+warn() { echo "❌ $*" >&2; }
+err()  { echo "❌[ERROR] $*" >&2; }
 
 LOCKFILE="/tmp/sindenps-update.lock"
 LOGFILE="/var/log/sindenps-update.log"
