@@ -89,7 +89,7 @@ def system_power_action(action: str) -> bool:
 UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"
 UPDATE_LOGF = "/var/log/sindenps-update.log"
 VERSION_FILE = "/home/sinden/Lightgun/VERSION"
-SINDENPS_UPDATE_LOG = "/var/log/sindenps-update.log"
+SINDENPS_UPDATE_LOG = "/var/log/platform-update.log"
 SINDENPS_LOCK = "/tmp/sindenps-update.lock"
 
 

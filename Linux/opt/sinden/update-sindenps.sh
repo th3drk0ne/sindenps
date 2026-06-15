@@ -6,22 +6,20 @@ log()  { echo "✅ $*"; }
 warn() { echo "❌ $*" >&2; }
 err()  { echo "❌[ERROR] $*" >&2; }
 
-LOCKFILE="/tmp/sindenps-update.lock"
-LOGFILE="/var/log/sindenps-update.log"
+LOG="/var/log/platform-update.log"
+LOCK="/tmp/sindenps-update.lock"
 
-echo "" > "$LOGFILE"
+# create lock
+touch "$LOCK"
 
-# Prevent double execution
-if [ -f "$LOCKFILE" ]; then
-    warn "Update already running" | tee -a "$LOGFILE"
-    exit 1
-fi
+# ensure cleanup on exit (success or failure)
+trap 'rm -f "$LOCK"' EXIT
 
-trap "rm -f $LOCKFILE" EXIT
-touch "$LOCKFILE"
+# clear log
+: > "$LOG"
 
-log "===== SindenPS Update Started $(date) =====" >> "$LOGFILE"
+log "=== SindenPS update started $(date) ===" >> "$LOG"
 
-VERSION=latest sudo -E bash -c "$(wget -qO- https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup-test.sh)" >> "$LOGFILE" 2>&1
+VERSION=latest sudo -E bash -c "$(wget -qO- https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh)" >> "$LOG" 2>&1
 
-log "===== Update Completed $(date) =====" >> "$LOGFILE"
+log "=== SindenPS update finished $(date) ===" >> "$LOG"
