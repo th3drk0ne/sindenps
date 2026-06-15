@@ -734,13 +734,10 @@ done
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
-(sh -c "sleep 3; systemctl restart lightgun-dashboard.service") &
 
 log "=== Done! Browse: http://sindenps.local ==="
 
-# 7) restart services
-(sh -c "sleep 3; systemctl restart lightgun-dashboard.service") &
-sudo systemctl restart lightgun-monitor.service
+
 
 # ------------------------------------------------------------
 # step 8) libjpeg8 (libjpeg.so.8) symlink to 62 turbo on aarch64
@@ -1123,3 +1120,7 @@ LOCAL_FILE="/opt/sinden/VERSION"
 remote_version=$(curl -fsSL "$URL" | tr -d '\r\n')
 log "Setting Version Number - $remote_version"
 curl -fsSL "$URL" -o "$LOCAL_FILE"
+
+#  restart services
+(sh -c "sleep 3; systemctl restart lightgun-dashboard.service") &
+sudo systemctl restart lightgun-monitor.service
