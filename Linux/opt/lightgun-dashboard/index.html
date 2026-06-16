@@ -1034,7 +1034,12 @@ setInterval(() => {
     const box = document.getElementById('logs-' + svc.replace('.service',''));
     if (box && box.style.display === 'block') loadLogs(svc);
   });
-  if (document.getElementById('tab-sindenlog').style.display === 'block') loadSindenLog();
+
+  const tab = document.getElementById('tab-sindenlog');
+  if (tab && tab.offsetParent !== null) {
+    loadSindenLog();
+  }
+
 }, 1000);
 
 setInterval(refreshServices, 1000);
