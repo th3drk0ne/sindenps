@@ -257,13 +257,6 @@ systemctl daemon-reload
 log "Enabling services."
 systemctl enable "${svc1}" "${svc2}"
 
-log "Starting services."
-systemctl start "${svc1}" || warn "Failed to start ${svc1}. Check logs: journalctl -u ${svc1}"
-systemctl start "${svc2}" || warn "Failed to start ${svc2}. Check logs: journalctl -u ${svc2}"
-
-systemctl is-active "${svc1}" &>/dev/null && log "${svc1} is active." || warn "${svc1} is not active."
-systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "${svc2} is not active."
-
 #-----------------------------------------------------------
 # Step 5) Install prerequisites
 #-----------------------------------------------------------
@@ -534,6 +527,14 @@ wget --quiet --show-progress --https-only --timestamping \
   "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
 
 log "Assets deployment complete."
+
+log "Starting services."
+systemctl start "${svc1}" || warn "Failed to start ${svc1}. Check logs: journalctl -u ${svc1}"
+systemctl start "${svc2}" || warn "Failed to start ${svc2}. Check logs: journalctl -u ${svc2}"
+
+systemctl is-active "${svc1}" &>/dev/null && log "${svc1} is active." || warn "${svc1} is not active."
+systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "${svc2} is not active."
+
 
 #-----------------------------------------------------------
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
