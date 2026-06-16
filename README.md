@@ -34,9 +34,9 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 ## 🧩 Architecture Overview
 
 ```
-													 	[Arduino Pro Micro] → G-Con2 USB Device
-[Sinden Lightgun] → [Raspberry Pi running SindenPS] → 	↓↑ [Switches based on detected Arduino]		→	PlayStation Console
-														[Arduino Nano] → G-Con45 Device
+													 	[Arduino Pro Micro] → [G-Con2 USB Device]
+[Sinden Lightgun] → [Raspberry Pi running SindenPS] → 	↓↑ [Switches based on detected Arduino]		→	[PlayStation Console]
+														[Arduino Nano] → [G-Con45 Device]
 ```
 
 - **Sinden Lightgun Driver**: Listens to Sinden HID reports and forwards them to the correct Arduino.  
