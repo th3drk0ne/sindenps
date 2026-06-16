@@ -1,54 +1,140 @@
 # Raspberry Pi PWM Fan Controller
 
-A Python script to control a PWM fan on a Raspberry Pi based on CPU temperature.
+Temperature-based PWM fan control daemon for Raspberry Pi with **safe shutdown handling**, **systemd integration**, and **automatic installation script**.
 
-Designed to:
-- Prevent fan noise at low speeds
-- Smoothly ramp speeds up/down
-- Avoid rapid on/off switching using hysteresis
-- Maintain stable temperature without oscillation
+Designed for:
+- Quiet operation (no low-speed squeal)
+- Smooth fan ramping
+- Stable thermals (no oscillation)
+- Proper shutdown behaviour (fan does not default to 100%)
 
 ---
 
 ## Features
 
-- PWM fan control via GPIO
-- Smooth speed ramping
-- Temperature-based speed curve
+- PWM fan control using GPIO18
+- Smooth speed ramping algorithm
+- Temperature → speed curve with interpolation
 - Hysteresis to prevent rapid toggling
-- Minimum spin threshold to avoid fan squeal
-- Low CPU usage
+- Minimum spin threshold to avoid noise
+- Fully managed via systemd
+- Dedicated service user
+- **Safe GPIO reset on stop (fan OFF helper)**
+- One-command installer
 
 ---
 
-## Requirements
+## Installation (Recommended)
 
-- Raspberry Pi
-- Python 3
-- gpiozero library
+Run installer:
 
-Install Fan Controller Script
 ```bash
-sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/fan-ctrl/setup.sh")"
+curl -fsSL https://raw.githubusercontent.com/th3drk0ne/sindenps/main/fan-ctrl/setup.sh | sudo bash
+```
+
+OR clone + run manually:
+
+```bash
+sudo ./setup.sh
+```
+
+---
+
+## What the Installer Does
+
+### System Setup
+
+- Installs dependencies:
+  - `python3`
+  - `gpiozero`
+  - `curl`
+
+- Creates system user:
+  ```
+  fanctl
+  ```
+
+- Adds user to:
+  ```
+  gpio group
+  ```
+
+---
+
+### Application Install
+
+- Installs script to:
+  ```
+  /opt/fan-controller/fan_controller.py
+  ```
+
+- Permissions:
+  - Owned by `fanctl`
+  - Executable
+
+---
+
+### systemd Service
+
+Installed as:
+
+```
+fan-controller.service
+```
+
+Key behaviour:
+
+- Runs as non-root user (`fanctl`)
+- Auto restart on failure
+- Starts on boot
+- Restricted permissions (hardened service)
+
+---
+
+### CRITICAL: Fan OFF Helper
+
+Installed at:
+
+```
+/usr/local/sbin/fan_off.sh
+```
+
+Purpose:
+- Forces GPIO18 LOW when service stops
+- Prevents PWM fans defaulting to **100% on exit**
+
+Handles both:
+- Pi 4 (`raspi-gpio`)
+- Pi 5 (`pinctrl`)
+
+---
+
+## Service Management
+
+```bash
+systemctl status fan-controller
+systemctl restart fan-controller
+journalctl -u fan-controller -f
 ```
 
 ---
 
 ## Hardware Setup
 
-Connect PWM control to:
+- PWM Pin:
+  ```
+  GPIO 18 (Pin 12)
+  ```
 
-- GPIO 18 (Pin 12)
-
-Ensure your fan:
-- Supports PWM input
-- Has proper 5V and GND connections
+Fan requirements:
+- PWM-capable
+- Proper 5V + GND wiring
 
 ---
 
-## Configuration
+## Configuration (from script)
 
-### GPIO + PWM
+### PWM Settings
 
 ```python
 FAN_PIN = 18
@@ -64,98 +150,60 @@ tempSteps  = [63, 65, 75, 85]
 speedSteps = [0, 75, 85, 100]
 ```
 
-| Temperature | Fan Speed |
-|------------|----------|
-| <63°C      | 0%       |
-| 65°C       | ~75%     |
-| 75°C       | ~85%     |
-| 85°C+      | 100%     |
-
-Speeds are linearly interpolated between points.
+| Temperature | Speed |
+|------------|------|
+| <63°C      | Off  |
+| 65°C       | 75%  |
+| 75°C       | 85%  |
+| 85°C+      | 100% |
 
 ---
 
-### Minimum Spin Threshold
+### Minimum Spin (anti-squeal)
 
 ```python
 MIN_SPIN = 63
 ```
 
-Prevents the fan running in low PWM range where it may squeak.
-
 ---
 
-### Hysteresis Settings
+### Hysteresis
 
 ```python
 HYST_DROP = 5
 hyst = 1
 ```
 
-- Fan turns OFF only when temp drops 5°C below threshold
-- Updates only occur when temp changes by ≥1°C
+- Fan turns OFF only when:
+  ```
+  temp < threshold - 5°C
+  ```
+- Temp changes must exceed:
+  ```
+  1°C
+  ```
 
 ---
 
 ## How It Works
 
-1. Reads CPU temperature from:
+Loop every 2 seconds:
 
-```
-/sys/class/thermal/thermal_zone0/temp
-```
+1. Reads CPU temperature:
+   ```
+   /sys/class/thermal/thermal_zone0/temp
+   ```
 
-2. Applies:
-   - Hysteresis logic
-   - Temperature curve mapping
+2. Applies hysteresis logic:
+   - Prevents rapid ON/OFF
+   - Keeps fan stable
 
-3. Calculates fan speed
+3. Calculates speed via interpolation
 
-4. Smoothly ramps to new speed using PWM
+4. Smoothly ramps speed:
 
-5. Loops every 2 seconds
-
----
-
-## Running
-
-```bash
-python3 fan_control.py
-```
-
----
-
-## Run as a Service (Recommended)
-
-Create service file:
-
-```bash
-sudo nano /etc/systemd/system/fan.service
-```
-
-Paste:
-
-```ini
-[Unit]
-Description=PWM Fan Controller
-After=multi-user.target
-
-[Service]
-ExecStart=/usr/bin/python3 /path/to/fan_control.py
-Restart=always
-User=pi
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable:
-
-```bash
-sudo systemctl daemon-reexec
-sudo systemctl daemon-reload
-sudo systemctl enable fan
-sudo systemctl start fan
+```python
+fan.value = speed / 100
 ```
 
 ---
@@ -163,26 +211,45 @@ sudo systemctl start fan
 ## Behaviour Summary
 
 - Fan stays OFF until threshold reached
-- Once ON, won't immediately turn OFF
-- Speed changes are gradual
-- Reduces noise and wear
+- Once ON, it remains ON until sufficiently cooled
+- Speed changes are gradual (no abrupt jumps)
+- No low-speed fan squeal
+- Safe shutdown ensures fan does not surge
+
+---
+
+## File Locations
+
+| Path | Purpose |
+|------|--------|
+| `/opt/fan-controller/` | Application |
+| `/etc/systemd/system/` | Service |
+| `/usr/local/sbin/fan_off.sh` | GPIO reset helper |
 
 ---
 
 ## Safety Notes
 
-- Ensure correct wiring before running
-- Confirm fan supports PWM
-- Test manually before enabling service
+- Requires correct wiring
+- Only use PWM-capable fans
+- Always test manually before full deployment
 
 ---
 
-## Possible Improvements
+## Customisation
 
-- Add logging
-- Add manual override
-- Add API endpoint
-- Integrate with web UI
+Edit installer script variables:
+
+```bash
+APP_NAME="fan-controller"
+FAN_PIN=18
+```
+
+Or modify runtime behaviour in:
+
+```
+/opt/fan-controller/fan_controller.py
+```
 
 ---
 
