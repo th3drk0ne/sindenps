@@ -35,7 +35,7 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 
 ```
 													 	[Arduino Pro Micro] → G-Con2 USB Device
-[Sinden Lightgun] → [Raspberry Pi running SindenPS] → 	↓↑ [Switches based on detected Arduino]		→	Playstation Console
+[Sinden Lightgun] → [Raspberry Pi running SindenPS] → 	↓↑ [Switches based on detected Arduino]		→	PlayStation Console
 														[Arduino Nano] → G-Con45 Device
 ```
 
