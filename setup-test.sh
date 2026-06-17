@@ -1071,6 +1071,27 @@ configure_serial_raw() {
   done
 }
 
+write_gcon2_status_helper() {
+  local STATUS_FILE="/etc/profile.d/gcon2-status.sh"
+
+  log "Creating GCON2 status helper: $STATUS_FILE"
+
+  cat > "$STATUS_FILE" <<EOF
+gcon2_serial_status() {
+  for link in /dev/ttyGCON2S_0 /dev/ttyGCON2S_1; do
+    if [[ -e "\$link" ]]; then
+      echo "\$link -> \$(readlink -f "\$link")"
+    else
+      echo "\$link (missing)"
+    fi
+  done
+}
+EOF
+
+  chmod 644 "$STATUS_FILE"
+}
+
+
 show_status() {
 	links=( "/dev/${PREFIX0}" )
 
@@ -1109,6 +1130,7 @@ main() {
   write_udev_rules
   write_profile_aliases
   configure_serial_raw
+  write_gcon2_status_helpe
   show_status
   log ""
   log "Next steps:"
