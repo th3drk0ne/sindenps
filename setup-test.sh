@@ -1057,18 +1057,16 @@ write_profile_aliases() {
 
 configure_serial_raw() {
   log "Applying raw low-latency settings to GCON2 devices"
-  
-	for i in {1..10}; do
-	  [[ -e /dev/${PREFIX0} ]] && break
-	  sleep 0.2
-	done
+
+  sleep 1
 
   for dev in /dev/${PREFIX0} /dev/${PREFIX1}; do
     if [[ -e "$dev" ]]; then
-      stty -F "$dev" raw -echo -icanon -isig -iexten -ixon -ixoff min 1 time 0
-      log "Configured $dev"
-    else
-      log "Not present: $dev"
+      if stty -F "$dev" raw -echo -icanon -isig -iexten -ixon -ixoff min 1 time 0 2>/dev/null; then
+        log "Configured $dev"
+      else
+        log "Failed to configure $dev (ignoring)"
+      fi
     fi
   done
 }
