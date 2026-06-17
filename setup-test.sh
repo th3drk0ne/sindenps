@@ -1134,10 +1134,10 @@ main() {
   show_status
   log ""
   log "Next steps:"
-  log "  • Load aliases now:  source /etc/profile.d/gcon2-serial.sh"
   log "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   log "  • Check:   gcon2_serial_status"
   log "  • Dashboard: Running at http://sindenps.local/"
+  log "  • If this is your instial install a reboot is required"
 }
 main
 fi
