@@ -1130,7 +1130,7 @@ main() {
   write_udev_rules
   write_profile_aliases
   configure_serial_raw
-  write_gcon2_status_helpe
+  write_gcon2_status_helper
   show_status
   log ""
   log "Next steps:"
