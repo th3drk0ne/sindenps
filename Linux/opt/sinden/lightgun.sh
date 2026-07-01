@@ -107,7 +107,7 @@ sleep 5
 if [ "$IsPsxMode" == 1 ]; then
     echo "[INFO] Querying PSX device..."
     
-    RESPONSE=$(/opt/sinden/query_dongle.sh 2>/dev/null)
+    RESPONSE=$(/opt/sinden/query-dongle.sh 2>/dev/null)
 
     if [ -n "$RESPONSE" ]; then
         echo "[INFO] Device replied: $RESPONSE"
