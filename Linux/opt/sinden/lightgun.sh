@@ -99,8 +99,22 @@ echo "[INFO] Reloading udev rules..."
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 echo "[INFO] Udev setup complete."
-sleep 3
+sleep 5
 
+
+# ---- Step 4: Query PSX device ----
+
+if [ "$IsPsxMode" == 1 ]; then
+    echo "[INFO] Querying PSX device..."
+    
+    RESPONSE=$(/opt/sinden/query_dongle.sh 2>/dev/null)
+
+    if [ -n "$RESPONSE" ]; then
+        echo "[INFO] Device replied: $RESPONSE"
+    else
+        echo "[WARN] No response from PSX device"
+    fi
+fi
 
 while :; do
 if [ "$IsPsxMode" == 1 ]; then
@@ -113,3 +127,6 @@ else
     	sudo mono LightgunMono.exe
 fi
 done
+
+
+
