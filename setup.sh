@@ -624,6 +624,8 @@ Cmnd_Alias LIGHTGUN_CMDS = \
 sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
+sudo systemctl disable ModemManager
+sudo systemctl stop ModemManager
 
 log "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
