@@ -119,11 +119,10 @@ fi
 
 FIRMWARE_FILE="/run/lightgun/firmware_type"
 
-if [[ "$RESPONSE" == *"KONAMI"* ]]; then
-    echo "KONAMI" > "$FIRMWARE_FILE"
-else
-    echo "NAMCO" > "$FIRMWARE_FILE"
-fi
+# Remove CR/LF
+RESPONSE="$(echo "$RESPONSE" | tr -d '\r\n')"
+
+echo "$RESPONSE" > "$FIRMWARE_FILE"
 
 
 while :; do

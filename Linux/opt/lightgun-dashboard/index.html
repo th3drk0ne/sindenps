@@ -402,9 +402,10 @@ async function updateModeIndicator() {
 
       document.body.classList.remove('ps2-mode');
 
-      const fw = (plat.firmware || '').toUpperCase();
+	const fw = (plat.firmware || '').toUpperCase();
+	const vendor = fw.split('-')[0];
 
-      if (fw === 'KONAMI') {
+	if (vendor === 'KONAMI') {
         img.src = '/hb.png';
         img.alt = 'Hyper Blaster';
       } else {
