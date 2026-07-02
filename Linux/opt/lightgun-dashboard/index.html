@@ -1048,21 +1048,6 @@ function renderBackupList(backups, platform) {
 
 
 // LOAD VERSION FROM API
-async function loadSindenpsVersion() {
-  try {
-    const res = await fetch('/api/version');
-    const data = await res.json();
-
-    if (data.ok && data.sindenps_version) {
-      document.getElementById('sindenps-version').textContent =
-        "v" + data.sindenps_version;
-    } else {
-      document.getElementById('sindenps-version').textContent = "v?";
-    }
-  } catch (e) {
-    document.getElementById('sindenps-version').textContent = "v?";
-  }
-}
 
 async function refreshSindenpsStatus() {
   const status = document.getElementById('sindenps-update-status');
@@ -1096,6 +1081,7 @@ async function refreshSindenpsStatus() {
     ).then(r => r.text());
 	
 	const banner = document.getElementById('update-banner');
+	const bannerText = document.getElementById('update-banner-text');
 
 	if (remote.trim() === local) {
 
@@ -1110,12 +1096,16 @@ async function refreshSindenpsStatus() {
 		status.textContent =
 			`Update available (${local} → ${remote.trim()})`;
 
-		if (banner) {
-			banner.textContent =
-				`Platform Update Available (${local} → ${remote.trim()})`;
 
-			banner.style.display = 'flex';
-		}
+
+	if (banner) {
+		banner.style.display = 'flex';
+	}
+
+	if (bannerText) {
+		bannerText.textContent =
+			`Platform Update Available (${local} → ${remote.trim()})`;
+	}
 	}
 
   } catch (e) {
@@ -1162,7 +1152,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   refreshFirmwareStatus();
   loadFirmwareList();
   loadFirmwarePorts();
-  loadSindenpsVersion();
   refreshSindenpsStatus();
 
   updateModeIndicator();
