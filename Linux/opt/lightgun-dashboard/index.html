@@ -1061,7 +1061,7 @@ async function refreshSindenpsStatus() {
       return;
     }
 
-    if (Date.now() - sindenpsLastRunning < 60000) {
+    if (Date.now() - sindenpsLastRunning < 5000) {
       status.textContent = "Updating…";
       return;
     }
