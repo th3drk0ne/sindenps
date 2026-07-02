@@ -717,7 +717,7 @@ LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightg
 OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/offline.png"
 FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/favicon.ico"
 PAL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/pal.png"
-NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ntsc.ico"
+NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ntsc.png"
 
 for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png pal.png ntsc.png; do
   case "$FILE" in
@@ -729,7 +729,7 @@ for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png pal
     offline.png)  URL="$OFFLINE" ;;
     favicon.ico)  URL="$FAVICON" ;;
 	pal.png)  URL="$PAL" ;;
-    ntsc.ico)  URL="$NTSC" ;;
+    ntsc.png)  URL="$NTSC" ;;
   esac
 
   DEST="${APP_DIR}/${FILE}"
