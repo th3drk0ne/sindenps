@@ -550,17 +550,28 @@ async function updateSindenps() {
   try {
     status.textContent = "Updating…";
 
-    const res = await fetch('/api/sindenps/update', { method: 'POST' });
+    const res = await fetch('/api/sindenps/update', {
+      method: 'POST'
+    });
+
     const data = await res.json();
 
     if (!data.ok) {
       status.textContent = data.error || "Update failed";
+      return;
     }
+
+    /*
+     * Force the GitHub/local version check to run again
+     * instead of being blocked by the recent-update guard.
+     */
+    sindenpsLastRunning = 0;
+    await refreshSindenpsStatus();
+
   } catch (e) {
     status.textContent = "error";
   }
 }
-
 function closeAllLogs() {
   document.querySelectorAll('.log-box').forEach(b => b.style.display = 'none');
 }
@@ -1292,6 +1303,12 @@ setInterval(() => {
 setInterval(refreshServices, 1000);
 
 setInterval(() => {
+  /*
+   * Platform update check must run globally.
+   * Do not restrict this to the Services tab.
+   */
+  refreshSindenpsStatus();
+
   const panel = document.getElementById('service-panel');
 
   if (panel && panel.style.display === 'block') {
@@ -1312,9 +1329,6 @@ setInterval(() => {
     else if (sindenBox && sindenBox.style.display === 'block') {
       loadSindenpsLogs();
     }
-
-    refreshSindenpsStatus();
-
   }
 }, 5000);
 

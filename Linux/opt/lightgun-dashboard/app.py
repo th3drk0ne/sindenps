@@ -964,7 +964,7 @@ def api_sindenps_logs():
 def api_sindenps_status():
     return jsonify({
         "ok": True,
-        "running": os.path.exists("/tmp/platform-update.lock")
+        "running": os.path.exists(SINDENPS_LOCK)
     })
 
 
