@@ -1088,46 +1088,58 @@ document.addEventListener('DOMContentLoaded', async () => {
 	  }
   }, 3000);
 
-setInterval(async () => {
-  try {
 
 setInterval(async () => {
   try {
-
-      if (systemPowerPending) {
-          setSystemOfflineUI();
-          return;
-      }
-
-      const svc = await (await fetch('/api/services')).json();
 
       const svc = await (await fetch('/api/services')).json();
       const lg = (svc['lightgun.service'] || '').toLowerCase();
+
       if (lg !== 'active') {
-		  setServiceOfflineUI();
-		  return;
-		}
+          setServiceOfflineUI();
+          return;
+      }
 
       let platform = null;
+
       try {
         const r = await fetch('/api/platform');
+
         if (r.ok) {
           const d = await r.json();
-          if (d && d.ok && (d.platform === 'ps1' || d.platform === 'ps2')) platform = d.platform;
+
+          if (
+            d &&
+            d.ok &&
+            (d.platform === 'ps1' || d.platform === 'ps2')
+          ) {
+            platform = d.platform;
+          }
         }
       } catch {}
-      if (!platform) { setLoadingUI(); return; }
+
+      if (!platform) {
+        setLoadingUI();
+        return;
+      }
 
       if (selPlatform && selPlatform.value !== platform) {
         selPlatform.value = platform;
-        if (platDisplay) platDisplay.textContent = platform.toUpperCase();
+
+        if (platDisplay) {
+          platDisplay.textContent = platform.toUpperCase();
+        }
+
         loadConfig(platform).catch(() => {});
         refreshProfilesUI(platform);
       }
 
       await updateModeIndicator();
-    } catch (e) { setSystemOfflineUI(); }
-  }, 2000);
+
+  } catch (e) {
+      setSystemOfflineUI();
+  }
+}, 2000);
 
   const btnDelete = document.getElementById('btn-delete-profile');
   if (btnDelete) btnDelete.onclick = async () => {
