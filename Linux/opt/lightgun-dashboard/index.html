@@ -1027,6 +1027,10 @@ function renderBackupList(backups, platform) {
       try {
         const res = await fetch('/api/config/backup/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, filename: b.name }) });
         const data = await res.json();
+		if (data.ok) {
+		sindenpsLastRunning = 0;
+		await refreshSindenpsStatus();
+		}
         if (!data.ok) { alert('Restore failed: ' + (data.error || 'unknown error')); return; }
         const s = document.getElementById('config-status');
         if (s) s.textContent = 'Backup restored. Restarting service...';
