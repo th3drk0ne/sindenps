@@ -91,6 +91,7 @@
       .config-card { flex:1 1 100%; }
       #save-restart { width:100%; padding:12px; font-size:16px; }
       #backup-modal > .dialog { width:95vw !important; margin-top:20vh !important; padding:12px; }
+	  #update-progress { display: block; width: 100%; text-align: center; color: #3cf; font-size: 12px; }
     }
   </style>
 </head>
@@ -134,6 +135,10 @@
 		<button onclick="updateSindenps()">
 			Update Now
 		</button>
+	</div>
+	<div id="update-progress"
+     style="display:none;color:#3cf;font-size:12px;margin-top:4px;">
+    Update in progress...
 	</div>
     </header>
 	
@@ -544,20 +549,37 @@ async function checkSindenpsUpdate() {
 
 async function updateSindenps() {
   const status = document.getElementById('sindenps-update-status');
+  const progress = document.getElementById('update-progress');
 
   if (!confirm("Update SindenPS platform now?")) return;
 
   try {
     status.textContent = "Updating…";
 
-    const res = await fetch('/api/sindenps/update', { method: 'POST' });
+    if (progress) {
+      progress.style.display = 'block';
+    }
+
+    const res = await fetch('/api/sindenps/update', {
+      method: 'POST'
+    });
+
     const data = await res.json();
 
     if (!data.ok) {
       status.textContent = data.error || "Update failed";
+
+      if (progress) {
+        progress.style.display = 'none';
+      }
     }
+
   } catch (e) {
     status.textContent = "error";
+
+    if (progress) {
+      progress.style.display = 'none';
+    }
   }
 }
 
@@ -1052,9 +1074,14 @@ function renderBackupList(backups, platform) {
 
 async function refreshSindenpsStatus() {
   const status = document.getElementById('sindenps-update-status');
+  const progress = document.getElementById('update-progress');
 
   try {
     const state = await (await fetch('/api/sindenps/status')).json();
+
+    if (progress) {
+      progress.style.display = state.running ? 'block' : 'none';
+    }
 
     if (state.running) {
       sindenpsLastRunning = Date.now();
@@ -1080,40 +1107,41 @@ async function refreshSindenpsStatus() {
     const remote = await fetch(
       "https://raw.githubusercontent.com/th3drk0ne/sindenps/main/VERSION"
     ).then(r => r.text());
-	
-	const banner = document.getElementById('update-banner');
-	const bannerText = document.getElementById('update-banner-text');
 
-	if (remote.trim() === local) {
+    const banner = document.getElementById('update-banner');
+    const bannerText = document.getElementById('update-banner-text');
 
-		status.textContent = `Up to date (v${local})`;
+    if (remote.trim() === local) {
 
-		if (banner) {
-			banner.style.display = 'none';
-		}
+      status.textContent = `Up to date (v${local})`;
 
-	} else {
+      if (banner) {
+        banner.style.display = 'none';
+      }
 
-		status.textContent =
-			`Update available (${local} → ${remote.trim()})`;
+    } else {
 
+      status.textContent =
+        `Update available (${local} → ${remote.trim()})`;
 
+      if (banner) {
+        banner.style.display = 'flex';
+      }
 
-	if (banner) {
-		banner.style.display = 'flex';
-	}
-
-	if (bannerText) {
-		bannerText.textContent =
-			`Platform Update Available (${local} → ${remote.trim()})`;
-	}
-	}
+      if (bannerText) {
+        bannerText.textContent =
+          `Platform Update Available (${local} → ${remote.trim()})`;
+      }
+    }
 
   } catch (e) {
     status.textContent = "...";
+
+    if (progress) {
+      progress.style.display = 'none';
+    }
   }
 }
-
 
 async function loadBackupDialog(platform) {
   openBackupModal();
