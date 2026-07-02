@@ -398,14 +398,37 @@ def list_services():
 def api_platform():
     try:
         modefile = "/run/lightgun/sinden_mode"
+        firmwarefile = "/run/lightgun/firmware_type"
+
+        firmware = "NAMCO"
+
+        if os.path.exists(firmwarefile):
+            with open(firmwarefile, "r", encoding="utf-8") as f:
+                value = f.read().strip().upper()
+                if value:
+                    firmware = value
+
         if os.path.exists(modefile):
             with open(modefile, "r", encoding="utf-8") as f:
                 mode = f.read().strip().lower()
-                if mode in ("ps1", "ps2"):
-                    return jsonify({"ok": True, "platform": mode})
-        return jsonify({"ok": False, "error": "platform unavailable"}), 404
+
+            if mode in ("ps1", "ps2"):
+                return jsonify({
+                    "ok": True,
+                    "platform": mode,
+                    "firmware": firmware
+                })
+
+        return jsonify({
+            "ok": False,
+            "error": "platform unavailable"
+        }), 404
+
     except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
 
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
