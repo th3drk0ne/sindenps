@@ -116,10 +116,8 @@ if [ "$IsPsxMode" == 1 ]; then
     fi
 fi
 
-
 FIRMWARE_FILE="/run/lightgun/firmware_type"
 
-# Remove CR/LF
 RESPONSE="$(echo "$RESPONSE" | tr -d '\r\n')"
 
 echo "$RESPONSE" > "$FIRMWARE_FILE"

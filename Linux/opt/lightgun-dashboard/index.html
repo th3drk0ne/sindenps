@@ -405,13 +405,13 @@ async function updateModeIndicator() {
 	const fw = (plat.firmware || '').toUpperCase();
 	const vendor = fw.split('-')[0];
 
-	if (vendor === 'KONAMI') {
-        img.src = '/hb.png';
-        img.alt = 'Hyper Blaster';
-      } else {
-        img.src = '/ps1.png';
-        img.alt = 'G-Con45';
-      }
+	if (plat.vendor === 'KONAMI') {
+		img.src = '/hb.png';
+		img.alt = 'Hyper Blaster';
+	} else {
+		img.src = '/ps1.png';
+		img.alt = 'G-Con45';
+	}
 
     } else {
 

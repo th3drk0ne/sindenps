@@ -404,9 +404,10 @@ def api_platform():
 
         if os.path.exists(firmwarefile):
             with open(firmwarefile, "r", encoding="utf-8") as f:
-                value = f.read().strip().upper()
-                if value:
-                    firmware = value
+                firmware = f.read().strip().upper()
+
+        vendor = firmware.split("-", 1)[0]
+        variant = firmware.split("-", 1)[1] if "-" in firmware else ""
 
         if os.path.exists(modefile):
             with open(modefile, "r", encoding="utf-8") as f:
@@ -416,7 +417,9 @@ def api_platform():
                 return jsonify({
                     "ok": True,
                     "platform": mode,
-                    "firmware": firmware
+                    "firmware": firmware,
+                    "vendor": vendor,
+                    "variant": variant
                 })
 
         return jsonify({
