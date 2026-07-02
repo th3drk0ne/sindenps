@@ -29,8 +29,8 @@
     .logo-area { display:flex; align-items:center; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
     .mode-indicator-img { height:28px; width:auto; display:block; }
-	#region-indicator { margin-left: 4px;}
 	.mode-text { display:none; color:#ff4444; font-weight:800; font-size:18px; letter-spacing:1px; }
+	.platform-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
     .tabs { display:flex; flex-wrap:wrap; gap:10px; }
     .tabs button { background:#222; color:#fff; border:1px solid var(--theme-border); padding:10px 14px; cursor:pointer; border-radius:6px; }
     .tabs button:hover { background: var(--theme-border); }
@@ -72,7 +72,8 @@
       .header-row { flex-wrap:wrap; align-items:flex-start; }
       .logo-area { flex-direction:row; align-items:center; justify-content:space-between; width:100%; gap:6px; }
       .mode-indicator-img { height:24px; }
-	  #region-indicator { margin-left: 4px;}
+	  .platform-group { display:flex; align-items:center; gap:0; }
+	  #region-indicator { margin-left:-2px; }
       .log-content { font-size:10px; }
       .page { width:100%; padding-bottom:env(safe-area-inset-bottom); }
       .tabs { flex:1 1 auto; width:auto; gap:6px; justify-content:flex-end; }
@@ -94,18 +95,33 @@
   <div class="page">
     <header>
       <div class="header-row">
-        <div class="logo-area">
-          <img src="/logo.png" class="logo" alt="SindenPS Logo">
-          <img id="mode-indicator" class="mode-indicator-img" src="/load.png" alt="Mode Icon">
-		  <span id="mode-text" class="mode-text">OFFLINE</span>
-		  <img id="region-indicator" class="mode-indicator-img" src="" alt="Region Icon" style="display:none;">
-        </div>
+	  
+	<div class="logo-area">
+		<img src="/logo.png" class="logo" alt="SindenPS Logo">
+
+		<div class="platform-group">
+			<img id="mode-indicator"
+				 class="mode-indicator-img"
+				 src="/load.png"
+				 alt="Mode Icon">
+
+			<span id="mode-text" class="mode-text">OFFLINE</span>
+
+			<img id="region-indicator"
+				 class="mode-indicator-img"
+				 src=""
+				 alt="Region Icon"
+				 style="display:none;">
+		</div>
+	</div>
+		
         <nav class="tabs">
           <button onclick="showTab('sindenlog')">Lightgun Log</button>
           <button onclick="showTab('services')">Services</button>
           <button onclick="showTab('config')">Configuration</button>
         </nav>
       </div>
+	  
     </header>
 
     <section id="tab-sindenlog" style="display:block; padding:10px;">
