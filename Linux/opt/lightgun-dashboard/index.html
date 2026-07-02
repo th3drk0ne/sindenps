@@ -25,7 +25,7 @@
     input, select, button { font-size:16px; }
     .page { width:100%; margin:0 auto; }
     header { background:#000; padding:20px; border-bottom:4px solid var(--theme-border); position:sticky; top:0; z-index:10; }
-	.update-banner { background: #ff9900; color: #000; font-weight: 700; text-align: center; padding: 10px; border-bottom: 2px solid #cc7700; animation: pulseBanner 2s infinite; }
+	.update-banner { background: #ff9900; color: #000; font-weight: 700; padding: 10px; border-bottom: 2px solid #cc7700; animation: pulseBanner 2s infinite; display: flex; align-items: center; justify-content: center; gap: 12px; }
 	@keyframes pulseBanner { 0%   { opacity: 1; } 50%  { opacity: 0.7; } 100% { opacity: 1; } }
 	.update-banner button { margin-left: 12px; padding: 4px 10px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
     .header-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -97,21 +97,7 @@
 <body>
   <div class="page">
     <header>
-	<div id="update-banner"
-		 class="update-banner"
-		 style="display:none;">
-
-		<span id="update-banner-text">
-			Platform Update Available
-		</span>
-
-		<button onclick="updateSindenps()">
-			Update Now
-		</button>
-
-	</div>
-
-      <div class="header-row">
+	      <div class="header-row">
 	  
 	<div class="logo-area">
 		<img src="/logo.png" class="logo" alt="SindenPS Logo">
@@ -138,9 +124,19 @@
           <button onclick="showTab('config')">Configuration</button>
         </nav>
       </div>
-	  
-    </header>
+	  <div id="update-banner"
+		 class="update-banner"
+		 style="display:none;">
 
+		<span id="update-banner-text">
+			Platform Update Available
+		</span>
+		<button onclick="updateSindenps()">
+			Update Now
+		</button>
+	</div>
+    </header>
+	
     <section id="tab-sindenlog" style="display:block; padding:10px;">
       <h2 class="panel-title">Lightgun Service Log</h2>
       <div class="log-box sinden-main-log" style="display:block;"><pre id="sinden-log-content" class="log-content">Loading…</pre></div>
@@ -1118,7 +1114,7 @@ async function refreshSindenpsStatus() {
 			banner.textContent =
 				`Platform Update Available (${local} → ${remote.trim()})`;
 
-			banner.style.display = 'block';
+			banner.style.display = 'flex';
 		}
 	}
 
