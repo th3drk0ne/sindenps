@@ -716,8 +716,10 @@ LOGO_HB="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lig
 LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/load.png"
 OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/offline.png"
 FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/favicon.ico"
+PAL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/pal.png"
+NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ntsc.ico"
 
-for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png; do
+for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png pal.png ntsc.png; do
   case "$FILE" in
     logo.png) URL="$LOGO_URL" ;;
     ps1.png)  URL="$LOGO_PS1" ;;
@@ -726,6 +728,8 @@ for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png; do
     load.png)  URL="$LOAD" ;;
     offline.png)  URL="$OFFLINE" ;;
     favicon.ico)  URL="$FAVICON" ;;
+	pal.png)  URL="$PAL" ;;
+    ntsc.ico)  URL="$NTSC" ;;
   esac
 
   DEST="${APP_DIR}/${FILE}"

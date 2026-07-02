@@ -910,6 +910,14 @@ def hb_png():
 def favicon_ico():
     return send_from_directory("/opt/lightgun-dashboard", "favicon.ico")
 
+@app.route("/pal.png")
+def pal_png():
+    return send_from_directory("/opt/lightgun-dashboard", "pal.png")
+
+@app.route("/ntsc.png")
+def ntsc_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ntsc.png")
+
 
 @app.route("/")
 def index():

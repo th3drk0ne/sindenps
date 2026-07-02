@@ -29,6 +29,7 @@
     .logo-area { display:flex; align-items:center; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
     .mode-indicator-img { height:28px; width:auto; display:block; }
+	#region-indicator { margin-left: 4px;}
 	.mode-text { display:none; color:#ff4444; font-weight:800; font-size:18px; letter-spacing:1px; }
     .tabs { display:flex; flex-wrap:wrap; gap:10px; }
     .tabs button { background:#222; color:#fff; border:1px solid var(--theme-border); padding:10px 14px; cursor:pointer; border-radius:6px; }
@@ -96,6 +97,7 @@
           <img src="/logo.png" class="logo" alt="SindenPS Logo">
           <img id="mode-indicator" class="mode-indicator-img" src="/load.png" alt="Mode Icon">
 		  <span id="mode-text" class="mode-text">OFFLINE</span>
+		  <img id="region-indicator" class="mode-indicator-img" src="" alt="Region Icon" style="display:none;">
         </div>
         <nav class="tabs">
           <button onclick="showTab('sindenlog')">Lightgun Log</button>
@@ -286,9 +288,14 @@ function setSystemOfflineUI() {
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
+  const regionImg = document.getElementById('region-indicator');
 
   if (img) img.style.display = 'none';
   if (txt) txt.style.display = 'inline-block';
+
+  if (regionImg) {
+    regionImg.style.display = 'none';
+  }
 }
 
 function setServiceOfflineUI() {
@@ -296,35 +303,44 @@ function setServiceOfflineUI() {
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
+  const regionImg = document.getElementById('region-indicator');
 
   if (txt) txt.style.display = 'none';
 
   if (img) {
     img.style.display = 'block';
     img.src = '/offline.png';
-    img.alt = 'Offline';
+  }
+
+  if (regionImg) {
+    regionImg.style.display = 'none';
   }
 }
 
 
 function setLoadingUI() {
-    document.body.classList.remove('ps2-mode');
+  document.body.classList.remove('ps2-mode');
 
-    const img = document.getElementById('mode-indicator');
-    const txt = document.getElementById('mode-text');
+  const img = document.getElementById('mode-indicator');
+  const txt = document.getElementById('mode-text');
+  const regionImg = document.getElementById('region-indicator');
 
-    if (txt) txt.style.display = 'none';
+  if (txt) txt.style.display = 'none';
 
-    if (img) {
-        img.style.display = 'block';
-        img.src = '/load.png';
-        img.alt = 'Loading...';
-    }
+  if (img) {
+    img.style.display = 'block';
+    img.src = '/load.png';
+  }
+
+  if (regionImg) {
+    regionImg.style.display = 'none';
+  }
 }
 
 async function updateModeIndicator() {
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
+  const regionImg = document.getElementById('region-indicator');
 
   if (!img) return;
 
@@ -398,27 +414,50 @@ async function updateModeIndicator() {
 
     img.style.display = 'block';
 
-    if (plat.platform === 'ps1') {
+	if (plat.platform === 'ps1') {
 
-      document.body.classList.remove('ps2-mode');
+		document.body.classList.remove('ps2-mode');
 
-	const fw = (plat.firmware || '').toUpperCase();
-	const vendor = fw.split('-')[0];
+		if (plat.vendor === 'KONAMI') {
+			img.src = '/hb.png';
+			img.alt = 'Hyper Blaster';
+		} else {
+			img.src = '/ps1.png';
+			img.alt = 'G-Con45';
+		}
 
-	if (plat.vendor === 'KONAMI') {
-		img.src = '/hb.png';
-		img.alt = 'Hyper Blaster';
+		if (regionImg) {
+
+			switch ((plat.variant || '').toUpperCase()) {
+
+				case 'PAL':
+					regionImg.src = '/pal.png';
+					regionImg.style.display = 'block';
+					break;
+
+				case 'NTSC':
+					regionImg.src = '/ntsc.png';
+					regionImg.style.display = 'block';
+					break;
+
+				default:
+					regionImg.style.display = 'none';
+					break;
+			}
+		}
+
 	} else {
-		img.src = '/ps1.png';
-		img.alt = 'G-Con45';
+
+		document.body.classList.add('ps2-mode');
+
+		img.src = '/ps2.png';
+		img.alt = 'PS2 Mode';
+
+		if (regionImg) {
+			regionImg.style.display = 'none';
+		}
 	}
 
-    } else {
-
-      document.body.classList.add('ps2-mode');
-      img.src = '/ps2.png';
-      img.alt = 'PS2 Mode';
-    }
 
   } catch (e) {
 
