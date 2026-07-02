@@ -61,6 +61,7 @@
     .config-row input { width:100% !important; max-width:100% !important; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:4px; }
 	.service-buttons select { padding:10px 12px; font-size:16px; min-height:40px; background:#222; color:#fff; border:1px solid var(--theme-border); border-radius:6px;}
     .config-toolbar select { padding: 5px 6px; font-size: 13px; height: 31px; border-radius: 6px;}
+	.sinden-main-log { height: calc(100vh - 180px); max-height: none; }
 	#platform-select, label[for="platform-select"] { display:none !important; }
     #firmware-select, #firmware-port, #update-channel, #profile-select { background:#000; color:#fff; border:1px solid #444; border-radius:6px; }
     #firmware-select { min-width:280px; }
@@ -104,7 +105,7 @@
 
     <section id="tab-sindenlog" style="display:block; padding:10px;">
       <h2 class="panel-title">Lightgun Service Log</h2>
-      <div class="log-box" style="display:block; max-height:500px;"><pre id="sinden-log-content" class="log-content">Loading…</pre></div>
+      <div class="log-box sinden-main-log" style="display:block;"><pre id="sinden-log-content" class="log-content">Loading…</pre></div>
     </section>
 
     <section id="service-panel" style="display:none;">
@@ -1034,7 +1035,12 @@ setInterval(() => {
     const box = document.getElementById('logs-' + svc.replace('.service',''));
     if (box && box.style.display === 'block') loadLogs(svc);
   });
-  if (document.getElementById('tab-sindenlog').style.display === 'block') loadSindenLog();
+
+  const tab = document.getElementById('tab-sindenlog');
+  if (tab && tab.offsetParent !== null) {
+    loadSindenLog();
+  }
+
 }, 1000);
 
 setInterval(refreshServices, 1000);

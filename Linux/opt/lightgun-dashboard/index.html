@@ -29,6 +29,7 @@
     .logo-area { display:flex; align-items:center; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
     .mode-indicator-img { height:28px; width:auto; display:block; }
+	.mode-text { display:none; color:#ff4444; font-weight:800; font-size:18px; letter-spacing:1px; }
     .tabs { display:flex; flex-wrap:wrap; gap:10px; }
     .tabs button { background:#222; color:#fff; border:1px solid var(--theme-border); padding:10px 14px; cursor:pointer; border-radius:6px; }
     .tabs button:hover { background: var(--theme-border); }
@@ -94,6 +95,7 @@
         <div class="logo-area">
           <img src="/logo.png" class="logo" alt="SindenPS Logo">
           <img id="mode-indicator" class="mode-indicator-img" src="/load.png" alt="Mode Icon">
+		  <span id="mode-text" class="mode-text">OFFLINE</span>
         </div>
         <nav class="tabs">
           <button onclick="showTab('sindenlog')">Lightgun Log</button>
@@ -256,6 +258,7 @@
 let lastFirmwareLog = "";
 let sindenpsLastRunning = 0;
 let lastFirmwarePorts = [];
+let systemPowerPending = false;
 
 function showTab(name) {
   document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
@@ -276,30 +279,85 @@ function showTab(name) {
   }
 }
 
-function setOfflineUI() {
+
+function setSystemOfflineUI() {
   document.body.classList.remove('ps2-mode');
+
   const img = document.getElementById('mode-indicator');
-  if (img) { img.src = '/offline.png'; img.alt = 'Offline'; }
+  const txt = document.getElementById('mode-text');
+
+  if (img) img.style.display = 'none';
+  if (txt) txt.style.display = 'inline-block';
 }
 
-function setLoadingUI() {
+function setServiceOfflineUI() {
   document.body.classList.remove('ps2-mode');
+
   const img = document.getElementById('mode-indicator');
-  if (img) { img.src = '/load.png'; img.alt = 'Loading...'; }
+  const txt = document.getElementById('mode-text');
+
+  if (txt) txt.style.display = 'none';
+
+  if (img) {
+    img.style.display = 'block';
+    img.src = '/offline.png';
+    img.alt = 'Offline';
+  }
+}
+
+
+function setLoadingUI() {
+    document.body.classList.remove('ps2-mode');
+
+    const img = document.getElementById('mode-indicator');
+    const txt = document.getElementById('mode-text');
+
+    if (txt) txt.style.display = 'none';
+
+    if (img) {
+        img.style.display = 'block';
+        img.src = '/load.png';
+        img.alt = 'Loading...';
+    }
 }
 
 async function updateModeIndicator() {
   const img = document.getElementById('mode-indicator');
+  const txt = document.getElementById('mode-text');
+
   if (!img) return;
+  
+  if (systemPowerPending) {
+  setSystemOfflineUI();
+  return;
+}
+
   try {
     const svc = await (await fetch('/api/services')).json();
     const lg = (svc['lightgun.service'] || '').toLowerCase();
-    if (lg !== 'active') { setOfflineUI(); return; }
+
+    if (lg !== 'active') {
+      setServiceOfflineUI();
+      return;
+    }
+
     const platRes = await fetch('/api/platform');
-    if (!platRes.ok) { setLoadingUI(); return; }
+    if (!platRes.ok) {
+      setLoadingUI();
+      return;
+    }
+
     const plat = await platRes.json();
     const ok = !!(plat && plat.ok);
-    if (!ok || !(plat.platform === 'ps1' || plat.platform === 'ps2')) { setLoadingUI(); return; }
+
+    if (!ok || !(plat.platform === 'ps1' || plat.platform === 'ps2')) {
+      setLoadingUI();
+      return;
+    }
+
+    if (txt) txt.style.display = 'none';
+    img.style.display = 'block';
+
     if (plat.platform === 'ps1') {
       document.body.classList.remove('ps2-mode');
       img.src = '/ps1.png';
@@ -309,10 +367,12 @@ async function updateModeIndicator() {
       img.src = '/ps2.png';
       img.alt = 'PS2 Mode';
     }
+
   } catch (e) {
-    setOfflineUI();
+    setSystemOfflineUI();
   }
 }
+
 
 async function refreshServices() {
   try {
@@ -407,17 +467,48 @@ async function loadSindenpsLogs() {
 
 async function systemAction(action) {
   const statusEl = document.getElementById('system-status');
+
   try {
-    if (statusEl) statusEl.textContent = (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
-    const res = await fetch(`/api/system/${action}`, { method: 'POST' });
-    let ok = false;
-    try { const data = await res.json(); ok = !!(data && data.ok); } catch (_) {}
     if (statusEl) {
-      statusEl.textContent = ok ? ((action === 'reboot') ? 'Reboot command sent.' : 'Shutdown command sent.') : 'Command failed (check server logs).';
+      statusEl.textContent =
+        (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
     }
-    document.querySelectorAll('#system-actions .service-buttons button').forEach(b => b.disabled = true);
+
+    systemPowerPending = true;
+    setSystemOfflineUI();
+
+    const res = await fetch(`/api/system/${action}`, { method: 'POST' });
+
+    let ok = false;
+    try {
+      const data = await res.json();
+      ok = !!(data && data.ok);
+    } catch (_) {}
+
+    if (statusEl) {
+      statusEl.textContent = ok
+        ? ((action === 'reboot')
+            ? 'Reboot command sent.'
+            : 'Shutdown command sent.')
+        : 'Command failed (check server logs).';
+    }
+
+    if (!ok) {
+      systemPowerPending = false;
+      updateModeIndicator();
+    }
+
+    document
+      .querySelectorAll('#system-actions .service-buttons button')
+      .forEach(b => b.disabled = true);
+
   } catch (e) {
-    if (statusEl) statusEl.textContent = 'Request error: ' + e.message;
+    systemPowerPending = false;
+    updateModeIndicator();
+
+    if (statusEl) {
+      statusEl.textContent = 'Request error: ' + e.message;
+    }
   }
 }
 
@@ -945,11 +1036,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 	  }
   }, 3000);
 
-  setInterval(async () => {
-    try {
+setInterval(async () => {
+  try {
+
+      if (systemPowerPending) {
+          setSystemOfflineUI();
+          return;
+      }
+
       const svc = await (await fetch('/api/services')).json();
       const lg = (svc['lightgun.service'] || '').toLowerCase();
-      if (lg !== 'active') { setOfflineUI(); return; }
+      if (lg !== 'active') {
+		  setServiceOfflineUI();
+		  return;
+		}
 
       let platform = null;
       try {
@@ -969,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       await updateModeIndicator();
-    } catch (e) { setOfflineUI(); }
+    } catch (e) { setSystemOfflineUI(); }
   }, 2000);
 
   const btnDelete = document.getElementById('btn-delete-profile');
