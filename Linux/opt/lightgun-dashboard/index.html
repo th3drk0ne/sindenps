@@ -507,10 +507,6 @@ async function systemAction(action) {
       updateModeIndicator();
     }
 
-    document
-      .querySelectorAll('#system-actions .service-buttons button')
-      .forEach(b => b.disabled = true);
-
   } catch (e) {
     systemPowerPending = false;
     updateModeIndicator();
