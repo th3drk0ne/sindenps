@@ -116,6 +116,16 @@ if [ "$IsPsxMode" == 1 ]; then
     fi
 fi
 
+
+FIRMWARE_FILE="/run/lightgun/firmware_type"
+
+if [[ "$RESPONSE" == *"KONAMI"* ]]; then
+    echo "KONAMI" > "$FIRMWARE_FILE"
+else
+    echo "NAMCO" > "$FIRMWARE_FILE"
+fi
+
+
 while :; do
 if [ "$IsPsxMode" == 1 ]; then
     	echo "[INFO] Launching PS1/LightgunMono.exe..."

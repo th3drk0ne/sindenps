@@ -358,11 +358,20 @@ async function updateModeIndicator() {
     if (txt) txt.style.display = 'none';
     img.style.display = 'block';
 
-    if (plat.platform === 'ps1') {
-      document.body.classList.remove('ps2-mode');
-      img.src = '/ps1.png';
-      img.alt = 'PS1 Mode';
-    } else {
+	if (plat.platform === 'ps1') {
+
+		document.body.classList.remove('ps2-mode');
+
+		const fw = (plat.firmware || '').toUpperCase();
+
+		if (fw === 'KONAMI') {
+			img.src = '/hb.png';
+			img.alt = 'Hyper Blaster';
+		} else {
+			img.src = '/ps1.png';
+			img.alt = 'G-Con45';
+		}
+	} else {
       document.body.classList.add('ps2-mode');
       img.src = '/ps2.png';
       img.alt = 'PS2 Mode';
