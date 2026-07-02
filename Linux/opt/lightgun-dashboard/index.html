@@ -259,6 +259,7 @@ let lastFirmwareLog = "";
 let sindenpsLastRunning = 0;
 let lastFirmwarePorts = [];
 let systemPowerPending = false;
+let sawSystemOffline = false;
 
 function showTab(name) {
   document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
@@ -328,31 +329,48 @@ async function updateModeIndicator() {
   if (!img) return;
 
   /*
-   * If we're waiting for a reboot/shutdown,
-   * keep showing OFFLINE until the web service
-   * comes back and responds to /healthz.
+   * Reboot/shutdown handling.
+   * Stay OFFLINE until we've actually seen the
+   * appliance disappear and then come back.
    */
   if (systemPowerPending) {
 
     try {
+
       const health = await fetch('/healthz', {
         cache: 'no-store'
       });
 
-      if (health.ok) {
-        systemPowerPending = false;
-      } else {
+      if (!health.ok) {
+        throw new Error('offline');
+      }
+
+      /*
+       * Appliance is still online and has not
+       * disappeared yet. Keep showing OFFLINE.
+       */
+      if (!sawSystemOffline) {
         setSystemOfflineUI();
         return;
       }
 
-    } catch {
+      /*
+       * Appliance disappeared and is back.
+       * Resume normal icon handling.
+       */
+      systemPowerPending = false;
+      sawSystemOffline = false;
+
+    } catch (e) {
+
+      sawSystemOffline = true;
       setSystemOfflineUI();
       return;
     }
   }
 
   try {
+
     const svc = await (await fetch('/api/services')).json();
     const lg = (svc['lightgun.service'] || '').toLowerCase();
 
@@ -399,10 +417,14 @@ async function updateModeIndicator() {
       document.body.classList.add('ps2-mode');
       img.src = '/ps2.png';
       img.alt = 'PS2 Mode';
-
     }
 
   } catch (e) {
+
+    if (systemPowerPending) {
+      sawSystemOffline = true;
+    }
+
     setSystemOfflineUI();
   }
 }
@@ -507,8 +529,9 @@ async function systemAction(action) {
         (action === 'reboot') ? 'Rebooting…' : 'Shutting down…';
     }
 
-    systemPowerPending = true;
-    setSystemOfflineUI();
+	systemPowerPending = true;
+	sawSystemOffline = false;
+	setSystemOfflineUI();
 
     const res = await fetch(`/api/system/${action}`, { method: 'POST' });
 
@@ -1068,10 +1091,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 setInterval(async () => {
   try {
 
+setInterval(async () => {
+  try {
+
       if (systemPowerPending) {
           setSystemOfflineUI();
           return;
       }
+
+      const svc = await (await fetch('/api/services')).json();
 
       const svc = await (await fetch('/api/services')).json();
       const lg = (svc['lightgun.service'] || '').toLowerCase();
