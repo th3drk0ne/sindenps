@@ -1061,7 +1061,95 @@ function renderBackupList(backups, platform) {
   });
 }
 
-async function refreshSindenpsStatus() {
+	async function refreshSindenpsStatus() {
+
+		const status = document.getElementById('sindenps-update-status');
+		const banner = document.getElementById('update-banner');
+		const bannerText = document.getElementById('update-banner-text');
+
+		try {
+
+			const state = await (await fetch('/api/sindenps/status')).json();
+
+			if (state.running) {
+
+				sindenpsLastRunning = Date.now();
+
+				if (status) {
+					status.textContent = "Updating…";
+				}
+
+				return;
+			}
+
+			const localRes = await fetch('/api/version');
+			const localData = await localRes.json();
+
+			if (!localData.ok) {
+
+				if (status) {
+					status.textContent = "Version check failed";
+				}
+
+				return;
+			}
+
+			const localVersion =
+				String(localData.sindenps_version || '').trim();
+
+			const remoteVersion = (
+				await fetch(
+					'https://raw.githubusercontent.com/th3drk0ne/sindenps/main/VERSION'
+				).then(r => r.text())
+			).trim();
+
+			if (!localVersion || !remoteVersion) {
+
+				if (status) {
+					status.textContent = "Version check failed";
+				}
+
+				return;
+			}
+
+			if (localVersion === remoteVersion) {
+
+				if (status) {
+					status.textContent =
+						`Up to date (v${localVersion})`;
+				}
+
+				if (banner) {
+					banner.style.display = 'none';
+				}
+
+			} else {
+
+				if (status) {
+					status.textContent =
+						`Update available (${localVersion} → ${remoteVersion})`;
+				}
+
+				if (bannerText) {
+					bannerText.textContent =
+						`Platform Update Available (${localVersion} → ${remoteVersion})`;
+				}
+
+				if (banner) {
+					banner.style.display = 'flex';
+				}
+			}
+
+		} catch (e) {
+
+			console.error('SindenPS update check failed', e);
+
+			if (status) {
+				status.textContent = "Version check failed";
+			}
+		}
+	}
+
   const status = document.getElementById('sindenps-update-status');
 
   try {
@@ -1305,30 +1393,30 @@ setInterval(refreshServices, 1000);
 setInterval(() => {
   /*
    * Platform update check must run globally.
-   * Do not restrict this to the Services tab.
+   * This drives the top banner and must not depend
+   * on the Services tab being open.
    */
   refreshSindenpsStatus();
 
-  const panel = document.getElementById('service-panel');
+  c*nst panel = document.getElementByI*('service-panel');
 
-  if (panel && panel.style.display === 'block') {
-
+  if (panel &&*panel.style.display === 'block') {*
     refreshUpdateStatus();
-    refreshFirmwareStatus();
+    re*reshFirmwareStatus();
 
-    const updateBox = document.getElementById('update-logs');
-    const fwBox = document.getElementById('firmware-logs');
-    const sindenBox = document.getElementById('sindenps-update-logs');
+    const u*dateBox = document.getElementById(*update-logs');
+    const fwBox = d*cument.getElementById('firmware-lo*s');
+    const sindenBox = documen*.getElementById('sindenps-update-l*gs');
 
-    if (updateBox && updateBox.style.display === 'block') {
-      loadUpdateLogs();
+    if (updateBox && update*ox.style.display === 'block') {
+  *   loadUpdateLogs();
     }
-    else if (fwBox && fwBox.style.display === 'block') {
-      loadFirmwareLogs();
+    els* if (fwBox && fwBox.style.display *== 'block') {
+      loadFirmwareLo*s();
     }
-    else if (sindenBox && sindenBox.style.display === 'block') {
+    else if (sindenBox *& sindenBox.style.display === 'blo*k') {
       loadSindenpsLogs();
-    }
+  * }
   }
 }, 5000);
 
