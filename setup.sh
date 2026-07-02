@@ -282,10 +282,11 @@ install -d -o sinden -g sinden /opt/sinden
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
 	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh"
+	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh" \
+	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/query-dongle.sh"
 
-  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh
-  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh
+  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
 )
 
 USER_HOME="/home/sinden"
@@ -624,6 +625,8 @@ Cmnd_Alias LIGHTGUN_CMDS = \
 sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
+sudo systemctl disable ModemManager
+sudo systemctl stop ModemManager
 
 log "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do

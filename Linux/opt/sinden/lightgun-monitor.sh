@@ -9,7 +9,7 @@ DEVICE_IDS=(
 )
 
 SERVICE="lightgun.service"
-INTERVAL=10
+INTERVAL=5
 PREV_COUNT=-1
 
 check_device_count() {
