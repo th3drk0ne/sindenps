@@ -326,11 +326,31 @@ async function updateModeIndicator() {
   const txt = document.getElementById('mode-text');
 
   if (!img) return;
-  
+
+  /*
+   * If we're waiting for a reboot/shutdown,
+   * keep showing OFFLINE until the web service
+   * comes back and responds to /healthz.
+   */
   if (systemPowerPending) {
-  setSystemOfflineUI();
-  return;
-}
+
+    try {
+      const health = await fetch('/healthz', {
+        cache: 'no-store'
+      });
+
+      if (health.ok) {
+        systemPowerPending = false;
+      } else {
+        setSystemOfflineUI();
+        return;
+      }
+
+    } catch {
+      setSystemOfflineUI();
+      return;
+    }
+  }
 
   try {
     const svc = await (await fetch('/api/services')).json();
@@ -342,6 +362,7 @@ async function updateModeIndicator() {
     }
 
     const platRes = await fetch('/api/platform');
+
     if (!platRes.ok) {
       setLoadingUI();
       return;
@@ -356,32 +377,35 @@ async function updateModeIndicator() {
     }
 
     if (txt) txt.style.display = 'none';
+
     img.style.display = 'block';
 
-	if (plat.platform === 'ps1') {
+    if (plat.platform === 'ps1') {
 
-		document.body.classList.remove('ps2-mode');
+      document.body.classList.remove('ps2-mode');
 
-		const fw = (plat.firmware || '').toUpperCase();
+      const fw = (plat.firmware || '').toUpperCase();
 
-		if (fw === 'KONAMI') {
-			img.src = '/hb.png';
-			img.alt = 'Hyper Blaster';
-		} else {
-			img.src = '/ps1.png';
-			img.alt = 'G-Con45';
-		}
-	} else {
+      if (fw === 'KONAMI') {
+        img.src = '/hb.png';
+        img.alt = 'Hyper Blaster';
+      } else {
+        img.src = '/ps1.png';
+        img.alt = 'G-Con45';
+      }
+
+    } else {
+
       document.body.classList.add('ps2-mode');
       img.src = '/ps2.png';
       img.alt = 'PS2 Mode';
+
     }
 
   } catch (e) {
     setSystemOfflineUI();
   }
 }
-
 
 async function refreshServices() {
   try {
