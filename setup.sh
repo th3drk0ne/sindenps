@@ -629,10 +629,10 @@ sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 SERVICE="ModemManager.service"
 
 if systemctl list-unit-files | grep -q "^${SERVICE}"; then
-    echo "$SERVICE exists. Disabling and stopping..."
+    log "$SERVICE exists. Disabling and stopping..."
     sudo systemctl disable --now "$SERVICE"
 else
-    echo "$SERVICE does not exist. Skipping."
+    warn "$SERVICE does not exist. Skipping."
 fi
 
 
