@@ -900,7 +900,7 @@ def offline_png():
     return send_from_directory("/opt/lightgun-dashboard", "offline.png")
 
 @app.route("/hb.png")
-def offline_png():
+def hb_png():
     return send_from_directory("/opt/lightgun-dashboard", "hb.png")
 
 @app.route("/favicon.ico")

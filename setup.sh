@@ -717,7 +717,7 @@ LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightg
 OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/offline.png"
 FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/favicon.ico"
 
-for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico; do
+for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png; do
   case "$FILE" in
     logo.png) URL="$LOGO_URL" ;;
     ps1.png)  URL="$LOGO_PS1" ;;
