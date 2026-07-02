@@ -625,8 +625,16 @@ Cmnd_Alias LIGHTGUN_CMDS = \
 sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
-sudo systemctl disable ModemManager
-sudo systemctl stop ModemManager
+
+SERVICE="ModemManager.service"
+
+if systemctl list-unit-files | grep -q "^${SERVICE}"; then
+    echo "$SERVICE exists. Disabling and stopping..."
+    sudo systemctl disable --now "$SERVICE"
+else
+    echo "$SERVICE does not exist. Skipping."
+fi
+
 
 log "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
