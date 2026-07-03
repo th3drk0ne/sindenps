@@ -125,6 +125,25 @@ void setup()
 
 void loop()
 {
+  
+  // firmware_mode query
+  if (Serial.available() > 0)
+  {
+      int incoming = Serial.peek();  // look without consuming
+
+      // If it's not your binary packet start byte, treat as command
+      if (incoming != 222)
+      {
+          incoming = Serial.read();
+
+          if (incoming == 'I')   // e.g. send 'I' for identify
+          {
+              Serial.println("KONAMI-PAL");
+          }
+          return; // don't process as gun data
+      }
+  }
+
   // Only update Reply[] when ATT is high (idle)
   if (ReadAttention() != 0)
   {
