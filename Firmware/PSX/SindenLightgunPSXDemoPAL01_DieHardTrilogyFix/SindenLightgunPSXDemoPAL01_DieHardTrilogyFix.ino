@@ -138,7 +138,7 @@ void loop()
 
           if (incoming == 'I')   // e.g. send 'I' for identify
           {
-              Serial.println("KONAMI-PAL");
+              Serial.println("NAMCO-DHT");
           }
           return; // don't process as gun data
       }
