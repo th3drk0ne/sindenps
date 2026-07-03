@@ -65,7 +65,7 @@ SindenPS detects which Arduino is connected and switches the Lightgun Emulation 
 - Arduino Nano (G-Con45 mode)  
 - USB cables
 - Raspberry Pi 
-- 32GB Micro SD Card 
+- 16GB Micro SD Card 
 - Optional: G-Con45 and G-Con Hardware Adapters (see Wiki)
 
 ---
