@@ -324,10 +324,18 @@ function showTab(name) {
 
   // Lightgun log
   if (name === 'sindenlog') {
+
+    const mainLog = document.querySelector('.sinden-main-log');
+
+    mainLog.style.display = 'block';
+    mainLog.style.visibility = 'visible';
+
     const box = document.getElementById('sinden-log-content');
+
     box.textContent = 'Loading...';
+
     loadSindenLog();
-  }
+	}
 
   // Configuration
   if (name === 'config') {
