@@ -302,7 +302,11 @@ function showTab(name) {
   document.getElementById('service-panel').style.display = (name === 'services') ? 'block' : 'none';
   document.getElementById('tab-sindenlog').style.display = (name === 'sindenlog') ? 'block' : 'none';
   document.getElementById('tab-config').style.display = (name === 'config') ? 'block' : 'none';
-  if (name === 'sindenlog') loadSindenLog();
+  if (name === 'sindenlog') {
+	  const box = document.getElementById('sinden-log-content');
+	  box.textContent = 'Loading...';
+	  loadSindenLog();
+	}
   if (name === 'config') {
     const p = document.getElementById('platform-select').value;
     loadConfig(p).catch(err => {
@@ -667,13 +671,25 @@ function confirmSystemAction(action) {
 }
 
 async function loadSindenLog() {
+  const box = document.getElementById('sinden-log-content');
+
   try {
-    const res = await fetch('/api/sinden-log');
+    const res = await fetch('/api/sinden-log', {
+      cache: 'no-store'
+    });
+
     const data = await res.json();
-    const box = document.getElementById('sinden-log-content');
-    box.textContent = data.logs || '';
-    box.parentElement.scrollTop = box.parentElement.scrollHeight;
-  } catch (e) {}
+
+    box.textContent = data.logs || 'Log empty';
+
+    box.parentElement.scrollTop =
+      box.parentElement.scrollHeight;
+
+  } catch (e) {
+    box.textContent = 'Waiting for service...';
+
+    setTimeout(loadSindenLog, 2000);
+  }
 }
 
 function buildGroupedConfigForm(containerId, groups) {
