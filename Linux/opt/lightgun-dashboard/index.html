@@ -298,6 +298,13 @@ let sawSystemOffline = false;
 
 function showTab(name) {
 
+	// Close any service log panels when changing tabs
+	document.querySelectorAll('.log-box').forEach(box => {
+	  if (!box.classList.contains('sinden-main-log')) {
+		box.style.display = 'none';
+	  }
+	});
+
   // Highlight active tab
   document.querySelectorAll('.tabs button')
     .forEach(btn => btn.classList.remove('active'));
