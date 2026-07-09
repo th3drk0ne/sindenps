@@ -706,6 +706,10 @@ console.log('Loading Sinden log...');
     });
 
     const data = await res.json();
+	
+	console.log('log length:', data.logs?.length);
+	console.log('section:', document.getElementById('tab-sindenlog'));
+	console.log('logbox:', box.parentElement);
 
     box.textContent = data.logs || 'Log empty';
 
