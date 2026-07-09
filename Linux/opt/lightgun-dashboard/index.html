@@ -699,7 +699,7 @@ function confirmSystemAction(action) {
 
 async function loadSindenLog() {
   const box = document.getElementById('sinden-log-content');
-
+console.log('Loading Sinden log...');
   try {
     const res = await fetch('/api/sinden-log', {
       cache: 'no-store'
@@ -714,7 +714,7 @@ async function loadSindenLog() {
 
   } catch (e) {
     box.textContent = 'Waiting for service...';
-
+	console.error('Sinden log load failed', e);
     setTimeout(loadSindenLog, 2000);
   }
 }
