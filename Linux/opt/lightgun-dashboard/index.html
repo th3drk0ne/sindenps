@@ -300,6 +300,22 @@ let systemPowerPending = false;
 let sawSystemOffline = false;
 
 function showTab(name) {
+	if (name === 'config') {
+
+	  window.scrollTo({
+		top: 0,
+		behavior: 'instant'
+	  });
+
+	  const p = document.getElementById('platform-select').value;
+
+	  loadConfig(p).catch(err => {
+		const s = document.getElementById('config-status');
+		if (s) s.textContent = 'Load error: ' + err.message;
+	  });
+
+	  refreshProfilesUI(p);
+	}
 
 	// Close any service log panels when changing tabs
 	document.querySelectorAll('.log-box').forEach(box => {
