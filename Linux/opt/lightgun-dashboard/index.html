@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
   <title>SindenPS</title>
-  <link rel="apple-touch-icon" href="/applemobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-title" content="SindenPS">
   <style>
@@ -303,10 +303,6 @@ let sawSystemOffline = false;
 
 function showTab(name) {
 
-  const topBtn = document.getElementById('scroll-top-btn');
-  if (topBtn) {
-    topBtn.style.display = (name === 'config') ? 'block' : 'none';
-  }
 
   // Close service log panels when switching tabs
   document.querySelectorAll('.log-box').forEach(box => {
@@ -375,6 +371,22 @@ function showTab(name) {
     loadFirmwarePorts();
   }
 }
+
+window.addEventListener('scroll', () => {
+
+  const btn = document.getElementById('scroll-top-btn');
+
+  if (!btn) return;
+
+  const onConfigTab =
+    document.getElementById('tab-config').style.display === 'block';
+
+  btn.style.display =
+    (onConfigTab && window.scrollY > 200)
+      ? 'block'
+      : 'none';
+
+});
 
 function setSystemOfflineUI() {
   document.body.classList.remove('ps2-mode');
