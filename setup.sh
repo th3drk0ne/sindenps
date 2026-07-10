@@ -726,8 +726,9 @@ OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lig
 FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/favicon.ico"
 PAL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/pal.png"
 NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ntsc.png"
+ATI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/apple-touch-icon.png"
 
-for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png pal.png ntsc.png; do
+for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png pal.png ntsc.png apple-touch-icon.png; do
   case "$FILE" in
     logo.png) URL="$LOGO_URL" ;;
     ps1.png)  URL="$LOGO_PS1" ;;
@@ -738,6 +739,7 @@ for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png pal
     favicon.ico)  URL="$FAVICON" ;;
 	pal.png)  URL="$PAL" ;;
     ntsc.png)  URL="$NTSC" ;;
+	apple-touch-icon.png)  URL="$ATI" ;;
   esac
 
   DEST="${APP_DIR}/${FILE}"
