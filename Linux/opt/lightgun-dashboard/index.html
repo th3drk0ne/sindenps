@@ -94,6 +94,7 @@
       .config-toolbar .group, .config-toolbar select, .config-toolbar button { width:100%; }
       .config-panels { margin:0 8px 20px; }
       .config-card { flex:1 1 100%; }
+	  #scroll-top-btn { position: fixed; right: 15px; bottom: 20px; z-index: 999; width: 50px; height: 50px; border: none; border-radius: 50%; background: var(--theme-border); color: #fff; font-size: 24px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.5);}
       #save-restart { width:100%; padding:12px; font-size:16px; }
       #backup-modal > .dialog { width:95vw !important; margin-top:20vh !important; padding:12px; }
 	  #update-progress { display: block; width: 100%; text-align: center; color: #3cf; font-size: 12px; }
@@ -291,7 +292,7 @@
       </div>
     </div>
   </div>
-
+<button id="scroll-top-btn" onclick="scrollToTop()">↑</button>
 <script>
 let lastFirmwareLog = "";
 let sindenpsLastRunning = 0;
@@ -300,29 +301,18 @@ let systemPowerPending = false;
 let sawSystemOffline = false;
 
 function showTab(name) {
-	if (name === 'config') {
 
-	  window.scrollTo({
-		top: 0,
-		behavior: 'instant'
-	  });
+  const topBtn = document.getElementById('scroll-top-btn');
+  if (topBtn) {
+    topBtn.style.display = (name === 'config') ? 'block' : 'none';
+  }
 
-	  const p = document.getElementById('platform-select').value;
-
-	  loadConfig(p).catch(err => {
-		const s = document.getElementById('config-status');
-		if (s) s.textContent = 'Load error: ' + err.message;
-	  });
-
-	  refreshProfilesUI(p);
-	}
-
-	// Close any service log panels when changing tabs
-	document.querySelectorAll('.log-box').forEach(box => {
-	  if (!box.classList.contains('sinden-main-log')) {
-		box.style.display = 'none';
-	  }
-	});
+  // Close service log panels when switching tabs
+  document.querySelectorAll('.log-box').forEach(box => {
+    if (!box.classList.contains('sinden-main-log')) {
+      box.style.display = 'none';
+    }
+  });
 
   // Highlight active tab
   document.querySelectorAll('.tabs button')
@@ -341,23 +331,33 @@ function showTab(name) {
   document.getElementById('tab-config').style.display =
     (name === 'config') ? 'block' : 'none';
 
-  // Lightgun log
+  // Lightgun Log
   if (name === 'sindenlog') {
 
     const mainLog = document.querySelector('.sinden-main-log');
 
-    mainLog.style.display = 'block';
-    mainLog.style.visibility = 'visible';
+    if (mainLog) {
+      mainLog.style.display = 'block';
+      mainLog.style.visibility = 'visible';
+    }
 
     const box = document.getElementById('sinden-log-content');
 
-    box.textContent = 'Loading...';
+    if (box) {
+      box.textContent = 'Loading...';
+    }
 
     loadSindenLog();
-	}
+  }
 
   // Configuration
   if (name === 'config') {
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant'
+    });
+
     const p = document.getElementById('platform-select').value;
 
     loadConfig(p).catch(err => {
@@ -374,7 +374,6 @@ function showTab(name) {
     loadFirmwarePorts();
   }
 }
-
 
 function setSystemOfflineUI() {
   document.body.classList.remove('ps2-mode');
@@ -775,6 +774,14 @@ function buildGroupedConfigForm(containerId, groups) {
     });
   });
 }
+
+function scrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}
+
 
 async function loadConfig(platform) {
   const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
