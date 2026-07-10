@@ -909,6 +909,10 @@ def hb_png():
 @app.route("/favicon.ico")
 def favicon_ico():
     return send_from_directory("/opt/lightgun-dashboard", "favicon.ico")
+    
+@app.route("/apple-touch-icon.png")
+def apple_touch_icon():
+    return send_from_directory("/opt/lightgun-dashboard", "apple-touch-icon.png")
 
 @app.route("/pal.png")
 def pal_png():
