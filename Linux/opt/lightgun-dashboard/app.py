@@ -914,6 +914,10 @@ def favicon_ico():
 def apple_touch_icon():
     return send_from_directory("/opt/lightgun-dashboard", "apple-touch-icon.png")
 
+@app.route("/manifest.json")
+def manifest_json():
+    return send_from_directory("/opt/lightgun-dashboard", "manifest.json")
+
 @app.route("/pal.png")
 def pal_png():
     return send_from_directory("/opt/lightgun-dashboard", "pal.png")
