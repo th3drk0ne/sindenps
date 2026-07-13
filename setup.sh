@@ -301,7 +301,8 @@ cd /home/sinden/Firmware
   log "Downloading Firmware files to /home/sinden/Firmware."
   wget --quiet --show-progress --https-only --timestamping \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
-    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex"  
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
+	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex"	
 	#\
 	#"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogy.hex"
 
