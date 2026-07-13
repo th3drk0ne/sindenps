@@ -303,8 +303,7 @@ cd /home/sinden/Firmware
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex"  
 	#\
-	#"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix2.hex" \
-	#"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogyFix3.hex"
+	#"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL_DieHardTrilogy.hex"
 
 
 LOG="/var/log/platform-update.log"
@@ -595,6 +594,12 @@ sudo wget -O /opt/lightgun-dashboard/index.html \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
+
+log "=== Downloading manifest.json from GitHub ==="
+sudo wget -O /opt/lightgun-dashboard/manifest.json \
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/manifest.json
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/manifest.json"
+log "manifest.json Downloaded to ${APP_DIR}/manifest.json"
 
 log "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
