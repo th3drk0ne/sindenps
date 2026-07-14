@@ -595,7 +595,8 @@ async function updateModeIndicator() {
       document.body.classList.remove('ps2-mode');
 
 	if (plat.vendor === 'KONAMI') {
-
+	
+		document.body.classList.remove('sony-mode');
 		document.body.classList.add('konami-mode');
 
 		img.src = '/hb.png';
