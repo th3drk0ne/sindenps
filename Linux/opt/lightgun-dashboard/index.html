@@ -49,16 +49,13 @@
     .tabs button { background:#222; color:#fff; border:1px solid var(--theme-border); padding:10px 14px; cursor:pointer; border-radius:6px; }
     .tabs button:hover { background: var(--theme-border); }
 	.tabs button.active { background: var(--theme-border); color: #fff; font-weight: 700; }
-	body.konami-mode .tabs button {
-	  color: #fff;
-	}
-
+	body.konami-mode .tabs button { color: #fff; }
 	body.konami-mode .tabs button.active,
+	body.konami-mode .tabs button:hover,
 	body.konami-mode .btn-danger,
 	body.konami-mode #scroll-top-btn,
-	body.konami-mode .update-banner button {
-	  color: #000 !important;
-	}
+	body.konami-mode .update-banner button,
+	body.konami-mode .service-buttons button:nth-child(2) { color: #000 !important;	}
     .panel-title { color: var(--theme-accent); font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
     .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid var(--theme-border); border-radius:6px; }
     .service-name { font-size:18px; font-weight:700; }
