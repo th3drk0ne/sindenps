@@ -23,6 +23,13 @@
       --theme-accent: #3385ff;
       --theme-button-danger: #0033aa;
     }
+	body.konami-mode {
+	  --theme-main: #ff9900;
+	  --theme-border: #ff9900;
+	  --theme-accent: #ffb84d;
+	  --theme-button-danger: #cc7700;
+	}
+
     html { box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
     html, body { height: 100%; }
@@ -388,6 +395,7 @@ window.addEventListener('scroll', () => {
 
 function setSystemOfflineUI() {
   document.body.classList.remove('ps2-mode');
+  document.body.classList.remove('konami-mode');
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -403,6 +411,7 @@ function setSystemOfflineUI() {
 
 function setServiceOfflineUI() {
   document.body.classList.remove('ps2-mode');
+  document.body.classList.remove('konami-mode');
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -423,6 +432,7 @@ function setServiceOfflineUI() {
 
 function setLoadingUI() {
   document.body.classList.remove('ps2-mode');
+  document.body.classList.remove('konami-mode');
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -517,50 +527,57 @@ async function updateModeIndicator() {
 
     img.style.display = 'block';
 
-	if (plat.platform === 'ps1') {
+    if (plat.platform === 'ps1') {
 
-		document.body.classList.remove('ps2-mode');
+      document.body.classList.remove('ps2-mode');
 
-		if (plat.vendor === 'KONAMI') {
-			img.src = '/hb.png';
-			img.alt = 'Hyper Blaster';
-		} else {
-			img.src = '/ps1.png';
-			img.alt = 'G-Con45';
-		}
+      if (plat.vendor === 'KONAMI') {
 
-		if (regionImg) {
+        document.body.classList.add('konami-mode');
 
-			switch ((plat.variant || '').toUpperCase()) {
+        img.src = '/hb.png';
+        img.alt = 'Hyper Blaster';
 
-				case 'PAL':
-					regionImg.src = '/pal.png';
-					regionImg.style.display = 'block';
-					break;
+      } else {
 
-				case 'NTSC':
-					regionImg.src = '/ntsc.png';
-					regionImg.style.display = 'block';
-					break;
+        document.body.classList.remove('konami-mode');
 
-				default:
-					regionImg.style.display = 'none';
-					break;
-			}
-		}
+        img.src = '/ps1.png';
+        img.alt = 'G-Con45';
+      }
 
-	} else {
+      if (regionImg) {
 
-		document.body.classList.add('ps2-mode');
+        switch ((plat.variant || '').toUpperCase()) {
 
-		img.src = '/ps2.png';
-		img.alt = 'PS2 Mode';
+          case 'PAL':
+            regionImg.src = '/pal.png';
+            regionImg.style.display = 'block';
+            break;
 
-		if (regionImg) {
-			regionImg.style.display = 'none';
-		}
-	}
+          case 'NTSC':
+            regionImg.src = '/ntsc.png';
+            regionImg.style.display = 'block';
+            break;
 
+          default:
+            regionImg.style.display = 'none';
+            break;
+        }
+      }
+
+    } else {
+
+      document.body.classList.remove('konami-mode');
+      document.body.classList.add('ps2-mode');
+
+      img.src = '/ps2.png';
+      img.alt = 'PS2 Mode';
+
+      if (regionImg) {
+        regionImg.style.display = 'none';
+      }
+    }
 
   } catch (e) {
 
