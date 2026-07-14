@@ -69,13 +69,31 @@
 	body.konami-mode #btn-check-updates,
 	body.konami-mode #btn-update-now { color: #000 !important; }
 	body.konami-mode .update-banner button { color: #fff !important; }
+	/* Sony theme text colours */
+	body.sony-mode .tabs button,
+	body.sony-mode .log-toggle,
+	body.sony-mode .btn-secondary,
+	body.sony-mode .btn-tertiary {
+	  color: #fff !important;
+	}
+	body.sony-mode #system-actions .btn-secondary {
+	  color: #000 !important;
+	}
+	body.sony-mode .tabs button.active,
+	body.sony-mode .tabs button:hover,
+	body.sony-mode #scroll-top-btn {
+	  color: #000 !important;
+	}
+	/* Keep danger/action buttons red */
 	body.sony-mode .btn-danger,
 	body.sony-mode .service-buttons button:nth-child(2),
-	body.sony-mode #scroll-top-btn,
 	body.sony-mode #btn-check-updates,
 	body.sony-mode #btn-update-now {
-		background: #a00 !important;
-		color: #fff !important;
+	  background: #a00 !important;
+	  color: #fff !important;
+	}
+	body.sony-mode .update-banner button {
+	  color: #fff !important;
 	}
     .panel-title { color: var(--theme-accent); font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
     .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid var(--theme-border); border-radius:6px; }
