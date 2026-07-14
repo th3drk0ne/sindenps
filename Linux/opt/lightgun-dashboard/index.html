@@ -141,9 +141,9 @@
 		<span id="update-banner-text">
 			Platform Update Available
 		</span>
-		<button onclick="updateSindenps()">
-			Update Now
-		</button>
+			<button id="update-banner-btn" onclick="updateSindenps()">
+				Update Now
+			</button>
 	</div>
 	<div id="update-progress"
      style="display:none;color:#3cf;font-size:12px;margin-top:4px;">
@@ -222,7 +222,7 @@
 
 	  <div class="service-buttons">
 		<button onclick="checkSindenpsUpdate()">Check</button>
-		<button onclick="updateSindenps()">Update</button>
+		<button id="update-banner-btn" onclick="updateSindenps()">Update Now</button>
 		<button class="log-toggle" onclick="toggleSindenpsLogs()">Show Logs</button>
 	  </div>
 
@@ -622,11 +622,19 @@ async function checkSindenpsUpdate() {
 async function updateSindenps() {
   const status = document.getElementById('sindenps-update-status');
   const progress = document.getElementById('update-progress');
+  const btn = document.getElementById('update-banner-btn');
 
   if (!confirm("Update SindenPS platform now?")) return;
 
   try {
     status.textContent = "Updating…";
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Updating...";
+      btn.style.opacity = "0.6";
+      btn.style.cursor = "not-allowed";
+    }
 
     if (progress) {
       progress.style.display = 'block';
@@ -641,13 +649,26 @@ async function updateSindenps() {
     if (!data.ok) {
       status.textContent = data.error || "Update failed";
 
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Update Now";
+        btn.style.opacity = "";
+        btn.style.cursor = "";
+      }
+
       if (progress) {
         progress.style.display = 'none';
       }
     }
-
   } catch (e) {
     status.textContent = "error";
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Update Now";
+      btn.style.opacity = "";
+      btn.style.cursor = "";
+    }
 
     if (progress) {
       progress.style.display = 'none';
@@ -1167,6 +1188,7 @@ function renderBackupList(backups, platform) {
 async function refreshSindenpsStatus() {
   const status = document.getElementById('sindenps-update-status');
   const progress = document.getElementById('update-progress');
+  const btn = document.getElementById('update-banner-btn');
 
   try {
     const state = await (await fetch('/api/sindenps/status')).json();
@@ -1177,7 +1199,16 @@ async function refreshSindenpsStatus() {
 
     if (state.running) {
       sindenpsLastRunning = Date.now();
+
       status.textContent = "Updating…";
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Updating...";
+        btn.style.opacity = "0.6";
+        btn.style.cursor = "not-allowed";
+      }
+
       return;
     }
 
@@ -1191,6 +1222,14 @@ async function refreshSindenpsStatus() {
 
     if (!localData.ok) {
       status.textContent = "check failed";
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Update Now";
+        btn.style.opacity = "";
+        btn.style.cursor = "";
+      }
+
       return;
     }
 
@@ -1211,6 +1250,13 @@ async function refreshSindenpsStatus() {
         banner.style.display = 'none';
       }
 
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Update Now";
+        btn.style.opacity = "";
+        btn.style.cursor = "";
+      }
+
     } else {
 
       status.textContent =
@@ -1224,6 +1270,13 @@ async function refreshSindenpsStatus() {
         bannerText.textContent =
           `Platform Update Available (${local} → ${remote.trim()})`;
       }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Update Now";
+        btn.style.opacity = "";
+        btn.style.cursor = "";
+      }
     }
 
   } catch (e) {
@@ -1231,6 +1284,13 @@ async function refreshSindenpsStatus() {
 
     if (progress) {
       progress.style.display = 'none';
+    }
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Update Now";
+      btn.style.opacity = "";
+      btn.style.cursor = "";
     }
   }
 }
