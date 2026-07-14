@@ -145,10 +145,6 @@
 				Update Now
 			</button>
 	</div>
-	<div id="update-progress"
-     style="display:none;color:#3cf;font-size:12px;margin-top:4px;">
-    Update in progress...
-	</div>
     </header>
 	
     <section id="tab-sindenlog" style="display:block; padding:10px;">
@@ -621,7 +617,6 @@ async function checkSindenpsUpdate() {
 
 async function updateSindenps() {
   const status = document.getElementById('sindenps-update-status');
-  const progress = document.getElementById('update-progress');
   const btn = document.getElementById('update-banner-btn');
 
   if (!confirm("Update SindenPS platform now?")) return;
@@ -634,10 +629,6 @@ async function updateSindenps() {
       btn.textContent = "Updating...";
       btn.style.opacity = "0.6";
       btn.style.cursor = "not-allowed";
-    }
-
-    if (progress) {
-      progress.style.display = 'block';
     }
 
     const res = await fetch('/api/sindenps/update', {
@@ -655,11 +646,8 @@ async function updateSindenps() {
         btn.style.opacity = "";
         btn.style.cursor = "";
       }
-
-      if (progress) {
-        progress.style.display = 'none';
-      }
     }
+
   } catch (e) {
     status.textContent = "error";
 
@@ -668,10 +656,6 @@ async function updateSindenps() {
       btn.textContent = "Update Now";
       btn.style.opacity = "";
       btn.style.cursor = "";
-    }
-
-    if (progress) {
-      progress.style.display = 'none';
     }
   }
 }
@@ -1187,15 +1171,10 @@ function renderBackupList(backups, platform) {
 
 async function refreshSindenpsStatus() {
   const status = document.getElementById('sindenps-update-status');
-  const progress = document.getElementById('update-progress');
   const btn = document.getElementById('update-banner-btn');
 
   try {
     const state = await (await fetch('/api/sindenps/status')).json();
-
-    if (progress) {
-      progress.style.display = state.running ? 'block' : 'none';
-    }
 
     if (state.running) {
       sindenpsLastRunning = Date.now();
@@ -1212,10 +1191,19 @@ async function refreshSindenpsStatus() {
       return;
     }
 
-    if (Date.now() - sindenpsLastRunning < 5000) {
-      status.textContent = "Updating…";
-      return;
-    }
+	if (Date.now() - sindenpsLastRunning < 5000) {
+
+	  status.textContent = "Updating…";
+
+	  if (btn) {
+		btn.disabled = true;
+		btn.textContent = "Updating...";
+		btn.style.opacity = "0.6";
+		btn.style.cursor = "not-allowed";
+	  }
+
+	  return;
+	}
 
     const localRes = await fetch('/api/version');
     const localData = await localRes.json();
@@ -1281,10 +1269,6 @@ async function refreshSindenpsStatus() {
 
   } catch (e) {
     status.textContent = "...";
-
-    if (progress) {
-      progress.style.display = 'none';
-    }
 
     if (btn) {
       btn.disabled = false;
