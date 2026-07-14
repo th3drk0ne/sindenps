@@ -29,6 +29,12 @@
 	  --theme-accent: #ffe866;
 	  --theme-button-danger: #ccaa00;
 	}
+	body.sony-mode {
+	  --theme-main: #00cc44;
+	  --theme-border: #00cc44;
+	  --theme-accent: #66ff99;
+	  --theme-button-danger: #009933;
+	}
     html { box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
     html, body { height: 100%; }
@@ -238,7 +244,7 @@
 
 	  <div class="service-buttons">
 		<button onclick="checkSindenpsUpdate()">Check</button>
-		<button id="update-banner-btn" onclick="updateSindenps()">Update Now</button>
+		<button id="btn-sindenps-update" onclick="updateSindenps()">Update Now</button>
 		<button class="log-toggle" onclick="toggleSindenpsLogs()">Show Logs</button>
 	  </div>
 
@@ -409,6 +415,7 @@ window.addEventListener('scroll', () => {
 function setSystemOfflineUI() {
   document.body.classList.remove('ps2-mode');
   document.body.classList.remove('konami-mode');
+  document.body.classList.remove('sony-mode');
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -425,6 +432,7 @@ function setSystemOfflineUI() {
 function setServiceOfflineUI() {
   document.body.classList.remove('ps2-mode');
   document.body.classList.remove('konami-mode');
+  document.body.classList.remove('sony-mode');
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -446,6 +454,7 @@ function setServiceOfflineUI() {
 function setLoadingUI() {
   document.body.classList.remove('ps2-mode');
   document.body.classList.remove('konami-mode');
+  document.body.classList.remove('sony-mode');
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -554,6 +563,7 @@ async function updateModeIndicator() {
 	} else if (plat.vendor === 'SONY') {
 
 		document.body.classList.remove('konami-mode');
+		document.body.classList.add('sony-mode');
 
 		img.src = '/sony.png';
 		img.alt = 'Sony';
@@ -561,6 +571,7 @@ async function updateModeIndicator() {
 	} else {
 
 		document.body.classList.remove('konami-mode');
+		document.body.classList.remove('sony-mode');
 
 		img.src = '/ps1.png';
 		img.alt = 'G-Con45';
@@ -594,6 +605,7 @@ async function updateModeIndicator() {
     } else {
 
       document.body.classList.remove('konami-mode');
+	  document.body.classList.remove('sony-mode');
       document.body.classList.add('ps2-mode');
 
       img.src = '/ps2.png';
