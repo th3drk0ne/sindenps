@@ -934,6 +934,9 @@ def sony_png():
 def ntsc_png():
     return send_from_directory("/opt/lightgun-dashboard", "ntsc.png")
 
+@app.route("/dht.png")
+def dht_png():
+    return send_from_directory("/opt/lightgun-dashboard", "dht.png")
 
 @app.route("/")
 def index():
