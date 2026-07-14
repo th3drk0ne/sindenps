@@ -544,20 +544,27 @@ async function updateModeIndicator() {
 
       document.body.classList.remove('ps2-mode');
 
-      if (plat.vendor === 'KONAMI') {
+	if (plat.vendor === 'KONAMI') {
 
-        document.body.classList.add('konami-mode');
+		document.body.classList.add('konami-mode');
 
-        img.src = '/hb.png';
-        img.alt = 'Hyper Blaster';
+		img.src = '/hb.png';
+		img.alt = 'Hyper Blaster';
 
-      } else {
+	} else if (plat.vendor === 'SONY') {
 
-        document.body.classList.remove('konami-mode');
+		document.body.classList.remove('konami-mode');
 
-        img.src = '/ps1.png';
-        img.alt = 'G-Con45';
-      }
+		img.src = '/sony.png';
+		img.alt = 'Sony';
+
+	} else {
+
+		document.body.classList.remove('konami-mode');
+
+		img.src = '/ps1.png';
+		img.alt = 'G-Con45';
+	}
 
       if (regionImg) {
 

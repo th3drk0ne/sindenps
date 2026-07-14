@@ -926,6 +926,10 @@ def pal_png():
 def analog_png():
     return send_from_directory("/opt/lightgun-dashboard", "analog.png")
 
+@app.route("/sony.png")
+def sony_png():
+    return send_from_directory("/opt/lightgun-dashboard", "sony.png")
+    
 @app.route("/ntsc.png")
 def ntsc_png():
     return send_from_directory("/opt/lightgun-dashboard", "ntsc.png")
