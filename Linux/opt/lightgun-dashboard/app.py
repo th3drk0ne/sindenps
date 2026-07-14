@@ -921,6 +921,10 @@ def manifest_json():
 @app.route("/pal.png")
 def pal_png():
     return send_from_directory("/opt/lightgun-dashboard", "pal.png")
+    
+@app.route("/analog.png")
+def analog_png():
+    return send_from_directory("/opt/lightgun-dashboard", "analog.png")
 
 @app.route("/ntsc.png")
 def ntsc_png():

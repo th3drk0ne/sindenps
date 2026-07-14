@@ -563,20 +563,25 @@ async function updateModeIndicator() {
 
         switch ((plat.variant || '').toUpperCase()) {
 
-          case 'PAL':
-            regionImg.src = '/pal.png';
-            regionImg.style.display = 'block';
-            break;
+			case 'PAL':
+				regionImg.src = '/pal.png';
+				regionImg.style.display = 'block';
+				break;
 
-          case 'NTSC':
-            regionImg.src = '/ntsc.png';
-            regionImg.style.display = 'block';
-            break;
+			case 'NTSC':
+				regionImg.src = '/ntsc.png';
+				regionImg.style.display = 'block';
+				break;
 
-          default:
-            regionImg.style.display = 'none';
-            break;
-        }
+			case 'ANALOG':
+				regionImg.src = '/analog.png';
+				regionImg.style.display = 'block';
+				break;
+
+			default:
+				regionImg.style.display = 'none';
+				break;
+		}
       }
 
     } else {
