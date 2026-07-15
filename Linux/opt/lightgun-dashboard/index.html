@@ -513,6 +513,28 @@ function setLoadingUI() {
   }
 }
 
+async function refreshTemperature() {
+    const el = document.getElementById('temperature-status');
+    if (!el) return;
+
+    try {
+        const res = await fetch('/api/temperature');
+        const data = await res.json();
+
+        if (!data.ok) {
+            el.textContent = 'Unavailable';
+            return;
+        }
+
+        el.textContent = `${data.temperature}°C (${data.state})`;
+
+        el.classList.remove('hot','warm','normal');
+        el.classList.add(data.state.toLowerCase());
+
+    } catch {
+        el.textContent = 'Unavailable';
+    }
+}
 async function updateModeIndicator() {
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -1419,6 +1441,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadFirmwareList();
   loadFirmwarePorts();
   refreshSindenpsStatus();
+  refreshTemperature();
 
   updateModeIndicator();
   setInterval(updateModeIndicator, 2000);
@@ -1563,6 +1586,7 @@ setInterval(() => {
 
     refreshUpdateStatus();
     refreshFirmwareStatus();
+	refreshTemperature();
 
     const updateBox = document.getElementById('update-logs');
     const fwBox = document.getElementById('firmware-logs');
