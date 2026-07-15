@@ -367,13 +367,17 @@ let systemPowerPending = false;
 let sawSystemOffline = false;
 
 function showTab(name) {
-
-
+function showTab(name) {
   // Close service log panels when switching tabs
   document.querySelectorAll('.log-box').forEach(box => {
     if (!box.classList.contains('sinden-main-log')) {
       box.style.display = 'none';
     }
+  });
+
+  // Reset all log toggle button captions
+  document.querySelectorAll('.log-toggle').forEach(btn => {
+    btn.textContent = 'Show Logs';
   });
 
   // Highlight active tab
