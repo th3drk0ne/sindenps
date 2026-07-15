@@ -286,7 +286,7 @@
 	  <div class="service-buttons">
 		<button onclick="checkSindenpsUpdate()">Check</button>
 		<button id="btn-sindenps-update" onclick="updateSindenps()">Update Now</button>
-		<button class="log-toggle" onclick="toggleSindenpsLogs()">Show Logs</button>
+		<button id="btn-toggle-sindenps-logs" class="log-toggle" onclick="toggleSindenpsLogs()">Show Logs</button>
 	  </div>
 
 	  <div class="log-box" id="sindenps-update-logs">
@@ -792,11 +792,14 @@ function closeAllLogs() {
 
 function toggleSindenpsLogs() {
   const box = document.getElementById('sindenps-update-logs');
+  const btn = document.getElementById('btn-toggle-sindenps-logs');
 
   if (box.style.display === 'block') {
     box.style.display = 'none';
+    if (btn) btn.textContent = 'Show Logs';
   } else {
     box.style.display = 'block';
+    if (btn) btn.textContent = 'Hide Logs';
     loadSindenpsLogs();
   }
 }
@@ -1594,16 +1597,15 @@ setInterval(() => {
     const fwBox = document.getElementById('firmware-logs');
     const sindenBox = document.getElementById('sindenps-update-logs');
 
-    if (updateBox && updateBox.style.display === 'block') {
-      loadUpdateLogs();
-    }
-    else if (fwBox && fwBox.style.display === 'block') {
-      loadFirmwareLogs();
-    }
-    else if (sindenBox && sindenBox.style.display === 'block') {
-      loadSindenpsLogs();
-    }
-
+	if (updateBox && updateBox.style.display === 'block') {
+	  loadUpdateLogs();
+	}
+	if (fwBox && fwBox.style.display === 'block') {
+	  loadFirmwareLogs();
+	}
+	if (sindenBox && sindenBox.style.display === 'block') {
+	  loadSindenpsLogs();
+	}
   }
   refreshSindenpsStatus();
 }, 5000);
