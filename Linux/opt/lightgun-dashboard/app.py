@@ -2,6 +2,7 @@
 import os
 import re
 import time
+import glob
 import threading
 import subprocess
 import xml.etree.ElementTree as ET
@@ -124,6 +125,32 @@ def _set_state(st, msg=""):
     UPDATE_STATE["state"] = st
     UPDATE_STATE["message"] = msg
 
+def get_cpu_temp():
+    try:
+        with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+            return round(int(f.read().strip()) / 1000, 1)
+    except Exception:
+        return None
+
+@app.route("/api/temperature")
+def api_temperature():
+    temp = get_cpu_temp()
+
+    if temp is None:
+        return jsonify({"ok": False})
+
+    if temp >= 80:
+        state = "HOT"
+    elif temp >= 70:
+        state = "WARM"
+    else:
+        state = "NORMAL"
+
+    return jsonify({
+        "ok": True,
+        "temperature": temp,
+        "state": state
+    })
 
 @app.route("/api/update/status")
 def api_update_status():

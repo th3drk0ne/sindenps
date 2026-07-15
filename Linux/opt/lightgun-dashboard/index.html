@@ -76,40 +76,34 @@
 	body.sony-mode .btn-tertiary {
 	  color: #fff !important;
 	}
-
-	body.sony-mode #system-actions .btn-secondary {
-	  color: #000 !important;
-	}
-
+	body.sony-mode #system-actions .btn-secondary { color: #000 !important;	}
 	body.sony-mode .tabs button.active,
 	body.sony-mode .tabs button:hover,
 	body.sony-mode #scroll-top-btn {
 	  color: #000 !important;
 	}
-
 	/* Keep only service stop/update buttons red */
 	body.sony-mode .service-buttons button:nth-child(2),
 	body.sony-mode #btn-update-now {
 	  background: #a00 !important;
 	  color: #fff !important;
 	}
-
 	/* Check button stays green */
 	body.sony-mode #btn-check-updates {
 	  background: #00cc44 !important;
 	  color: #000 !important;
 	}
-
 	/* Config buttons stay green */
 	body.sony-mode #btn-activate-profile,
 	body.sony-mode #save-restart {
 	  background: #00cc44 !important;
 	  color: #000 !important;
 	}
-
-	body.sony-mode .update-banner button {
-	  color: #fff !important;
-	}
+	body.sony-mode .update-banner button { color: #fff !important;	}
+	#temperature-panel { background: #111; }
+	#temperature-status.hot { color: #ff4444; font-weight: 700;	}
+	#temperature-status.warm { color: #ffaa00; font-weight: 700; }
+	#temperature-status.normal { color: #00ff66; font-weight: 700;	}
     .panel-title { color: var(--theme-accent); font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
     .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid var(--theme-border); border-radius:6px; }
     .service-name { font-size:18px; font-weight:700; }
@@ -219,6 +213,12 @@
     </section>
 
     <section id="service-panel" style="display:none;">
+	<div class="service-row" id="temperature-panel">
+		<span class="service-name">System Temperature</span>
+		<span id="temperature-status" class="service-status">
+			Loading...
+		</span>
+	</div>
       <div class="service-row" id="service-lightgun">
         <span class="service-name">lightgun.service</span>
         <span class="service-status">loading…</span>
