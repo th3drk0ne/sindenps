@@ -787,7 +787,7 @@ async function updateModeIndicator() {
 			if (adapter2.vendor === 'KONAMI') {
 
 				if (img2.src.indexOf('/hb.png') === -1) {
-					img2.src = '/hb.png';
+					img2.src = vendorIcon('hb');
 				}
 
 				img2.alt = 'Hyper Blaster';
@@ -803,7 +803,7 @@ async function updateModeIndicator() {
 			} else {
 
 				if (img2.src.indexOf('/ps1.png') === -1) {
-					img2.src = '/ps1.png';
+					img2.src = vendorIcon('ps1');
 				}
 
 				img2.alt = 'G-Con45';
