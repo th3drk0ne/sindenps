@@ -92,7 +92,28 @@ UPDATE_LOGF = "/var/log/sindenps-update.log"
 VERSION_FILE = "/home/sinden/Lightgun/VERSION"
 SINDENPS_UPDATE_LOG = "/var/log/platform-update.log"
 SINDENPS_LOCK = "/tmp/sindenps-update.lock"
+ICONSET_FILE = "/opt/lightgun-dashboard/iconset.conf"
 
+
+def get_icon_set():
+    try:
+        with open(ICONSET_FILE, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+
+        if value in ("pal", "us"):
+            return value
+    except Exception:
+        pass
+
+    return "pal"
+
+
+def set_icon_set(value):
+    if value not in ("pal", "us"):
+        raise ValueError("Invalid icon set")
+
+    with open(ICONSET_FILE, "w", encoding="utf-8") as f:
+        f.write(value)
 
 def _read_version_marker():
     try:
@@ -1094,16 +1115,21 @@ def logo():
 def ps1_png():
     return send_from_directory("/opt/lightgun-dashboard", "ps1.png")
 
+@app.route("/ps1-u.png")
+def ps1u_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ps1-u.png")
 
 @app.route("/ps2.png")
 def ps2_png():
     return send_from_directory("/opt/lightgun-dashboard", "ps2.png")
 
+@app.route("/ps2-u.png")
+def ps2u_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ps2-u.png")
 
 @app.route("/load.png")
 def load_png():
     return send_from_directory("/opt/lightgun-dashboard", "load.png")
-
 
 @app.route("/offline.png")
 def offline_png():
@@ -1112,7 +1138,11 @@ def offline_png():
 @app.route("/hb.png")
 def hb_png():
     return send_from_directory("/opt/lightgun-dashboard", "hb.png")
-
+    
+@app.route("/hb-u.png")
+def hbu_png():
+    return send_from_directory("/opt/lightgun-dashboard", "hb-u.png")
+    
 @app.route("/favicon.ico")
 def favicon_ico():
     return send_from_directory("/opt/lightgun-dashboard", "favicon.ico")
@@ -1193,6 +1223,30 @@ def api_sindenps_status():
         "running": os.path.exists(SINDENPS_LOCK)
     })
 
+@app.route("/api/iconset")
+def api_iconset():
+    return jsonify({
+        "ok": True,
+        "iconset": get_icon_set()
+    })
+
+
+@app.route("/api/iconset", methods=["POST"])
+def api_iconset_save():
+    try:
+        data = request.get_json(force=True) or {}
+
+        set_icon_set(data.get("iconset", "pal"))
+
+        return jsonify({
+            "ok": True
+        })
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 400
 
 @app.route("/healthz")
 def healthz():

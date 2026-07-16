@@ -735,13 +735,19 @@ ATI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgu
 ANLG="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/analog.png"
 SONY="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/sony.png"
 DHT="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/dht.png"
+LOGO_PS1U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps1-u.png"
+LOGO_PS2U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2-u.png"
+LOGO_HBU="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/hb-u.png"
 
-for FILE in logo.png ps1.png ps2.png load.png offline.png favicon.ico hb.png pal.png ntsc.png apple-touch-icon.png analog.png sony.png dht.png; do
+for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png favicon.ico hb.png hb-u.png pal.png ntsc.png apple-touch-icon.png analog.png sony.png dht.png; do
   case "$FILE" in
     logo.png) URL="$LOGO_URL" ;;
     ps1.png)  URL="$LOGO_PS1" ;;
     ps2.png)  URL="$LOGO_PS2" ;;
 	hb.png)  URL="$LOGO_HB" ;;
+	ps1-u.png)  URL="$LOGO_PS1U" ;;
+    ps2-u.png)  URL="$LOGO_PS2U" ;;
+	hb-u.png)  URL="$LOGO_HBU" ;;
     load.png)  URL="$LOAD" ;;
     offline.png)  URL="$OFFLINE" ;;
     favicon.ico)  URL="$FAVICON" ;;

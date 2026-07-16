@@ -105,6 +105,8 @@
 	#temperature-status.hot { color: #ff4444; font-weight: 700;	}
 	#temperature-status.warm { color: #ffaa00; font-weight: 700; }
 	#temperature-status.normal { color: #00ff66; font-weight: 700;	}
+	#iconset-select { background: #000; color: #fff; border: 1px solid #444; border-radius: 6px; }
+	#iconset-select:focus { outline: none; box-shadow: none; border-color: #444; }
     .panel-title { color: var(--theme-accent); font-size:22px; font-weight:700; text-align:center; margin:16px 0; }
     .service-row { display:flex; flex-direction:column; gap:8px; background:#111; margin:10px 16px; padding:12px; border-left:6px solid var(--theme-border); border-radius:6px; }
     .service-name { font-size:18px; font-weight:700; }
@@ -299,6 +301,21 @@
 			</pre>
 
 		</div>
+
+		<div class="service-row" id="iconset-row">
+		<span class="service-name">Dashboard Icon Set</span>
+		<span class="service-status">
+			Choose icon style used by the dashboard
+		</span>
+
+		<div class="service-buttons">
+			<select id="iconset-select">
+				<option value="pal">PAL Icons</option>
+				<option value="us">US Icons</option>
+			</select>
+		</div>
+		</div>
+	
 	  <div class="service-row" id="sindenps-update">
 	  <span class="service-name">SindenPS Platform</span>
 	  <span class="service-status" id="sindenps-update-status">idle…</span>
@@ -313,6 +330,7 @@
 		<pre class="log-content" id="sindenps-update-log-content">Loading…</pre>
 	  </div>
 	</div>
+
     </section>
 
     <section id="tab-config" style="display:none; padding:10px;">
@@ -366,6 +384,7 @@ let sindenpsLastRunning = 0;
 let lastFirmwarePorts = [];
 let systemPowerPending = false;
 let sawSystemOffline = false;
+let iconSet = 'pal';
 
 function showTab(name) {
   // Close service log panels when switching tabs
@@ -584,6 +603,21 @@ async function refreshTemperature() {
     }
 }
 
+async function loadIconSet() {
+    try {
+        const res = await fetch('/api/iconset');
+        const data = await res.json();
+
+        iconSet = data.iconset || 'pal';
+
+        const sel = document.getElementById('iconset-select');
+
+        if (sel) {
+            sel.value = iconSet;
+        }
+    } catch {}
+}
+
 async function updateModeIndicator() {
 
     const img = document.getElementById('mode-indicator');
@@ -693,7 +727,7 @@ async function updateModeIndicator() {
                 document.body.classList.remove('sony-mode');
                 document.body.classList.add('konami-mode');
 
-                img.src = '/hb.png';
+                img.src = vendorIcon('hb');
                 img.alt = 'Hyper Blaster';
 
             } else if (adapter1?.vendor === 'SONY') {
@@ -709,7 +743,7 @@ async function updateModeIndicator() {
                 document.body.classList.remove('konami-mode');
                 document.body.classList.remove('sony-mode');
 
-                img.src = '/ps1.png';
+                img.src = vendorIcon('ps1');
                 img.alt = 'G-Con45';
             }
 
@@ -835,7 +869,7 @@ async function updateModeIndicator() {
 				divider.style.display = 'none';
 			}
 
-			img.src = '/ps2.png';
+			img.src = vendorIcon('ps2');
 			img.alt = 'PS2 Mode';
 
 			regionImg.style.display = 'none';
@@ -1582,6 +1616,16 @@ function renderBackupList(backups, platform) {
   });
 }
 
+function vendorIcon(name) {
+
+    const suffix =
+        iconSet === 'us'
+            ? '-u'
+            : '';
+
+    return `/${name}${suffix}.png`;
+}
+
 async function refreshSindenpsStatus() {
   const status = document.getElementById('sindenps-update-status');
   const btn = document.getElementById('update-banner-btn');
@@ -1713,6 +1757,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   const platDisplay = document.getElementById('platform-display');
 
   let detected = null;
+  
+  await loadIconSet();
+
+	const iconsetSelect =
+		document.getElementById('iconset-select');
+
+	if (iconsetSelect) {
+
+		iconsetSelect.addEventListener(
+			'change',
+			async () => {
+
+				iconSet = iconsetSelect.value;
+
+				await fetch('/api/iconset', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						iconset: iconSet
+					})
+				});
+
+				updateModeIndicator();
+			}
+		);
+	}
+  
+  
   try {
     const r = await fetch('/api/platform');
     if (r.ok) {
