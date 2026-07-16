@@ -49,12 +49,13 @@
     .logo-area { display:flex; align-items:center; gap:12px; }
     .logo { height:40px; width:auto; display:block; }
     .mode-indicator-img { height:28px; width:auto; display:block; }
-	.mode-text { display:none; color:#ff4444; font-weight:800; font-size:18px; letter-spacing:1px; }
+	.mode-text { display:none; color:#ff4444; font-weight:700; font-size:18px; letter-spacing:1px; }
 	.platform-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
     .tabs { display:flex; flex-wrap:wrap; gap:10px; }
     .tabs button { background:#222; color:#fff; border:1px solid var(--theme-border); padding:10px 14px; cursor:pointer; border-radius:6px; }
     .tabs button:hover { background: var(--theme-border); }
 	.tabs button.active { background: var(--theme-border); color: #fff; font-weight: 700; }
+	.adapter-divider { width: 2px; height: 22px; background: var(--theme-border); opacity: 0.75; border-radius: 1px; margin: 0 8px; display: none;}
 	/* Konami theme text colours */
 	body.konami-mode .tabs button,
 	body.konami-mode .log-toggle,
@@ -136,7 +137,7 @@
     .config-toolbar select { padding: 5px 6px; font-size: 13px; height: 31px; border-radius: 6px;}
 	.sinden-main-log { height: calc(100vh - 180px); max-height: none; }
 	#platform-select, label[for="platform-select"] { display:none !important; }
-    #firmware-select, #firmware-port, #update-channel, #profile-select { background:#000; color:#fff; border:1px solid #444; border-radius:6px; }
+    #firmware-select, #firmware-port, #update-channel, #profile-select, #firmware-baud { background:#000; color:#fff; border:1px solid #444; border-radius:6px; }
     #firmware-select { min-width:280px; }
     #firmware-port { min-width:180px; }
     @media (max-width:768px) {
@@ -158,6 +159,9 @@
       .config-toolbar .group, .config-toolbar select, .config-toolbar button { width:100%; }
       .config-panels { margin:0 8px 20px; }
       .config-card { flex:1 1 100%; }
+	  .mode-indicator-img {	height: 21px; width: auto; }
+	  .adapter-divider { margin: 0 4px;	}
+	  .platform-group { gap: 0; }
 	  #scroll-top-btn { position: fixed; right: 15px; bottom: 20px; z-index: 999; display: none; background: var(--theme-border); color: #fff; border: none; border-radius: 6px;  width: 48px; height: 48px;  font-size: 22px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5); opacity: 0.6;}
       #save-restart { width:100%; padding:12px; font-size:16px; }
       #backup-modal > .dialog { width:95vw !important; margin-top:20vh !important; padding:12px; }
@@ -172,26 +176,20 @@
 	  
 	<div class="logo-area">
 		<img src="/logo.png" class="logo" alt="SindenPS Logo">
-
-		<div class="platform-group">
-			<img id="mode-indicator"
-				 class="mode-indicator-img"
-				 src="/load.png"
-				 alt="Mode Icon">
-
-			<span id="mode-text" class="mode-text">OFFLINE</span>
-
-			<img id="region-indicator"
-				 class="mode-indicator-img"
-				 src=""
-				 alt="Region Icon"
-				 style="display:none;">
-		</div>
+	<div class="platform-group"> 
+	<img id="mode-indicator" class="mode-indicator-img" src="/load.png" alt="Mode Icon"> 
+	<span id="mode-text" class="mode-text">OFFLINE</span> 
+	<img id="region-indicator" class="mode-indicator-img" src="" alt="Region Icon" style="display:none;"> 
+	<div id="adapter-divider" class="adapter-divider" style="display:none;"></div>
+	<img id="mode-indicator-2" class="mode-indicator-img" src="" alt="Second Adapter" style="display:none;"> 
+	<img id="region-indicator-2" class="mode-indicator-img" src="" alt="Second Adapter Variant" style="display:none;"> 
+	</div>
+	
 	</div>
 		
         <nav class="tabs">
 			<button id="tab-btn-sindenlog" onclick="showTab('sindenlog')">Lightgun Log</button>
-			<button id="tab-btn-services" onclick="showTab('services')">Services</button>
+			<button id="tab-btn-services" onclick="showTab('services')">Service Menu</button>
 			<button id="tab-btn-config" onclick="showTab('config')">Configuration</button>
         </nav>
       </div>
@@ -269,16 +267,37 @@
       </div>
 
       <div class="service-row" id="firmware-flash">
-        <span class="service-name">SindenPS G-Con45 Adapter Firmware</span>
+        <span class="service-name">SindenPS Adapter Firmware</span>
         <span class="service-status" id="firmware-status">idle…</span>
         <div class="service-buttons">
-          <select id="firmware-select" aria-label="Firmware file"><option value="">Loading firmware…</option></select>
+        <select id="firmware-select" aria-label="Firmware file"><option value="">Loading firmware…</option></select>
           <select id="firmware-port" aria-label="TTY alias"><option value="">No Adapter Connected</option></select>
-          <button id="btn-flash-firmware">Flash Firmware</button>
+          <select id="firmware-baud">
+			<option value="57600" selected>57600</option>
+			<option value="115200">115200</option>
+		  </select>
+		  <button id="btn-flash-firmware">Flash Firmware</button>
           <button class="log-toggle" id="btn-toggle-fw-logs">Show Logs</button>
         </div>
         <div class="log-box" id="firmware-logs" style="display:none"><pre class="log-content" id="firmware-log-content">No firmware logs</pre></div>
       </div>
+		<div class="service-row" id="connected-adapters">
+
+			<span class="service-name">
+				Connected Adapters
+			</span>
+
+			<span class="service-status"
+				  id="adapter-status">
+				Loading...
+			</span>
+
+			<pre id="adapter-content"
+				 class="log-content">
+		Loading...
+			</pre>
+
+		</div>
 	  <div class="service-row" id="sindenps-update">
 	  <span class="service-name">SindenPS Platform</span>
 	  <span class="service-status" id="sindenps-update-status">idle…</span>
@@ -325,25 +344,6 @@
           <div class="player">Player 2</div>
           <div id="p2-form" class="config-form"></div>
         </div>
-      </div>
-      <div class="config-card">
-        <div class="service-name">Assignable Actions Reference</div>
-        <div class="config-form"><pre class="log-content" style="display:block; max-height:none; border:1px solid #444; padding:10px;">0 None
-1 MouseLeft
-2 MouseMiddle
-3 MouseRight
-4 PauseMovement
-5 TurboFireMouseLeft
-6 TurboFire/Reload MouseLeft/Right
-7 AltB (enable border on windows)
-8–17 Keyboard 0–9
-18–43 Keyboard A–Z
-44–69 Keyboard a–z (recommended)
-70–73 Return/Space/Escape/Tab
-74–77 Up/Down/Left/Right
-78–81 + , - .
-82–93 F1–F12
-94–113 Joystick Button 1–20</pre></div>
       </div>
     </section>
 
@@ -460,7 +460,12 @@ function setSystemOfflineUI() {
   document.body.classList.remove('ps2-mode');
   document.body.classList.remove('konami-mode');
   document.body.classList.remove('sony-mode');
+  const divider = document.getElementById('adapter-divider');
 
+	if (divider) {
+		divider.style.display = 'none';
+	}
+	
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
   const regionImg = document.getElementById('region-indicator');
@@ -474,31 +479,65 @@ function setSystemOfflineUI() {
 }
 
 function setServiceOfflineUI() {
-  document.body.classList.remove('ps2-mode');
-  document.body.classList.remove('konami-mode');
-  document.body.classList.remove('sony-mode');
 
-  const img = document.getElementById('mode-indicator');
-  const txt = document.getElementById('mode-text');
-  const regionImg = document.getElementById('region-indicator');
+    document.body.classList.remove('ps2-mode');
+    document.body.classList.remove('konami-mode');
+    document.body.classList.remove('sony-mode');
 
-  if (txt) txt.style.display = 'none';
+    const divider = document.getElementById('adapter-divider');
 
-  if (img) {
-    img.style.display = 'block';
-    img.src = '/offline.png';
-  }
+    const img = document.getElementById('mode-indicator');
+    const txt = document.getElementById('mode-text');
+    const regionImg = document.getElementById('region-indicator');
 
-  if (regionImg) {
-    regionImg.style.display = 'none';
-  }
+    const img2 = document.getElementById('mode-indicator-2');
+    const regionImg2 = document.getElementById('region-indicator-2');
+
+    if (divider) {
+        divider.style.display = 'none';
+    }
+
+    if (img2) {
+        img2.style.display = 'none';
+    }
+
+    if (regionImg2) {
+        regionImg2.style.display = 'none';
+    }
+
+    if (txt) {
+        txt.style.display = 'none';
+    }
+
+    if (img) {
+        img.style.display = 'block';
+        img.src = '/offline.png';
+    }
+
+    if (regionImg) {
+        regionImg.style.display = 'none';
+    }
 }
-
 
 function setLoadingUI() {
   document.body.classList.remove('ps2-mode');
   document.body.classList.remove('konami-mode');
   document.body.classList.remove('sony-mode');
+  const divider = document.getElementById('adapter-divider');
+  const img2 = document.getElementById('mode-indicator-2');
+  const regionImg2 = document.getElementById('region-indicator-2');
+
+	if (img2) {
+		img2.style.display = 'none';
+	}
+
+	if (regionImg2) {
+		regionImg2.style.display = 'none';
+	}
+
+	if (divider) {
+		divider.style.display = 'none';
+	}
 
   const img = document.getElementById('mode-indicator');
   const txt = document.getElementById('mode-text');
@@ -506,10 +545,15 @@ function setLoadingUI() {
 
   if (txt) txt.style.display = 'none';
 
+  
   if (img) {
-    img.style.display = 'block';
-    img.src = '/load.png';
-  }
+    img.style.display = 'none';
+	}
+
+	if (txt) {
+		txt.textContent = 'LOADING...';
+		txt.style.display = 'inline-block';
+	}
 
   if (regionImg) {
     regionImg.style.display = 'none';
@@ -538,164 +582,280 @@ async function refreshTemperature() {
         el.textContent = 'Unavailable';
     }
 }
+
 async function updateModeIndicator() {
-  const img = document.getElementById('mode-indicator');
-  const txt = document.getElementById('mode-text');
-  const regionImg = document.getElementById('region-indicator');
 
-  if (!img) return;
+    const img = document.getElementById('mode-indicator');
+    const txt = document.getElementById('mode-text');
+    const regionImg = document.getElementById('region-indicator');
 
-  /*
-   * Reboot/shutdown handling.
-   * Stay OFFLINE until we've actually seen the
-   * appliance disappear and then come back.
-   */
-  if (systemPowerPending) {
+    const img2 = document.getElementById('mode-indicator-2');
+    const regionImg2 = document.getElementById('region-indicator-2');
+	const divider = document.getElementById('adapter-divider');
+		
+    if (!img) return;
+
+    if (systemPowerPending) {
+        try {
+            const health = await fetch('/healthz', {
+                cache: 'no-store'
+            });
+
+            if (!health.ok) {
+                throw new Error('offline');
+            }
+
+            if (!sawSystemOffline) {
+                setSystemOfflineUI();
+                return;
+            }
+
+            systemPowerPending = false;
+            sawSystemOffline = false;
+
+        } catch (e) {
+            sawSystemOffline = true;
+            setSystemOfflineUI();
+            return;
+        }
+    }
 
     try {
 
-      const health = await fetch('/healthz', {
-        cache: 'no-store'
-      });
+        const svc = await (await fetch('/api/services')).json();
 
-      if (!health.ok) {
-        throw new Error('offline');
-      }
+        const lg = (svc['lightgun.service'] || '').toLowerCase();
 
-      /*
-       * Appliance is still online and has not
-       * disappeared yet. Keep showing OFFLINE.
-       */
-      if (!sawSystemOffline) {
-        setSystemOfflineUI();
-        return;
-      }
+        if (lg !== 'active') {
+            setServiceOfflineUI();
+            return;
+        }
 
-      /*
-       * Appliance disappeared and is back.
-       * Resume normal icon handling.
-       */
-      systemPowerPending = false;
-      sawSystemOffline = false;
+        const platRes = await fetch('/api/platform');
+
+        if (!platRes.ok) {
+            setLoadingUI();
+            return;
+        }
+        const plat = await platRes.json();
+		
+		if (plat.detecting) {
+
+			if (divider) {
+				divider.style.display = 'none';
+			}
+
+			img.style.display = 'none';
+
+			if (txt) {
+				txt.textContent = 'LOADING...';
+				txt.style.display = 'inline-block';
+			}
+
+			if (regionImg) {
+				regionImg.style.display = 'none';
+			}
+
+			if (img2) {
+				img2.style.display = 'none';
+			}
+
+			if (regionImg2) {
+				regionImg2.style.display = 'none';
+			}
+
+			return;
+		}
+
+        const adapter1 = plat.adapters?.[0] || {
+            firmware: plat.firmware,
+            vendor: plat.vendor,
+            variant: plat.variant
+        };
+
+        const adapter2 = plat.adapters?.[1];
+
+        if (txt) {
+            txt.style.display = 'none';
+        }
+
+        img.style.display = 'block';
+
+        if (plat.platform === 'ps1') {
+
+            document.body.classList.remove('ps2-mode');
+
+            // Adapter 1
+
+            if (adapter1?.vendor === 'KONAMI') {
+
+                document.body.classList.remove('sony-mode');
+                document.body.classList.add('konami-mode');
+
+                img.src = '/hb.png';
+                img.alt = 'Hyper Blaster';
+
+            } else if (adapter1?.vendor === 'SONY') {
+
+                document.body.classList.remove('konami-mode');
+                document.body.classList.add('sony-mode');
+
+                img.src = '/sony.png';
+                img.alt = 'Sony';
+
+            } else {
+
+                document.body.classList.remove('konami-mode');
+                document.body.classList.remove('sony-mode');
+
+                img.src = '/ps1.png';
+                img.alt = 'G-Con45';
+            }
+
+            switch ((adapter1?.variant || '').toUpperCase()) {
+
+                case 'PAL':
+                    regionImg.src = '/pal.png';
+                    regionImg.style.display = 'block';
+                    break;
+
+                case 'NTSC':
+                    regionImg.src = '/ntsc.png';
+                    regionImg.style.display = 'block';
+                    break;
+
+                case 'ANALOG':
+                    regionImg.src = '/analog.png';
+                    regionImg.style.display = 'block';
+                    break;
+
+                case 'DHT':
+                    regionImg.src = '/dht.png';
+                    regionImg.style.display = 'block';
+                    break;
+
+                default:
+                    regionImg.style.display = 'none';
+                    break;
+            }
+
+		 // Adapter 2
+
+		if (adapter2 && img2 && regionImg2) {
+
+			if (divider) {
+				divider.style.display = 'block';
+			}
+
+			img2.style.display = 'block';
+
+			if (adapter2.vendor === 'KONAMI') {
+
+				if (img2.src.indexOf('/hb.png') === -1) {
+					img2.src = '/hb.png';
+				}
+
+				img2.alt = 'Hyper Blaster';
+
+			} else if (adapter2.vendor === 'SONY') {
+
+				if (img2.src.indexOf('/sony.png') === -1) {
+					img2.src = '/sony.png';
+				}
+
+				img2.alt = 'Sony';
+
+			} else {
+
+				if (img2.src.indexOf('/ps1.png') === -1) {
+					img2.src = '/ps1.png';
+				}
+
+				img2.alt = 'G-Con45';
+			}
+
+			switch ((adapter2.variant || '').toUpperCase()) {
+
+				case 'PAL':
+					if (regionImg2.src.indexOf('/pal.png') === -1) {
+						regionImg2.src = '/pal.png';
+					}
+					regionImg2.style.display = 'block';
+					break;
+
+				case 'NTSC':
+					if (regionImg2.src.indexOf('/ntsc.png') === -1) {
+						regionImg2.src = '/ntsc.png';
+					}
+					regionImg2.style.display = 'block';
+					break;
+
+				case 'ANALOG':
+					if (regionImg2.src.indexOf('/analog.png') === -1) {
+						regionImg2.src = '/analog.png';
+					}
+					regionImg2.style.display = 'block';
+					break;
+
+				case 'DHT':
+					if (regionImg2.src.indexOf('/dht.png') === -1) {
+						regionImg2.src = '/dht.png';
+					}
+					regionImg2.style.display = 'block';
+					break;
+
+				default:
+					regionImg2.style.display = 'none';
+					break;
+			}
+
+		} else {
+
+			if (divider) {
+				divider.style.display = 'none';
+			}
+
+			if (img2) {
+				img2.style.display = 'none';
+			}
+
+			if (regionImg2) {
+				regionImg2.style.display = 'none';
+			}
+		}
+
+        } else {
+
+			document.body.classList.remove('konami-mode');
+			document.body.classList.remove('sony-mode');
+			document.body.classList.add('ps2-mode');
+
+			if (divider) {
+				divider.style.display = 'none';
+			}
+
+			img.src = '/ps2.png';
+			img.alt = 'PS2 Mode';
+
+			regionImg.style.display = 'none';
+
+			if (img2) {
+				img2.style.display = 'none';
+			}
+
+			if (regionImg2) {
+				regionImg2.style.display = 'none';
+			}
+		}
 
     } catch (e) {
 
-      sawSystemOffline = true;
-      setSystemOfflineUI();
-      return;
+        if (systemPowerPending) {
+            sawSystemOffline = true;
+        }
+
+        setSystemOfflineUI();
     }
-  }
-
-  try {
-
-    const svc = await (await fetch('/api/services')).json();
-    const lg = (svc['lightgun.service'] || '').toLowerCase();
-
-    if (lg !== 'active') {
-      setServiceOfflineUI();
-      return;
-    }
-
-    const platRes = await fetch('/api/platform');
-
-    if (!platRes.ok) {
-      setLoadingUI();
-      return;
-    }
-
-    const plat = await platRes.json();
-    const ok = !!(plat && plat.ok);
-
-    if (!ok || !(plat.platform === 'ps1' || plat.platform === 'ps2')) {
-      setLoadingUI();
-      return;
-    }
-
-    if (txt) txt.style.display = 'none';
-
-    img.style.display = 'block';
-
-    if (plat.platform === 'ps1') {
-
-      document.body.classList.remove('ps2-mode');
-
-	if (plat.vendor === 'KONAMI') {
-	
-		document.body.classList.remove('sony-mode');
-		document.body.classList.add('konami-mode');
-
-		img.src = '/hb.png';
-		img.alt = 'Hyper Blaster';
-
-	} else if (plat.vendor === 'SONY') {
-
-		document.body.classList.remove('konami-mode');
-		document.body.classList.add('sony-mode');
-
-		img.src = '/sony.png';
-		img.alt = 'Sony';
-
-	} else {
-
-		document.body.classList.remove('konami-mode');
-		document.body.classList.remove('sony-mode');
-
-		img.src = '/ps1.png';
-		img.alt = 'G-Con45';
-	}
-
-      if (regionImg) {
-
-        switch ((plat.variant || '').toUpperCase()) {
-
-			case 'PAL':
-				regionImg.src = '/pal.png';
-				regionImg.style.display = 'block';
-				break;
-
-			case 'NTSC':
-				regionImg.src = '/ntsc.png';
-				regionImg.style.display = 'block';
-				break;
-
-			case 'ANALOG':
-				regionImg.src = '/analog.png';
-				regionImg.style.display = 'block';
-				break;
-				
-			case 'DHT':
-				regionImg.src = '/dht.png';
-				regionImg.style.display = 'block';
-				break;
-
-			default:
-				regionImg.style.display = 'none';
-				break;
-		}
-      }
-
-    } else {
-
-      document.body.classList.remove('konami-mode');
-	  document.body.classList.remove('sony-mode');
-      document.body.classList.add('ps2-mode');
-
-      img.src = '/ps2.png';
-      img.alt = 'PS2 Mode';
-
-      if (regionImg) {
-        regionImg.style.display = 'none';
-      }
-    }
-
-  } catch (e) {
-
-    if (systemPowerPending) {
-      sawSystemOffline = true;
-    }
-
-    setSystemOfflineUI();
-  }
 }
 
 async function refreshServices() {
@@ -707,6 +867,114 @@ async function refreshServices() {
       if (el) el.textContent = status;
     }
   } catch (e) {}
+}
+
+async function refreshAdapters() {
+
+    const status =
+        document.getElementById('adapter-status');
+
+    const content =
+        document.getElementById('adapter-content');
+
+    if (!content) {
+        return;
+    }
+
+    try {
+
+        const [adapterRes, platformRes] = await Promise.all([
+            fetch('/api/adapters'),
+            fetch('/api/platform')
+        ]);
+
+        const adapterData = await adapterRes.json();
+
+		let platform = 'ps1';
+		let detecting = false;
+
+		if (platformRes.ok) {
+
+			const plat = await platformRes.json();
+
+			platform = plat.platform || 'ps1';
+			detecting = !!plat.detecting;
+		}
+
+		if (detecting) {
+
+			if (status) {
+				status.textContent = 'Configuring Adapters...';
+			}
+
+			content.textContent =
+				'Please wait while adapters are being detected and configured';
+
+			return;
+		}
+
+        if (!adapterData.ok) {
+
+            if (status) {
+                status.textContent = 'Detection Error';
+            }
+
+            content.textContent =
+                'Unable to determine connected adapters';
+
+            return;
+        }
+
+        if (!adapterData.adapters || !adapterData.adapters.length) {
+
+            if (status) {
+                status.textContent = 'No Adapters Connected';
+            }
+
+            content.textContent =
+                'No adapters detected';
+
+            return;
+        }
+
+        if (status) {
+
+            status.textContent =
+                `${adapterData.adapters.length} Adapter(s) Connected`;
+        }
+
+        let output = '';
+
+        adapterData.adapters.forEach((adapter) => {
+
+            if (platform === 'ps2') {
+
+                output +=
+                    `Player ${adapter.player}\n` +
+                    `Alias  : ${adapter.alias}\n` +
+                    `Device : ${adapter.target}\n\n`;
+
+            } else {
+
+                output +=
+                    `Player ${adapter.player}\n` +
+                    `Alias    : ${adapter.alias}\n` +
+                    `Device   : ${adapter.target}\n` +
+                    `Firmware : ${adapter.firmware || 'Unknown'}\n\n`;
+            }
+        });
+
+        content.textContent = output.trim();
+
+    } catch (e) {
+
+        if (status) {
+            status.textContent = 'Error';
+        }
+
+        content.textContent =
+            `Adapter detection failed: ${e.message}`;
+    }
 }
 
 async function serviceAction(name, action) {
@@ -1162,25 +1430,41 @@ function toggleFirmwareLogs() {
 }
 
 async function flashFirmware() {
-  const fileSel = document.getElementById('firmware-select');
-  const portSel = document.getElementById('firmware-port');
-  const filename = fileSel.value;
-  const port = portSel.value;
-  if (!filename) return alert('Select firmware');
-  if (!confirm('Flash firmware now?')) return;
-  lastFirmwareLog = '';
-  try {
-    const res = await fetch('/api/firmware/flash', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ filename, port })
-    });
-    const data = await res.json();
-    alert(data.ok ? 'Success' : data.error);
-    loadFirmwareLogs();
-  } catch (e) {
-    alert('Firmware flash error: ' + e.message);
-  }
+    const fileSel = document.getElementById('firmware-select');
+    const portSel = document.getElementById('firmware-port');
+    const baudSel = document.getElementById('firmware-baud');
+
+    const filename = fileSel.value;
+    const port = portSel.value;
+    const baud = baudSel.value;
+
+    if (!filename) return alert('Select firmware');
+    if (!confirm('Flash firmware now?')) return;
+
+    lastFirmwareLog = '';
+
+    try {
+        const res = await fetch('/api/firmware/flash', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                filename,
+                port,
+                baud
+            })
+        });
+
+        const data = await res.json();
+
+        alert(data.ok ? 'Success' : data.error);
+
+        loadFirmwareLogs();
+
+    } catch (e) {
+
+        alert('Firmware flash error: ' + e.message);
+
+    }
 }
 
 async function listProfiles(platform) {
@@ -1450,6 +1734,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   updateModeIndicator();
   setInterval(updateModeIndicator, 2000);
+  
+  refreshAdapters();
+  setInterval(refreshAdapters, 5000);
    
   setInterval(() => {
 	  const panel = document.getElementById('service-panel');

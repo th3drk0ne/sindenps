@@ -282,27 +282,59 @@ def _fw_valid_library_file(filename: str) -> str:
     return full
 
 
-def _fw_flash_hex(path: str, port: str) -> subprocess.CompletedProcess:
+
+def _fw_flash_hex(path: str, port: str, baud: str):
+
     cmd = [
         AVRDUDE,
         "-v",
         "-p", FIRMWARE_DEFAULT_MCU,
         "-c", FIRMWARE_DEFAULT_PROGRAMMER,
         "-P", port,
-        "-b", FIRMWARE_DEFAULT_BAUD,
+        "-b", baud,
         "-D",
         "-V",
         "-U", f"flash:w:{path}:i",
     ]
-    _fw_append_log("Running: " + " ".join(cmd))
-    return subprocess.run(
+
+    _fw_append_log(
+        f"Attempting flash at {baud} baud"
+    )
+
+    result = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         timeout=300,
+        check=False
     )
 
+    _fw_append_log(result.stdout or "")
+
+    if result.returncode == 0:
+        FIRMWARE_STATE["baud"] = baud
+
+    return result
+
+def _read_adapter_identity(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            identity = f.read().strip()
+
+        if not identity:
+            return None
+
+        parts = identity.split("-", 1)
+
+        return {
+            "identity": identity,
+            "vendor": parts[0],
+            "variant": parts[1] if len(parts) > 1 else ""
+        }
+
+    except Exception:
+        return None
 
 @app.route("/api/firmware/status")
 def api_firmware_status():
@@ -350,6 +382,7 @@ def api_firmware_flash():
         data = request.get_json(force=True) or {}
         filename = data.get("filename")
         port = data.get("port") or _fw_detect_port()
+        baud = str(data.get("baud", "57600"))
         full_path = _fw_valid_library_file(filename)
 
 
@@ -374,7 +407,11 @@ def api_firmware_flash():
         _fw_append_log(f"Port: {port}")
 
         _fw_reset_port(port)
-        result = _fw_flash_hex(full_path, port)
+        result = _fw_flash_hex(
+            full_path,
+            port,
+            baud
+        )
         _fw_append_log(result.stdout or "")
 
         if result.returncode != 0:
@@ -386,9 +423,12 @@ def api_firmware_flash():
         port_name = port.replace("/dev/", "")
 
         _fw_set_state(
-            "success",
-            f"Flash complete: {name} ({port_name})",
-            last_result="success"
+            "flashing",
+            f"Flashing {name} ({port_name})",
+            port=port,
+            file=os.path.basename(full_path),
+            baud=baud,
+            last_result=""
         )
         
         return jsonify({"ok": True, "message": "Flash complete"})
@@ -420,25 +460,80 @@ def api_firmware_flash():
 def list_services():
     return jsonify({s: get_status(s) for s in SERVICES})
 
-
 @app.route("/api/platform", methods=["GET"])
 def api_platform():
     try:
         modefile = "/run/lightgun/sinden_mode"
-        firmwarefile = "/run/lightgun/firmware_type"
 
-        firmware = "NAMCO"
+        adapters = []
 
-        if os.path.exists(firmwarefile):
+        for idx in (1, 2):
+
+            firmwarefile = f"/run/lightgun/firmware_type_{idx}"
+
+            if not os.path.exists(firmwarefile):
+                continue
+
             with open(firmwarefile, "r", encoding="utf-8") as f:
                 firmware = f.read().strip().upper()
 
-        vendor = firmware.split("-", 1)[0]
-        variant = firmware.split("-", 1)[1] if "-" in firmware else ""
+            if not firmware:
+                firmware = "NAMCO"
+
+            parts = firmware.split("-", 1)
+            vendor = parts[0] if parts[0] else "NAMCO"
+            variant = parts[1] if len(parts) > 1 else ""
+            adapters.append({
+                "firmware": firmware,
+                "vendor": parts[0],
+                "variant": parts[1] if len(parts) > 1 else ""
+            })
+
+        #
+        # Backwards compatibility
+        #
+
+        firmware = "NAMCO"
+        vendor = "NAMCO"
+        variant = ""
+
+        if adapters:
+
+            firmware = adapters[0]["firmware"]
+            vendor = adapters[0]["vendor"]
+            variant = adapters[0]["variant"]
+
+        elif os.path.exists("/run/lightgun/firmware_type"):
+
+            with open(
+                "/run/lightgun/firmware_type",
+                "r",
+                encoding="utf-8"
+            ) as f:
+                firmware = f.read().strip().upper()
+
+            vendor = firmware.split("-", 1)[0]
+            variant = (
+                firmware.split("-", 1)[1]
+                if "-" in firmware else ""
+            )
+
+            adapters.append({
+                "firmware": firmware,
+                "vendor": vendor,
+                "variant": variant
+            })
 
         if os.path.exists(modefile):
+
             with open(modefile, "r", encoding="utf-8") as f:
                 mode = f.read().strip().lower()
+
+            detecting = (
+                mode == "ps1"
+                and not os.path.exists("/run/lightgun/firmware_type_1")
+                and not os.path.exists("/run/lightgun/firmware_type_2")
+            )
 
             if mode in ("ps1", "ps2"):
                 return jsonify({
@@ -446,7 +541,9 @@ def api_platform():
                     "platform": mode,
                     "firmware": firmware,
                     "vendor": vendor,
-                    "variant": variant
+                    "variant": variant,
+                    "adapters": adapters,
+                    "detecting": detecting
                 })
 
         return jsonify({
@@ -460,7 +557,6 @@ def api_platform():
             "error": str(e)
         }), 500
 
-
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
     if name not in SERVICES:
@@ -470,6 +566,90 @@ def service_action(name, action):
     ok = control_service(name, action)
     return jsonify({"success": ok, "status": get_status(name)})
 
+@app.route('/api/adapters')
+def api_adapters():
+
+    adapters = []
+
+    model = ""
+
+    try:
+        with open(
+            "/proc/device-tree/model",
+            "r",
+            encoding="utf-8",
+            errors="ignore"
+        ) as f:
+
+            model = f.read().replace("\x00", "").strip()
+
+    except Exception:
+        pass
+
+    single_player_only = (
+        "Raspberry Pi 3" in model or
+        "Raspberry Pi Zero 2" in model
+    )
+
+    ps1_mode = os.path.exists(
+        "/run/lightgun/firmware_type_1"
+    )
+
+    if ps1_mode:
+
+        candidates = [
+            (1, "/dev/ttyGCON45S_0"),
+            (2, "/dev/ttyGCON45S_1"),
+        ]
+
+    else:
+
+        candidates = [
+            (1, "/dev/ttyGCON2S_0"),
+            (2, "/dev/ttyGCON2S_1"),
+        ]
+
+    for player, alias in candidates:
+
+        if single_player_only and not ps1_mode and player == 2:
+            continue
+
+        if not os.path.exists(alias):
+            continue
+
+        firmware = ""
+
+        if ps1_mode:
+
+            firmware_file = (
+                f"/run/lightgun/firmware_type_{player}"
+            )
+
+            if os.path.exists(firmware_file):
+
+                with open(
+                    firmware_file,
+                    "r",
+                    encoding="utf-8"
+                ) as f:
+
+                    firmware = f.read().strip()
+
+        adapters.append({
+            "player": player,
+            "alias": alias,
+            "target": os.path.realpath(alias),
+            "firmware": firmware
+        })
+
+    adapters.sort(
+        key=lambda a: a["player"]
+    )
+
+    return jsonify({
+        "ok": True,
+        "adapters": adapters
+    })
 
 @app.route("/api/logs/<service>")
 def service_logs(service):

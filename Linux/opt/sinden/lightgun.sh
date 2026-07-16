@@ -105,7 +105,7 @@ sleep 5
 # ---- Step 4: Query PSX device ----
 
 if [ "$IsPsxMode" == 1 ]; then
-    echo "[INFO] Querying PSX device..."
+    echo "[INFO] Querying SindenPS Adapter..."
     
     RESPONSE=$(/opt/sinden/query-dongle.sh 2>/dev/null)
 
@@ -116,11 +116,29 @@ if [ "$IsPsxMode" == 1 ]; then
     fi
 fi
 
-FIRMWARE_FILE="/run/lightgun/firmware_type"
+mkdir -p /run/lightgun
 
-RESPONSE="$(echo "$RESPONSE" | tr -d '\r\n')"
+rm -f /run/lightgun/firmware_type_*
 
-echo "$RESPONSE" > "$FIRMWARE_FILE"
+idx=1
+
+for port in /dev/ttyGCON45S_*; do
+
+    [ -e "$port" ] || continue
+
+    identity=$(/opt/sinden/query-dongle.sh "$port" 57600 I 2>/dev/null || true)
+
+    identity="$(echo "$identity" | tr -d '\r\n')"
+
+    if [ -z "$identity" ]; then
+        identity="NAMCO"
+    fi
+
+    echo "$identity" > "/run/lightgun/firmware_type_${idx}"
+
+    idx=$((idx + 1))
+
+done
 
 
 while :; do
