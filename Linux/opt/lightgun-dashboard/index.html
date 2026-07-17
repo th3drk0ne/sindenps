@@ -170,8 +170,8 @@
       #save-restart { width:100%; padding:12px; font-size:16px; }
       #backup-modal > .dialog { width:95vw !important; margin-top:20vh !important; padding:12px; }
 	  #update-progress { display: block; width: 100%; text-align: center; color: #3cf; font-size: 14px; }
-	  #pull-refresh { position: fixed; top: -40px; left: 0; right: 0; text-align: center; color: #ccc; transition: top 0.2s ease; z-index: 1000;}
-	  #pull-refresh.active { top: 10px; }
+	  #pull-refresh { display: block; position: fixed; top: -40px; left: 0; right: 0; text-align: center; color: #ccc; transition: top 0.2s ease; z-index: 1000; pointer-events: none; }
+      #pull-refresh.active { top: 10px; }	  
     }
   </style>
 </head>
@@ -1725,40 +1725,34 @@ let pullStartY = 0;
 let pullTriggered = false;
 
 window.addEventListener('touchstart', e => {
-    if (window.scrollY === 0) {
+    if (window.scrollY <= 10) {
         pullStartY = e.touches[0].clientY;
         pullTriggered = false;
     }
 }, { passive: true });
 
 window.addEventListener('touchmove', e => {
-    if (window.scrollY !== 0) return;
+    if (window.scrollY > 10) return;
 
     const distance = e.touches[0].clientY - pullStartY;
 
-    if (distance > 120 && !pullTriggered) {
+    if (distance > 60) {
         pullTriggered = true;
         document.getElementById('pull-refresh')
             ?.classList.add('active');
     }
 }, { passive: true });
 
-window.addEventListener('touchend', async () => {
+window.addEventListener('touchend', () => {
     if (!pullTriggered) return;
+
+    pullTriggered = false;
 
     document.getElementById('pull-refresh')
         ?.classList.remove('active');
 
-    await Promise.all([
-        refreshServices(),
-        refreshAdapters(),
-        refreshTemperature(),
-        refreshSindenpsStatus(),
-        updateModeIndicator()
-    ]);
-
-    pullTriggered = false;
-});
+    location.reload();
+}, { passive: true });
 
 
 async function loadBackupDialog(platform) {
