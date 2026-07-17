@@ -1724,7 +1724,14 @@ async function refreshSindenpsStatus() {
 let pullStartY = 0;
 let pullTriggered = false;
 
+function isLightgunTabActive() {
+    const tab = document.getElementById('tab-sindenlog');
+    return tab && tab.style.display === 'block';
+}
+
 window.addEventListener('touchstart', e => {
+    if (!isLightgunTabActive()) return;
+
     if (window.scrollY <= 10) {
         pullStartY = e.touches[0].clientY;
         pullTriggered = false;
@@ -1732,6 +1739,8 @@ window.addEventListener('touchstart', e => {
 }, { passive: true });
 
 window.addEventListener('touchmove', e => {
+    if (!isLightgunTabActive()) return;
+
     if (window.scrollY > 10) return;
 
     const distance = e.touches[0].clientY - pullStartY;
@@ -1744,6 +1753,7 @@ window.addEventListener('touchmove', e => {
 }, { passive: true });
 
 window.addEventListener('touchend', () => {
+    if (!isLightgunTabActive()) return;
     if (!pullTriggered) return;
 
     pullTriggered = false;
@@ -1753,6 +1763,7 @@ window.addEventListener('touchend', () => {
 
     location.reload();
 }, { passive: true });
+
 
 
 async function loadBackupDialog(platform) {
