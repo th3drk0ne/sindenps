@@ -785,21 +785,14 @@ async function updateModeIndicator() {
 			img2.style.display = 'block';
 
 			if (adapter2.vendor === 'KONAMI') {
-
-				if (img2.src.indexOf('/hb.png') === -1) {
-					img2.src = vendorIcon('hb');
-				}
-
+				img2.src = vendorIcon('hb');
 				img2.alt = 'Hyper Blaster';
-
 			} else if (adapter2.vendor === 'SONY') {
-
-				if (img2.src.indexOf('/sony.png') === -1) {
-					img2.src = '/sony.png';
-				}
-
+				img2.src = '/sony.png';
 				img2.alt = 'Sony';
-
+			} else {
+				img2.src = vendorIcon('ps1');
+				img2.alt = 'G-Con45';
 			} else {
 
 				if (img2.src.indexOf('/ps1.png') === -1) {
@@ -809,40 +802,31 @@ async function updateModeIndicator() {
 				img2.alt = 'G-Con45';
 			}
 
-			switch ((adapter2.variant || '').toUpperCase()) {
+		switch ((adapter2.variant || '').toUpperCase()) {
+			case 'PAL':
+				regionImg2.src = '/pal.png';
+				regionImg2.style.display = 'block';
+				break;
 
-				case 'PAL':
-					if (regionImg2.src.indexOf('/pal.png') === -1) {
-						regionImg2.src = '/pal.png';
-					}
-					regionImg2.style.display = 'block';
-					break;
+			case 'NTSC':
+				regionImg2.src = '/ntsc.png';
+				regionImg2.style.display = 'block';
+				break;
 
-				case 'NTSC':
-					if (regionImg2.src.indexOf('/ntsc.png') === -1) {
-						regionImg2.src = '/ntsc.png';
-					}
-					regionImg2.style.display = 'block';
-					break;
+			case 'ANALOG':
+				regionImg2.src = '/analog.png';
+				regionImg2.style.display = 'block';
+				break;
 
-				case 'ANALOG':
-					if (regionImg2.src.indexOf('/analog.png') === -1) {
-						regionImg2.src = '/analog.png';
-					}
-					regionImg2.style.display = 'block';
-					break;
+			case 'DHT':
+				regionImg2.src = '/dht.png';
+				regionImg2.style.display = 'block';
+				break;
 
-				case 'DHT':
-					if (regionImg2.src.indexOf('/dht.png') === -1) {
-						regionImg2.src = '/dht.png';
-					}
-					regionImg2.style.display = 'block';
-					break;
-
-				default:
-					regionImg2.style.display = 'none';
-					break;
-			}
+			default:
+				regionImg2.style.display = 'none';
+				break;
+		}
 
 		} else {
 
