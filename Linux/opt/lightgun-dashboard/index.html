@@ -1458,6 +1458,11 @@ async function flashFirmware() {
     const baud = baudSel.value;
 
     if (!filename) return alert('Select firmware');
+	
+	if (filename.toUpperCase() === 'KONAMI.HEX') {
+		alert('SindenPS V3 Adapter Required');
+	}
+	
     if (!confirm('Flash firmware now?')) return;
 
     lastFirmwareLog = '';
