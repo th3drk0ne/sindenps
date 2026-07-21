@@ -638,7 +638,7 @@ if systemctl list-unit-files | grep -q "^${SERVICE}"; then
     log "$SERVICE exists. Disabling and stopping..."
     sudo systemctl disable --now "$SERVICE"
 else
-    warn "$SERVICE does not exist. Skipping."
+    log "$SERVICE does not exist. Skipping."
 fi
 
 
