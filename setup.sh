@@ -302,8 +302,9 @@ cd /home/sinden/Firmware
   wget --quiet --show-progress --https-only --timestamping \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
-	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex"	\
-	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL-DieHardTrilogy.hex"
+	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex" \
+	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL-DieHardTrilogy.hex" \
+	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-SONY-ANALOG.hex"
 
 
 LOG="/var/log/platform-update.log"
