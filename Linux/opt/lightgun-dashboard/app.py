@@ -85,7 +85,7 @@ def system_power_action(action: str) -> bool:
         return False
 
 # ===========================
-# Software Update (Bash-script wrapper)
+# (Bash-script wrapper)
 # ===========================
 UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"
 UPDATE_LOGF = "/var/log/sindenps-update.log"
@@ -1180,8 +1180,6 @@ def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
 
-
-# --- only showing the corrected/additional parts ---
 
 
 @app.route("/api/version")
