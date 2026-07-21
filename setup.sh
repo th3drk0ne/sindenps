@@ -304,7 +304,7 @@ cd /home/sinden/Firmware
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
 	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex" \
 	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL-DieHardTrilogy.hex" \
-	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-SONY-ANALOG.hex"
+	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/SONY-ANALOG.hex"
 
 
 LOG="/var/log/platform-update.log"
