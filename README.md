@@ -151,8 +151,9 @@ Community Contributors that made this project possible
 - Prof_gLX & titchgamer: Created the Original Raspberry Pi Image that made all this possible.
 - Psiloc: Created the base image for the Raspberry Pi that I used to start this project.
 - RayneX: Created a 3D Printable case for the PS1 adapter.
+- Widge<sup>™</sup>: Addition of an Sony Analog Adpater Firmware for Galaxian 3 (Future projects are in the pipeline)
 
----
+--- 
 
 ## 🧡 Why SindenPS Exists
 
