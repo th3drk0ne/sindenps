@@ -281,9 +281,9 @@ install -d -o sinden -g sinden /opt/sinden
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh" \
-	"https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/query-dongle.sh"
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh" \
+    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/query-dongle.sh"
 
   chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
   chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
@@ -302,9 +302,9 @@ cd /home/sinden/Firmware
   wget --quiet --show-progress --https-only --timestamping \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
-	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex" \
-	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL-DieHardTrilogy.hex" \
-	"https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/SONY-ANALOG.hex"
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex" \
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL-DieHardTrilogy.hex" \
+    "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/SONY-ANALOG.hex"
 
 
 LOG="/var/log/platform-update.log"
