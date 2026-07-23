@@ -144,6 +144,14 @@ Pull requests are welcome — especially for:
 
 ---
 
+### ☕ Support SindenPS
+
+If you enjoy SindenPS and would like to support ongoing development, documentation, testing, and new hardware projects, you can buy me a coffee.
+
+<a href="https://ko-fi.com/th3drk0ne src="https://storage.ko-fi.com/cdn/kofi3.png?v=3" alt="Buy Me a Coffee atp the project moving forward and is greatly appreciated. ❤️
+
+---
+
 ## 🧾 Credits
 
 Community Contributors that made this project possible
