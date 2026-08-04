@@ -374,7 +374,11 @@
     <section id="tab-config" style="display:none; padding:10px;">
       <div class="config-toolbar">
         <div class="group">
-          <label>Platform:</label>
+		<label style="display:flex;align-items:center;gap:6px;">
+			<input type="checkbox" id="show-advanced-settings">
+			Advanced Settings
+		</label>
+			  <label>Platform:</label>
           <span id="platform-display" style="font-weight:700;color:#fff;">loading…</span>
           <select id="platform-select"><option value="ps2">PlayStation 2</option><option value="ps1">PlayStation 1</option></select>
         </div>
@@ -1216,12 +1220,27 @@ function buildGroupedConfigForm(containerId, groups) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
 
+  const advancedGroups = [
+    'Buttons (On-screen)',
+    'Buttons (Off-screen)',
+    'Joystick Mode'
+  ];
+
+  const showAdvanced =
+    document.getElementById('show-advanced-settings')?.checked ?? false;
+
   (groups || []).forEach((group, index) => {
+
+    const isAdvanced = advancedGroups.includes(group.name);
+
+    if (!showAdvanced && isAdvanced) {
+      return;
+    }
 
     const details = document.createElement('details');
 
-    // Open first section by default
-    if (index === 0) {
+    // Open first visible section by default
+    if (container.children.length === 0) {
       details.open = true;
     }
 
@@ -1237,6 +1256,7 @@ function buildGroupedConfigForm(containerId, groups) {
     content.className = 'config-section-content';
 
     (group.items || []).forEach(item => {
+
       const row = document.createElement('div');
       row.className = 'config-row';
 
@@ -1256,11 +1276,13 @@ function buildGroupedConfigForm(containerId, groups) {
 
       row.appendChild(label);
       row.appendChild(input);
+
       content.appendChild(row);
     });
 
     details.appendChild(content);
     container.appendChild(details);
+
   });
 }
 
@@ -1875,6 +1897,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 		);
 	}
   
+  const advCheckbox =
+  document.getElementById('show-advanced-settings');
+
+	if (advCheckbox) {
+
+	  advCheckbox.checked =
+		localStorage.getItem('showAdvancedSettings') === 'true';
+
+	  advCheckbox.addEventListener('change', () => {
+
+		localStorage.setItem(
+		  'showAdvancedSettings',
+		  advCheckbox.checked
+		);
+
+		loadConfig(
+		  document.getElementById('platform-select').value
+		);
+	  });
+	}
   
   try {
     const r = await fetch('/api/platform');
