@@ -402,10 +402,10 @@
           <div class="player">Player 1</div>
           <div id="p1-form" class="config-form"></div>
         </div>
-        <div class="config-card">
-          <div class="player">Player 2</div>
-          <div id="p2-form" class="config-form"></div>
-        </div>
+		<div class="config-card" id="p2-card">
+		  <div class="player">Player 2</div>
+		  <div id="p2-form" class="config-form"></div>
+		</div>
       </div>
     </section>
 
@@ -1302,8 +1302,25 @@ async function loadConfig(platform) {
   const p1Groups = data.player1Groups || [{ name: 'All Settings', items: data.player1 || [] }];
   const p2Groups = data.player2Groups || [{ name: 'All Settings', items: data.player2 || [] }];
   document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
-  buildGroupedConfigForm('p1-form', p1Groups);
-  buildGroupedConfigForm('p2-form', p2Groups);
+  const p2Card =
+  document.getElementById('p2-card');
+
+	const hidePlayer2 =
+	  platform === 'ps2' &&
+	  data.single_uart === true;
+
+	buildGroupedConfigForm('p1-form', p1Groups);
+
+	if (hidePlayer2) {
+
+	  p2Card.style.display = 'none';
+
+	} else {
+
+	  p2Card.style.display = '';
+	  buildGroupedConfigForm('p2-form', p2Groups);
+
+	}
 }
 
 function collectForm(containerId) {

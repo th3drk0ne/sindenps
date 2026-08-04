@@ -225,7 +225,22 @@ def api_update_apply():
         _set_state("error", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
+def has_secondary_uart():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            model = f.read().lower()
 
+        if "raspberry pi zero" in model:
+            return False
+
+        if "raspberry pi 3" in model:
+            return False
+
+        return True
+
+    except Exception:
+        return True
+        
 @app.route("/api/update/logs")
 def api_update_logs():
     try:
@@ -927,6 +942,7 @@ def api_config_get():
             "player2": p2,
             "player1Groups": p1_groups,
             "player2Groups": p2_groups,
+            "single_uart": not has_secondary_uart(),
             "source": source,
             "profile": profile_name if profile_name else "",
         })
