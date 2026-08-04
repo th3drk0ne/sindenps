@@ -1240,11 +1240,6 @@ function buildGroupedConfigForm(containerId, groups) {
 
     const details = document.createElement('details');
 
-    // Open first visible section by default
-    if (container.children.length === 0) {
-      details.open = true;
-    }
-
     details.className = 'config-section';
 
     const summary = document.createElement('summary');
