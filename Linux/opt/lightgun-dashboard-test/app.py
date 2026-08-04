@@ -241,6 +241,22 @@ def has_secondary_uart():
     except Exception:
         return True
         
+def supports_player2(platform):
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            model = f.read().lower()
+
+        if "raspberry pi zero" in model:
+            return False
+
+        if "raspberry pi 3" in model:
+            return platform == "ps1"
+
+        return True
+
+    except Exception:
+        return True
+        
 @app.route("/api/update/logs")
 def api_update_logs():
     try:
@@ -943,6 +959,7 @@ def api_config_get():
             "player1Groups": p1_groups,
             "player2Groups": p2_groups,
             "single_uart": not has_secondary_uart(),
+            "player2_supported": supports_player2(platform),
             "source": source,
             "profile": profile_name if profile_name else "",
         })

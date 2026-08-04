@@ -1301,8 +1301,7 @@ async function loadConfig(platform) {
   document.getElementById('p2-card');
 
 	const hidePlayer2 =
-	  platform === 'ps2' &&
-	  data.single_uart === true;
+		data.player2_supported === false;
 
 	buildGroupedConfigForm('p1-form', p1Groups);
 
