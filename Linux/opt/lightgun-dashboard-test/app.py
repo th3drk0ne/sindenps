@@ -2,6 +2,7 @@
 import os
 import re
 import time
+import glob
 import threading
 import subprocess
 import xml.etree.ElementTree as ET
@@ -84,14 +85,35 @@ def system_power_action(action: str) -> bool:
         return False
 
 # ===========================
-# Software Update (Bash-script wrapper)
+# (Bash-script wrapper)
 # ===========================
 UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"
 UPDATE_LOGF = "/var/log/sindenps-update.log"
 VERSION_FILE = "/home/sinden/Lightgun/VERSION"
 SINDENPS_UPDATE_LOG = "/var/log/platform-update.log"
 SINDENPS_LOCK = "/tmp/sindenps-update.lock"
+ICONSET_FILE = "/opt/lightgun-dashboard/iconset.conf"
 
+
+def get_icon_set():
+    try:
+        with open(ICONSET_FILE, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+
+        if value in ("pal", "us"):
+            return value
+    except Exception:
+        pass
+
+    return "pal"
+
+
+def set_icon_set(value):
+    if value not in ("pal", "us"):
+        raise ValueError("Invalid icon set")
+
+    with open(ICONSET_FILE, "w", encoding="utf-8") as f:
+        f.write(value)
 
 def _read_version_marker():
     try:
@@ -124,6 +146,32 @@ def _set_state(st, msg=""):
     UPDATE_STATE["state"] = st
     UPDATE_STATE["message"] = msg
 
+def get_cpu_temp():
+    try:
+        with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+            return round(int(f.read().strip()) / 1000, 1)
+    except Exception:
+        return None
+
+@app.route("/api/temperature")
+def api_temperature():
+    temp = get_cpu_temp()
+
+    if temp is None:
+        return jsonify({"ok": False})
+
+    if temp >= 80:
+        state = "HOT"
+    elif temp >= 70:
+        state = "WARM"
+    else:
+        state = "NORMAL"
+
+    return jsonify({
+        "ok": True,
+        "temperature": temp,
+        "state": state
+    })
 
 @app.route("/api/update/status")
 def api_update_status():
@@ -255,27 +303,59 @@ def _fw_valid_library_file(filename: str) -> str:
     return full
 
 
-def _fw_flash_hex(path: str, port: str) -> subprocess.CompletedProcess:
+
+def _fw_flash_hex(path: str, port: str, baud: str):
+
     cmd = [
         AVRDUDE,
         "-v",
         "-p", FIRMWARE_DEFAULT_MCU,
         "-c", FIRMWARE_DEFAULT_PROGRAMMER,
         "-P", port,
-        "-b", FIRMWARE_DEFAULT_BAUD,
+        "-b", baud,
         "-D",
         "-V",
         "-U", f"flash:w:{path}:i",
     ]
-    _fw_append_log("Running: " + " ".join(cmd))
-    return subprocess.run(
+
+    _fw_append_log(
+        f"Attempting flash at {baud} baud"
+    )
+
+    result = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         timeout=300,
+        check=False
     )
 
+    _fw_append_log(result.stdout or "")
+
+    if result.returncode == 0:
+        FIRMWARE_STATE["baud"] = baud
+
+    return result
+
+def _read_adapter_identity(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            identity = f.read().strip()
+
+        if not identity:
+            return None
+
+        parts = identity.split("-", 1)
+
+        return {
+            "identity": identity,
+            "vendor": parts[0],
+            "variant": parts[1] if len(parts) > 1 else ""
+        }
+
+    except Exception:
+        return None
 
 @app.route("/api/firmware/status")
 def api_firmware_status():
@@ -323,6 +403,7 @@ def api_firmware_flash():
         data = request.get_json(force=True) or {}
         filename = data.get("filename")
         port = data.get("port") or _fw_detect_port()
+        baud = str(data.get("baud", "57600"))
         full_path = _fw_valid_library_file(filename)
 
 
@@ -347,7 +428,11 @@ def api_firmware_flash():
         _fw_append_log(f"Port: {port}")
 
         _fw_reset_port(port)
-        result = _fw_flash_hex(full_path, port)
+        result = _fw_flash_hex(
+            full_path,
+            port,
+            baud
+        )
         _fw_append_log(result.stdout or "")
 
         if result.returncode != 0:
@@ -359,9 +444,12 @@ def api_firmware_flash():
         port_name = port.replace("/dev/", "")
 
         _fw_set_state(
-            "success",
-            f"Flash complete: {name} ({port_name})",
-            last_result="success"
+            "flashing",
+            f"Flashing {name} ({port_name})",
+            port=port,
+            file=os.path.basename(full_path),
+            baud=baud,
+            last_result=""
         )
         
         return jsonify({"ok": True, "message": "Flash complete"})
@@ -393,20 +481,102 @@ def api_firmware_flash():
 def list_services():
     return jsonify({s: get_status(s) for s in SERVICES})
 
-
 @app.route("/api/platform", methods=["GET"])
 def api_platform():
     try:
         modefile = "/run/lightgun/sinden_mode"
+
+        adapters = []
+
+        for idx in (1, 2):
+
+            firmwarefile = f"/run/lightgun/firmware_type_{idx}"
+
+            if not os.path.exists(firmwarefile):
+                continue
+
+            with open(firmwarefile, "r", encoding="utf-8") as f:
+                firmware = f.read().strip().upper()
+
+            if not firmware:
+                firmware = "NAMCO"
+
+            parts = firmware.split("-", 1)
+            vendor = parts[0] if parts[0] else "NAMCO"
+            variant = parts[1] if len(parts) > 1 else ""
+            adapters.append({
+                "firmware": firmware,
+                "vendor": parts[0],
+                "variant": parts[1] if len(parts) > 1 else ""
+            })
+
+        #
+        # Backwards compatibility
+        #
+
+        firmware = "NAMCO"
+        vendor = "NAMCO"
+        variant = ""
+
+        if adapters:
+
+            firmware = adapters[0]["firmware"]
+            vendor = adapters[0]["vendor"]
+            variant = adapters[0]["variant"]
+
+        elif os.path.exists("/run/lightgun/firmware_type"):
+
+            with open(
+                "/run/lightgun/firmware_type",
+                "r",
+                encoding="utf-8"
+            ) as f:
+                firmware = f.read().strip().upper()
+
+            vendor = firmware.split("-", 1)[0]
+            variant = (
+                firmware.split("-", 1)[1]
+                if "-" in firmware else ""
+            )
+
+            adapters.append({
+                "firmware": firmware,
+                "vendor": vendor,
+                "variant": variant
+            })
+
         if os.path.exists(modefile):
+
             with open(modefile, "r", encoding="utf-8") as f:
                 mode = f.read().strip().lower()
-                if mode in ("ps1", "ps2"):
-                    return jsonify({"ok": True, "platform": mode})
-        return jsonify({"ok": False, "error": "platform unavailable"}), 404
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
 
+            detecting = (
+                mode == "ps1"
+                and not os.path.exists("/run/lightgun/firmware_type_1")
+                and not os.path.exists("/run/lightgun/firmware_type_2")
+            )
+
+            if mode in ("ps1", "ps2"):
+                return jsonify({
+                    "ok": True,
+                    "platform": mode,
+                    "firmware": firmware,
+                    "vendor": vendor,
+                    "variant": variant,
+                    "adapters": adapters,
+                    "detecting": detecting
+                })
+
+        return jsonify({
+            "ok": False,
+            "error": "platform unavailable"
+        }), 404
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
@@ -417,6 +587,90 @@ def service_action(name, action):
     ok = control_service(name, action)
     return jsonify({"success": ok, "status": get_status(name)})
 
+@app.route('/api/adapters')
+def api_adapters():
+
+    adapters = []
+
+    model = ""
+
+    try:
+        with open(
+            "/proc/device-tree/model",
+            "r",
+            encoding="utf-8",
+            errors="ignore"
+        ) as f:
+
+            model = f.read().replace("\x00", "").strip()
+
+    except Exception:
+        pass
+
+    single_player_only = (
+        "Raspberry Pi 3" in model or
+        "Raspberry Pi Zero 2" in model
+    )
+
+    ps1_mode = os.path.exists(
+        "/run/lightgun/firmware_type_1"
+    )
+
+    if ps1_mode:
+
+        candidates = [
+            (1, "/dev/ttyGCON45S_0"),
+            (2, "/dev/ttyGCON45S_1"),
+        ]
+
+    else:
+
+        candidates = [
+            (1, "/dev/ttyGCON2S_0"),
+            (2, "/dev/ttyGCON2S_1"),
+        ]
+
+    for player, alias in candidates:
+
+        if single_player_only and not ps1_mode and player == 2:
+            continue
+
+        if not os.path.exists(alias):
+            continue
+
+        firmware = ""
+
+        if ps1_mode:
+
+            firmware_file = (
+                f"/run/lightgun/firmware_type_{player}"
+            )
+
+            if os.path.exists(firmware_file):
+
+                with open(
+                    firmware_file,
+                    "r",
+                    encoding="utf-8"
+                ) as f:
+
+                    firmware = f.read().strip()
+
+        adapters.append({
+            "player": player,
+            "alias": alias,
+            "target": os.path.realpath(alias),
+            "firmware": firmware
+        })
+
+    adapters.sort(
+        key=lambda a: a["player"]
+    )
+
+    return jsonify({
+        "ok": True,
+        "adapters": adapters
+    })
 
 @app.route("/api/logs/<service>")
 def service_logs(service):
@@ -852,43 +1106,82 @@ def api_backup_restore():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 
+# ===========================
+# Logo App Routes
+# ===========================
+
 @app.route("/logo.png")
 def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
-
 
 @app.route("/ps1.png")
 def ps1_png():
     return send_from_directory("/opt/lightgun-dashboard", "ps1.png")
 
+@app.route("/ps1-u.png")
+def ps1u_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ps1-u.png")
 
 @app.route("/ps2.png")
 def ps2_png():
     return send_from_directory("/opt/lightgun-dashboard", "ps2.png")
 
+@app.route("/ps2-u.png")
+def ps2u_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ps2-u.png")
 
 @app.route("/load.png")
 def load_png():
     return send_from_directory("/opt/lightgun-dashboard", "load.png")
 
-
 @app.route("/offline.png")
 def offline_png():
     return send_from_directory("/opt/lightgun-dashboard", "offline.png")
 
-
+@app.route("/hb.png")
+def hb_png():
+    return send_from_directory("/opt/lightgun-dashboard", "hb.png")
+    
+@app.route("/hb-u.png")
+def hbu_png():
+    return send_from_directory("/opt/lightgun-dashboard", "hb-u.png")
+    
 @app.route("/favicon.ico")
 def favicon_ico():
     return send_from_directory("/opt/lightgun-dashboard", "favicon.ico")
+    
+@app.route("/apple-touch-icon.png")
+def apple_touch_icon():
+    return send_from_directory("/opt/lightgun-dashboard", "apple-touch-icon.png")
 
+@app.route("/manifest.json")
+def manifest_json():
+    return send_from_directory("/opt/lightgun-dashboard", "manifest.json")
+
+@app.route("/pal.png")
+def pal_png():
+    return send_from_directory("/opt/lightgun-dashboard", "pal.png")
+    
+@app.route("/analog.png")
+def analog_png():
+    return send_from_directory("/opt/lightgun-dashboard", "analog.png")
+
+@app.route("/sony.png")
+def sony_png():
+    return send_from_directory("/opt/lightgun-dashboard", "sony.png")
+    
+@app.route("/ntsc.png")
+def ntsc_png():
+    return send_from_directory("/opt/lightgun-dashboard", "ntsc.png")
+
+@app.route("/dht.png")
+def dht_png():
+    return send_from_directory("/opt/lightgun-dashboard", "dht.png")
 
 @app.route("/")
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
-
-
-# --- only showing the corrected/additional parts ---
 
 
 @app.route("/api/version")
@@ -927,9 +1220,33 @@ def api_sindenps_logs():
 def api_sindenps_status():
     return jsonify({
         "ok": True,
-        "running": os.path.exists("/tmp/platform-update.lock")
+        "running": os.path.exists(SINDENPS_LOCK)
     })
 
+@app.route("/api/iconset")
+def api_iconset():
+    return jsonify({
+        "ok": True,
+        "iconset": get_icon_set()
+    })
+
+
+@app.route("/api/iconset", methods=["POST"])
+def api_iconset_save():
+    try:
+        data = request.get_json(force=True) or {}
+
+        set_icon_set(data.get("iconset", "pal"))
+
+        return jsonify({
+            "ok": True
+        })
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 400
 
 @app.route("/healthz")
 def healthz():
