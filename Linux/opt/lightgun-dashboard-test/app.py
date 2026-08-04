@@ -56,9 +56,16 @@ def _read_sindenps_version():
 # ===========================
 def get_status(service: str) -> str:
     try:
-        out = subprocess.check_output([SYSTEMCTL, "is-active", service], stderr=subprocess.STDOUT)
+        out = subprocess.check_output(
+            [SYSTEMCTL, "is-active", service],
+            stderr=subprocess.STDOUT
+        )
         return out.decode().strip()
-    except subprocess.CalledProcessError:
+
+    except subprocess.CalledProcessError as e:
+        return e.output.decode().strip()
+
+    except Exception:
         return "unknown"
 
 
