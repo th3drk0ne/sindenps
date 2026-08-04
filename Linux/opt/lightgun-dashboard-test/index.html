@@ -1556,19 +1556,31 @@ async function flashFirmware() {
     lastFirmwareLog = '';
 
     try {
-        const res = await fetch('/api/firmware/flash', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                filename,
-                port,
-                baud
-            })
-        });
+	const res = await fetch('/api/firmware/flash', {
+		method: 'POST',
+		headers: {'Content-Type': 'application/json'},
+		body: JSON.stringify({
+			filename,
+			port,
+			baud
+		})
+	});
 
-        const data = await res.json();
+	const text = await res.text();
 
-        alert(data.ok ? 'Success' : data.error);
+	console.log(text);
+
+	try {
+
+		const data = JSON.parse(text);
+
+		alert(data.ok ? 'Success' : data.error);
+
+	} catch {
+
+		alert('Firmware flash failed:\n\n' + text);
+
+	}
 
         loadFirmwareLogs();
 
