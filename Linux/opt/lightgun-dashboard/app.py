@@ -56,9 +56,16 @@ def _read_sindenps_version():
 # ===========================
 def get_status(service: str) -> str:
     try:
-        out = subprocess.check_output([SYSTEMCTL, "is-active", service], stderr=subprocess.STDOUT)
+        out = subprocess.check_output(
+            [SYSTEMCTL, "is-active", service],
+            stderr=subprocess.STDOUT
+        )
         return out.decode().strip()
-    except subprocess.CalledProcessError:
+
+    except subprocess.CalledProcessError as e:
+        return e.output.decode().strip()
+
+    except Exception:
         return "unknown"
 
 
@@ -225,7 +232,23 @@ def api_update_apply():
         _set_state("error", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
+      
+def supports_player2(platform):
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            model = f.read().lower()
 
+        if "raspberry pi zero" in model:
+            return False
+
+        if "raspberry pi 3" in model:
+            return platform == "ps1"
+
+        return True
+
+    except Exception:
+        return True
+        
 @app.route("/api/update/logs")
 def api_update_logs():
     try:
@@ -927,6 +950,7 @@ def api_config_get():
             "player2": p2,
             "player1Groups": p1_groups,
             "player2Groups": p2_groups,
+            "player2_supported": supports_player2(platform),
             "source": source,
             "profile": profile_name if profile_name else "",
         })
