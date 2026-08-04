@@ -1106,10 +1106,13 @@ def api_backup_restore():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 
+# ===========================
+# Logo App Routes
+# ===========================
+
 @app.route("/logo.png")
 def logo():
     return send_from_directory("/opt/lightgun-dashboard", "logo.png")
-
 
 @app.route("/ps1.png")
 def ps1_png():
@@ -1179,7 +1182,6 @@ def dht_png():
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
-
 
 
 @app.route("/api/version")
