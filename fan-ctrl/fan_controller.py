@@ -3,6 +3,8 @@
 
 import time
 import sys
+import json
+import os
 from gpiozero import PWMOutputDevice
 
 # Fan GPIO
@@ -10,15 +12,60 @@ FAN_PIN = 18
 PWM_FREQ = 10000           # Fixed 10 kHz
 WAIT_TIME = 2
 
-# Temperature thresholds and speed curve (%)
-tempSteps  = [63, 65, 75, 85]
-speedSteps = [0, 75, 85, 100]
+## Fan curve config
 
-# Minimum non-squeaky speed
-MIN_SPIN = 63
+CONFIG_FILE = "/opt/fan-controller/fan_curve.json"
 
-# Hysteresis: fan stays ON until temperature drops 5Â°C below threshold
-HYST_DROP = 5
+DEFAULT_FAN_CONFIG = {
+    "tempSteps": [63, 65, 75, 85],
+    "speedSteps": [0, 75, 85, 100],
+    "minSpin": 63,
+    "hystDrop": 5
+}
+
+
+def load_fan_config():
+    try:
+        if not os.path.exists(CONFIG_FILE):
+            return DEFAULT_FAN_CONFIG.copy()
+
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        temp_steps = data.get("tempSteps", DEFAULT_FAN_CONFIG["tempSteps"])
+        speed_steps = data.get("speedSteps", DEFAULT_FAN_CONFIG["speedSteps"])
+
+        if (
+            not isinstance(temp_steps, list)
+            or not isinstance(speed_steps, list)
+            or len(temp_steps) != len(speed_steps)
+            or len(temp_steps) < 2
+        ):
+            return DEFAULT_FAN_CONFIG.copy()
+
+        return {
+            "tempSteps": [int(x) for x in temp_steps],
+            "speedSteps": [int(x) for x in speed_steps],
+            "minSpin": int(data.get("minSpin", DEFAULT_FAN_CONFIG["minSpin"])),
+            "hystDrop": int(data.get("hystDrop", DEFAULT_FAN_CONFIG["hystDrop"]))
+        }
+
+    except Exception:
+        return DEFAULT_FAN_CONFIG.copy()
+
+
+fan_config = load_fan_config()
+
+tempSteps = fan_config["tempSteps"]
+speedSteps = fan_config["speedSteps"]
+
+## Minimum non-squeaky speed
+
+MIN_SPIN = fan_config["minSpin"]
+
+## Hysteresis: fan stays ON until temperature drops below threshold
+
+HYST_DROP = fan_config["hystDrop"]
 
 # Temperature change hysteresis to avoid excessive reads
 hyst = 1
