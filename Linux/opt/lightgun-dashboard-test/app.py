@@ -5,6 +5,7 @@ import time
 import glob
 import threading
 import subprocess
+import json
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from typing import List, Dict, Tuple
@@ -76,6 +77,135 @@ def control_service(service: str, action: str) -> bool:
     except subprocess.CalledProcessError as e:
         print("CONTROL ERROR:", e.output.decode(errors="replace"))
         return False
+
+
+# ===========================
+# Fan Controller Curve
+# ===========================
+
+FAN_CONTROLLER_SCRIPT = "/opt/fan-controller/fan_controller.py"
+FAN_CURVE_CONFIG = "/opt/fan-controller/fan_curve.json"
+
+DEFAULT_FAN_CURVE = {
+    "tempSteps": [63, 65, 75, 85],
+    "speedSteps": [0, 75, 85, 100],
+    "minSpin": 63,
+    "hystDrop": 5
+}
+
+
+def _validate_fan_curve(data):
+    temp_steps = data.get("tempSteps")
+    speed_steps = data.get("speedSteps")
+    min_spin = data.get("minSpin", DEFAULT_FAN_CURVE["minSpin"])
+    hyst_drop = data.get("hystDrop", DEFAULT_FAN_CURVE["hystDrop"])
+
+    if not isinstance(temp_steps, list) or not isinstance(speed_steps, list):
+        raise ValueError("Temperature and speed steps must be arrays")
+
+    if len(temp_steps) != len(speed_steps):
+        raise ValueError("Temperature and speed arrays must be the same length")
+
+    if len(temp_steps) < 2:
+        raise ValueError("At least two fan curve points are required")
+
+    temp_steps = [int(x) for x in temp_steps]
+    speed_steps = [int(x) for x in speed_steps]
+    min_spin = int(min_spin)
+    hyst_drop = int(hyst_drop)
+
+    if temp_steps != sorted(temp_steps):
+        raise ValueError("Temperature steps must be in ascending order")
+
+    for temp in temp_steps:
+        if temp < 0 or temp > 120:
+            raise ValueError("Temperature values must be between 0 and 120")
+
+    for speed in speed_steps:
+        if speed < 0 or speed > 100:
+            raise ValueError("Fan speed values must be between 0 and 100")
+
+    if min_spin < 0 or min_spin > 100:
+        raise ValueError("Minimum spin must be between 0 and 100")
+
+    if hyst_drop < 0 or hyst_drop > 30:
+        raise ValueError("Hysteresis drop must be between 0 and 30")
+
+    return {
+        "tempSteps": temp_steps,
+        "speedSteps": speed_steps,
+        "minSpin": min_spin,
+        "hystDrop": hyst_drop
+    }
+
+
+def _read_fan_curve():
+    try:
+        if not os.path.exists(FAN_CURVE_CONFIG):
+            return DEFAULT_FAN_CURVE.copy()
+
+        with open(FAN_CURVE_CONFIG, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        return _validate_fan_curve({
+            "tempSteps": data.get("tempSteps", DEFAULT_FAN_CURVE["tempSteps"]),
+            "speedSteps": data.get("speedSteps", DEFAULT_FAN_CURVE["speedSteps"]),
+            "minSpin": data.get("minSpin", DEFAULT_FAN_CURVE["minSpin"]),
+            "hystDrop": data.get("hystDrop", DEFAULT_FAN_CURVE["hystDrop"])
+        })
+
+    except Exception:
+        return DEFAULT_FAN_CURVE.copy()
+
+
+@app.route("/api/fan/config", methods=["GET"])
+def api_fan_config_get():
+    return jsonify({
+        "ok": True,
+        "config": _read_fan_curve(),
+        "path": FAN_CURVE_CONFIG
+    })
+
+
+@app.route("/api/fan/config", methods=["POST"])
+def api_fan_config_save():
+    try:
+        data = request.get_json(force=True) or {}
+        clean = _validate_fan_curve(data)
+
+        os.makedirs(os.path.dirname(FAN_CURVE_CONFIG), exist_ok=True)
+
+        backup_path = None
+        if os.path.exists(FAN_CURVE_CONFIG):
+            backup_path = FAN_CURVE_CONFIG + ".bak"
+            try:
+                with open(FAN_CURVE_CONFIG, "r", encoding="utf-8") as src:
+                    old = src.read()
+                with open(backup_path, "w", encoding="utf-8") as dst:
+                    dst.write(old)
+            except Exception:
+                backup_path = None
+
+        with open(FAN_CURVE_CONFIG, "w", encoding="utf-8") as f:
+            json.dump(clean, f, indent=2)
+
+        restarted = control_service("fan-controller.service", "restart")
+
+        return jsonify({
+            "ok": True,
+            "config": clean,
+            "backup": backup_path,
+            "restarted": restarted,
+            "status": get_status("fan-controller.service")
+        })
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 400
+
+
 
 # ===========================
 # System power actions
@@ -200,20 +330,34 @@ def install_fan_service():
   
 @app.route("/api/fan/status")
 def fan_status():
+    service_name = "fan-controller.service"
+    service_file = "/etc/systemd/system/fan-controller.service"
 
-    service_paths = [
-        "/etc/systemd/system/fan-controller.service",
-        "/lib/systemd/system/fan-controller.service"
-    ]
+    installed = os.path.exists(service_file)
 
-    installed = any(
-        os.path.exists(path)
-        for path in service_paths
-    )
+    if not installed:
+        return jsonify({
+            "installed": False,
+            "status": "not-installed"
+        })
+
+    try:
+        out = subprocess.check_output(
+            [SYSTEMCTL, "is-active", service_name],
+            stderr=subprocess.STDOUT
+        )
+        status = out.decode().strip()
+
+    except subprocess.CalledProcessError as e:
+        status = e.output.decode(errors="replace").strip()
+        if not status:
+            status = "inactive"
 
     return jsonify({
-        "installed": installed
+        "installed": True,
+        "status": status
     })
+
     
     
 @app.route("/api/temperature")
