@@ -678,12 +678,15 @@ async function installFanService() {
         });
 
         const data = await res.json();
+		
+		
+	console.log(data);
 
-        if (data.ok) {
-            alert('Fan service installed successfully');
-        } else {
-            alert(data.error || 'Installation failed');
-        }
+	if (data.ok) {
+		alert('Fan service installed successfully');
+	} else {
+		alert(JSON.stringify(data));
+	}
 
     } catch (e) {
 
