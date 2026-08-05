@@ -757,17 +757,40 @@ def api_adapters():
 
 @app.route("/api/logs/<service>")
 def service_logs(service):
+
     allowed_services = SERVICES + [
         "fan-controller.service"
     ]
 
-    if name not in allowed_services:
-        return jsonify({"error": "unknown service"}), 400
+    if service not in allowed_services:
+        return jsonify({
+            "error": "unknown service"
+        }), 400
+
     try:
-        out = subprocess.check_output([SYSTEMCTL, "status", service, "--no-pager"], stderr=subprocess.STDOUT)
-        return jsonify({"logs": out.decode(errors="replace")})
+        out = subprocess.check_output(
+            [
+                SYSTEMCTL,
+                "status",
+                service,
+                "--no-pager"
+            ],
+            stderr=subprocess.STDOUT
+        )
+
+        return jsonify({
+            "logs": out.decode(
+                errors="replace"
+            )
+        })
+
     except subprocess.CalledProcessError as e:
-        return jsonify({"logs": e.output.decode(errors="replace")})
+
+        return jsonify({
+            "logs": e.output.decode(
+                errors="replace"
+            )
+        })
 
 
 @app.route("/api/sinden-log")
