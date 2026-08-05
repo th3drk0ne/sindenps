@@ -179,7 +179,7 @@ def install_fan_service():
             [
                 "bash",
                 "-c",
-                "curl -fsSL https://raw.githubusercontent.com/th3drk0ne/sindenps/main/fan-ctrl/setup.sh | bash"
+                "curl -fsSL https://raw.githubusercontent.com/th3drk0ne/sindenps/main/fan-ctrl/setup.sh | sudo bash"
             ],
             capture_output=True,
             text=True,
