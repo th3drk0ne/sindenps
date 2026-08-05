@@ -260,59 +260,11 @@
 			Loading...
 		</span>
 	</div>
-	<div class="service-row"
-     id="fan-install-row"
-     style="display:none;">
-
-    <span class="service-name">Fan Service</span>
-
-    <span class="service-status">
-        Install PWM fan control service
-    </span>
-
-    <div class="service-buttons">
-        <button id="btn-install-fan"
-                onclick="installFanService()">
-            Install Fan Service
-        </button>
-    </div>
-</div>
-
-<div class="service-row"
-     id="service-fan-controller"
-     style="display:none;">
-
-    <span class="service-name">
-        fan-controller.service
-    </span>
-
-    <span class="service-status">
-        loading...
-    </span>
-
-    <div class="service-buttons">
-        <button onclick="serviceAction('fan-controller.service','start')">
-            Start
-        </button>
-
-        <button onclick="serviceAction('fan-controller.service','stop')">
-            Stop
-        </button>
-
-        <button onclick="serviceAction('fan-controller.service','restart')">
-            Restart
-        </button>
-
-        <button class="log-toggle"
-                onclick="toggleLogs(event,'fan-controller.service')">
-            Show Logs
-        </button>
-    </div>
 
     <div class="log-box" id="logs-fan-controller">
         <pre class="log-content">Loading…</pre>
     </div>
-</div>
+	</div>
       <div class="service-row" id="service-lightgun">
         <span class="service-name">lightgun.service</span>
         <span class="service-status">loading…</span>
@@ -336,19 +288,48 @@
         </div>
         <div class="log-box" id="logs-lightgun-monitor"><pre class="log-content">Loading…</pre></div>
       </div>
-	  
-	  <div class="service-row" id="service-fan-controller">
-        <span class="service-name">fan-controller.service</span>
-        <span class="service-status">loading…</span>
-        <div class="service-buttons">
-          <button onclick="serviceAction('fan-controller.service','start')">Start</button>
-          <button onclick="serviceAction('fan-controller.service','stop')">Stop</button>
-          <button onclick="serviceAction('fan-controller.service','restart')">Restart</button>
-          <button class="log-toggle" onclick="toggleLogs(event,'fan-controller.service')">Show Logs</button>
-        </div>
-        <div class="log-box" id="logs-fan-controller"><pre class="log-content">Loading…</pre></div>
-      </div>
+	  	<div class="service-row"
+     id="fan-install-row"
+     style="display:none;">
 
+    <span class="service-name">Fan Service</span>
+
+    <span class="service-status">
+        Install PWM fan control service
+    </span>
+
+    <div class="service-buttons">
+        <button id="btn-install-fan"
+                onclick="installFanService()">
+            Install Fan Service
+        </button>
+    </div>
+	</div>
+
+	<div class="service-row"
+		 id="service-fan-controller"
+		 style="display:none;">
+		<span class="service-name">
+			fan-controller.service
+		</span>
+		<span class="service-status">
+			loading...
+		</span>
+		<div class="service-buttons">
+			<button onclick="serviceAction('fan-controller.service','start')">
+				Start
+			</button>
+			<button onclick="serviceAction('fan-controller.service','stop')">
+				Stop
+			</button>
+			<button onclick="serviceAction('fan-controller.service','restart')">
+				Restart
+			</button>
+			<button class="log-toggle"
+					onclick="toggleLogs(event,'fan-controller.service')">
+				Show Logs
+			</button>
+		</div>
       <div class="service-row" id="system-actions">
         <span class="service-name">System</span>
         <span id="system-status" class="service-status"></span>
