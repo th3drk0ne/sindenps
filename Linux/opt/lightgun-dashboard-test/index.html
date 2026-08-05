@@ -682,11 +682,11 @@ async function installFanService() {
 		
 	console.log(data);
 
-	if (data.ok) {
-		alert('Fan service installed successfully');
-	} else {
-		alert(JSON.stringify(data));
-	}
+alert(
+    'OK      : ' + data.ok +
+    '\nERROR   : ' + data.error +
+    '\nOUTPUT  : ' + data.output
+);
 
     } catch (e) {
 
