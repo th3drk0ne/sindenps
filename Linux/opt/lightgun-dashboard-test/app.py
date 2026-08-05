@@ -170,7 +170,7 @@ def supports_fan_script():
             "raspberry pi 4" in model
         )
     except:
-        return False
+        return True
   
 
 @app.route("/api/temperature")
