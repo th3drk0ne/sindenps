@@ -171,6 +171,32 @@ def supports_fan_script():
         )
     except:
         return True
+        
+@app.route("/api/fan/install", methods=["POST"])
+def install_fan_service():
+    try:
+        result = subprocess.run(
+            [
+                "bash",
+                "-c",
+                "curl -fsSL https://raw.githubusercontent.com/th3drk0ne/sindenps/main/fan-ctrl/setup.sh | bash"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        return jsonify({
+            "ok": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr
+        })
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
   
 
 @app.route("/api/temperature")

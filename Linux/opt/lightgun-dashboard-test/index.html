@@ -268,7 +268,7 @@
 			Install PWM fan control service
 		</span>
 		<div class="service-buttons">
-			<button id="btn-install-fan">
+			<button onclick="installFanService()">
 				Install Fan Service
 			</button>
 		</div>
@@ -656,6 +656,42 @@ async function refreshTemperature() {
 
     } catch {
         el.textContent = 'Unavailable';
+    }
+}
+
+async function installFanService() {
+
+    if (!confirm('Install cooling fan service?')) {
+        return;
+    }
+
+    const btn = document.getElementById('btn-install-fan');
+
+    btn.disabled = true;
+    btn.textContent = 'Installing...';
+
+    try {
+
+        const res = await fetch('/api/fan/install', {
+            method: 'POST'
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+            alert('Fan service installed successfully');
+        } else {
+            alert(data.error || 'Installation failed');
+        }
+
+    } catch (e) {
+
+        alert(e.message);
+
+    } finally {
+
+        btn.disabled = false;
+        btn.textContent = 'Install Fan Service';
     }
 }
 
