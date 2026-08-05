@@ -19,8 +19,7 @@ app = Flask(__name__)
 # ---------------------------
 SERVICES = [
     "lightgun.service",
-    "lightgun-monitor.service",
-    "fan-controller.service"
+    "lightgun-monitor.service"
 ]
 
 SYSTEMCTL = "/usr/bin/systemctl"
@@ -199,7 +198,24 @@ def install_fan_service():
             "error": str(e)
         }), 500
   
+@app.route("/api/fan/status")
+def fan_status():
 
+    service_paths = [
+        "/etc/systemd/system/fan-controller.service",
+        "/lib/systemd/system/fan-controller.service"
+    ]
+
+    installed = any(
+        os.path.exists(path)
+        for path in service_paths
+    )
+
+    return jsonify({
+        "installed": installed
+    })
+    
+    
 @app.route("/api/temperature")
 def api_temperature():
     temp = get_cpu_temp()
@@ -644,7 +660,10 @@ def api_platform():
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
-    if name not in SERVICES:
+    allowed_services = SERVICES + [
+        "fan-controller.service"
+    ]
+    if name not in allowed_services:
         return jsonify({"error": "unknown service"}), 400
     if action not in ("start", "stop", "restart"):
         return jsonify({"error": "invalid action"}), 400
@@ -738,7 +757,11 @@ def api_adapters():
 
 @app.route("/api/logs/<service>")
 def service_logs(service):
-    if service not in SERVICES:
+    allowed_services = SERVICES + [
+        "fan-controller.service"
+    ]
+
+    if name not in allowed_services:
         return jsonify({"error": "unknown service"}), 400
     try:
         out = subprocess.check_output([SYSTEMCTL, "status", service, "--no-pager"], stderr=subprocess.STDOUT)

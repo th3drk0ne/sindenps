@@ -312,7 +312,7 @@
     <div class="log-box" id="logs-fan-controller">
         <pre class="log-content">Loading…</pre>
     </div>
-</div>
+	</div>
       <div class="service-row" id="service-lightgun">
         <span class="service-name">lightgun.service</span>
         <span class="service-status">loading…</span>
@@ -337,18 +337,6 @@
         <div class="log-box" id="logs-lightgun-monitor"><pre class="log-content">Loading…</pre></div>
       </div>
 	  
-	  <div class="service-row" id="service-fan-controller">
-        <span class="service-name">fan-controller.service</span>
-        <span class="service-status">loading…</span>
-        <div class="service-buttons">
-          <button onclick="serviceAction('fan-controller.service','start')">Start</button>
-          <button onclick="serviceAction('fan-controller.service','stop')">Stop</button>
-          <button onclick="serviceAction('fan-controller.service','restart')">Restart</button>
-          <button class="log-toggle" onclick="toggleLogs(event,'fan-controller.service')">Show Logs</button>
-        </div>
-        <div class="log-box" id="logs-fan-controller"><pre class="log-content">Loading…</pre></div>
-      </div>
-
       <div class="service-row" id="system-actions">
         <span class="service-name">System</span>
         <span id="system-status" class="service-status"></span>
@@ -827,12 +815,27 @@ async function updateModeIndicator() {
 		const fanServiceRow =
 			document.getElementById('service-fan-controller');
 
-		const fanStatus =
-			svc['fan-controller.service'];
+		let fanInstalled = false;
+
+		try {
+
+			const fanRes =
+				await fetch('/api/fan/status');
+
+			const fan =
+				await fanRes.json();
+
+			fanInstalled = fan.installed === true;
+
+		} catch (e) {
+
+			fanInstalled = false;
+
+		}
 
 		if (plat.fan_supported) {
 
-			if (fanStatus) {
+			if (fanInstalled) {
 
 				fanInstallRow.style.display = 'none';
 				fanServiceRow.style.display = '';
@@ -848,6 +851,7 @@ async function updateModeIndicator() {
 
 			fanInstallRow.style.display = 'none';
 			fanServiceRow.style.display = 'none';
+
 		}
 		
 		if (plat.detecting) {
