@@ -20,6 +20,7 @@ app = Flask(__name__)
 SERVICES = [
     "lightgun.service",
     "lightgun-monitor.service",
+    "fan-controller.service"
 ]
 
 SYSTEMCTL = "/usr/bin/systemctl"
