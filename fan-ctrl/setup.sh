@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_NAME="fan-controller"
-APP_USER="fanctl"
+APP_USER="sinden"
 INSTALL_DIR="/opt/${APP_NAME}"
 DST_SCRIPT="${INSTALL_DIR}/fan_controller.py"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
