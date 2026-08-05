@@ -260,6 +260,19 @@
 			Loading...
 		</span>
 	</div>
+	<div class="service-row" id="fan-install-row" style="display:none;">
+		<span class="service-name">
+			Cooling Fan
+		</span>
+		<span class="service-status">
+			Install PWM fan control service
+		</span>
+		<div class="service-buttons">
+			<button id="btn-install-fan">
+				Install Fan Service
+			</button>
+		</div>
+	</div>
       <div class="service-row" id="service-lightgun">
         <span class="service-name">lightgun.service</span>
         <span class="service-status">loading…</span>
@@ -716,6 +729,13 @@ async function updateModeIndicator() {
             return;
         }
         const plat = await platRes.json();
+		
+		const fanRow = document.getElementById('fan-install-row');
+
+		if (fanRow) {
+			fanRow.style.display =
+				plat.fan_supported ? '' : 'none';
+		}
 		
 		if (plat.detecting) {
 

@@ -159,6 +159,19 @@ def get_cpu_temp():
             return round(int(f.read().strip()) / 1000, 1)
     except Exception:
         return None
+  
+def supports_fan_script():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            model = f.read().lower()
+
+        return (
+            "raspberry pi 3" in model or
+            "raspberry pi 4" in model
+        )
+    except:
+        return False
+  
 
 @app.route("/api/temperature")
 def api_temperature():
@@ -587,7 +600,8 @@ def api_platform():
                     "vendor": vendor,
                     "variant": variant,
                     "adapters": adapters,
-                    "detecting": detecting
+                    "detecting": detecting,
+                    "fan_supported": supports_fan_script()
                 })
 
         return jsonify({
