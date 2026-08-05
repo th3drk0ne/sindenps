@@ -1244,7 +1244,7 @@ function buildGroupedConfigForm(containerId, groups) {
 
     const summary = document.createElement('summary');
     summary.className = 'config-section-header';
-    summary.textContent = `${group.name || 'Settings'} (${group.items.length})`;
+    summary.textContent = group.name || 'Settings';
 
     details.appendChild(summary);
 
