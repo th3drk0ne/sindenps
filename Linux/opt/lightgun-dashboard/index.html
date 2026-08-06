@@ -89,6 +89,23 @@
 	.config-section-content {
 	  padding: 0 12px 12px 12px;
 	}
+	.fan-curve-row,
+	.fan-curve-header {
+		display: grid;
+		grid-template-columns: 120px 120px auto;
+		gap: 10px;
+		align-items: center;
+		margin-bottom: 8px;
+	}
+
+	.fan-curve-header {
+		font-weight: bold;
+		color: #ccc;
+	}
+
+	.fan-curve-row input {
+		width: 100%;
+	}
 	/* Konami theme text colours */
 	body.konami-mode .tabs button,
 	body.konami-mode .log-toggle,
@@ -260,6 +277,112 @@
 			Loading...
 		</span>
 	</div>
+	<div class="service-row" id="fan-install-row"  style="display:none;">
+    <span class="service-name">Fan Service</span>
+    <span class="service-status">
+        Install PWM fan control service
+    </span>
+    <div class="service-buttons">
+        <button id="btn-install-fan"
+                onclick="installFanService()">
+            Install Fan Service
+        </button>
+    </div>
+</div>
+
+<div class="service-row" id="service-fan-controller" style="display:none;">
+    <span class="service-name">
+        fan-controller.service
+    </span>
+
+    <span class="service-status">
+        loading...
+    </span>
+
+    <div class="service-buttons">
+        <button onclick="serviceAction('fan-controller.service','start')">
+            Start
+        </button>
+        <button onclick="serviceAction('fan-controller.service','stop')">
+            Stop
+        </button>
+        <button onclick="serviceAction('fan-controller.service','restart')">
+            Restart
+        </button>
+        <button class="log-toggle"
+                onclick="toggleLogs(event,'fan-controller.service')">
+            Show Logs
+        </button>
+        <button class="btn-secondary"
+                onclick="toggleFanCurveEditor(event)">
+            Edit Fan Curve
+        </button>
+    </div>
+
+    <div class="log-box" id="logs-fan-controller">
+        <pre class="log-content">Loading…</pre>
+    </div>
+
+    <div class="log-box" id="fan-curve-editor" style="display:none;">
+        <div class="config-form">
+
+			<div style="padding:10px;border:1px solid var(--theme-border);">
+				<canvas id="fan-curve-canvas"
+						width="400"
+						height="150"
+						style="display:block;width:100%;">
+				</canvas>
+			</div>
+
+
+            <div class="config-row">
+                <label>
+                    Fan Curve Points
+                    <small>Each row is CPU temperature in °C and fan speed in %. Temperatures must be ascending.</small>
+                </label>
+                <div class="fan-curve-header">
+					<span>Temp °C</span>
+					<span>Fan %</span>
+					<span>Action</span>
+				</div>
+
+				<div id="fan-curve-points"></div>
+            </div>
+
+            <div class="service-buttons">
+                <button class="btn-secondary" onclick="addFanCurvePoint()">
+                    Add Point
+                </button>
+            </div>
+
+            <div class="config-row">
+                <label>
+                    Minimum Spin %
+                    <small>Used to avoid low-speed fan squeal.</small>
+                </label>
+                <input id="fan-min-spin" type="number" min="0" max="100">
+            </div>
+
+            <div class="config-row">
+                <label>
+                    Hysteresis Drop °C
+                    <small>Fan remains on until temperature drops this many degrees below threshold.</small>
+                </label>
+                <input id="fan-hyst-drop" type="number" min="0" max="30">
+            </div>
+
+            <div class="service-buttons">
+                <button class="btn-danger" onclick="saveFanCurve()">
+                    Save Fan Curve & Restart
+                </button>
+                <button class="btn-secondary" onclick="loadFanCurve()">
+                    Reload
+                </button>
+            </div>
+            <span id="fan-curve-status" class="service-status"></span>
+        </div>
+    </div>
+</div>	
       <div class="service-row" id="service-lightgun">
         <span class="service-name">lightgun.service</span>
         <span class="service-status">loading…</span>
@@ -283,7 +406,7 @@
         </div>
         <div class="log-box" id="logs-lightgun-monitor"><pre class="log-content">Loading…</pre></div>
       </div>
-
+	  
       <div class="service-row" id="system-actions">
         <span class="service-name">System</span>
         <span id="system-status" class="service-status"></span>
@@ -582,6 +705,90 @@ function setServiceOfflineUI() {
     }
 }
 
+function drawFanCurve(config) {
+    const canvas = document.getElementById('fan-curve-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+
+    // border
+    ctx.strokeStyle = '#444';
+    ctx.strokeRect(40, 20, w - 60, h - 60);
+
+    const temps = config.tempSteps || [];
+    const speeds = config.speedSteps || [];
+
+    if (temps.length < 2) return;
+
+    const minTemp = Math.min(...temps);
+    const maxTemp = Math.max(...temps);
+
+    function scaleX(temp) {
+        return 40 + ((temp - minTemp) / (maxTemp - minTemp)) * (w - 60);
+    }
+
+    function scaleY(speed) {
+        return h - 40 - (speed / 100) * (h - 60);
+    }
+
+    // grid
+    ctx.strokeStyle = '#222';
+
+    for (let p = 0; p <= 100; p += 25) {
+        const y = scaleY(p);
+
+        ctx.beginPath();
+        ctx.moveTo(40, y);
+        ctx.lineTo(w - 20, y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#aaa';
+        ctx.fillText(`${p}%`, 5, y + 4);
+    }
+
+    // curve
+    ctx.beginPath();
+    ctx.strokeStyle = '#00ff66';
+    ctx.lineWidth = 3;
+
+    temps.forEach((temp, i) => {
+        const x = scaleX(temp);
+        const y = scaleY(speeds[i]);
+
+        if (i === 0)
+            ctx.moveTo(x, y);
+        else
+            ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+
+    // points
+    ctx.fillStyle = '#33ccff';
+
+    temps.forEach((temp, i) => {
+        const x = scaleX(temp);
+        const y = scaleY(speeds[i]);
+
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`${temp}°`, x - 10, h - 20);
+        ctx.fillStyle = '#33ccff';
+    });
+}
+
 function setLoadingUI() {
   document.body.classList.remove('ps2-mode');
   document.body.classList.remove('konami-mode');
@@ -645,6 +852,271 @@ async function refreshTemperature() {
         el.textContent = 'Unavailable';
     }
 }
+
+async function installFanService() {
+
+    if (!confirm('Install cooling fan service?')) {
+        return;
+    }
+
+    const btn = document.getElementById('btn-install-fan');
+
+    btn.disabled = true;
+    btn.textContent = 'Installing...';
+
+    try {
+
+        const res = await fetch('/api/fan/install', {
+            method: 'POST'
+        });
+
+        const data = await res.json();
+		
+		
+	console.log(data);
+
+	if (data.ok) {
+		alert('Fan service installed successfully');
+	} else {
+		alert(
+			'Installation failed:\n\n' +
+			(data.error || 'Unknown error')
+		);
+	}
+
+    } catch (e) {
+
+        alert(e.message);
+
+    } finally {
+
+        btn.disabled = false;
+        btn.textContent = 'Install Fan Service';
+    }
+}
+
+let fanCurveLoaded = false;
+
+function renderFanCurve(config) {
+    const box = document.getElementById('fan-curve-points');
+    if (!box) return;
+
+    box.innerHTML = '';
+
+    const temps = config.tempSteps || [];
+    const speeds = config.speedSteps || [];
+
+    temps.forEach((temp, i) => {
+        const row = document.createElement('div');
+        row.className = 'fan-curve-row';
+        row.style.marginBottom = '8px';
+
+        const tempInput = document.createElement('input');
+        tempInput.type = 'number';
+        tempInput.min = '0';
+        tempInput.max = '120';
+        tempInput.value = temp;
+        tempInput.className = 'fan-temp-step';
+        tempInput.placeholder = 'Temp °C';
+        tempInput.style.width = '120px';
+
+        const speedInput = document.createElement('input');
+        speedInput.type = 'number';
+        speedInput.min = '0';
+        speedInput.max = '100';
+        speedInput.value = speeds[i] ?? 0;
+        speedInput.className = 'fan-speed-step';
+        speedInput.placeholder = 'Speed %';
+        speedInput.style.width = '120px';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-secondary';
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = () => {
+            row.remove();
+        };
+
+        row.appendChild(tempInput);
+        row.appendChild(speedInput);
+        row.appendChild(removeBtn);
+        box.appendChild(row);
+    });
+
+    document.getElementById('fan-min-spin').value = config.minSpin ?? 63;
+    document.getElementById('fan-hyst-drop').value = config.hystDrop ?? 5;
+	document
+    .querySelectorAll(
+        '.fan-temp-step,.fan-speed-step'
+    )
+    .forEach(el => {
+        el.addEventListener('input', () => {
+            drawFanCurve(collectFanCurve());
+        });
+    });
+}
+
+async function loadFanCurve() {
+    const status = document.getElementById('fan-curve-status');
+    if (status) status.textContent = 'Loading fan curve...';
+
+    try {
+        const res = await fetch('/api/fan/config', {
+            cache: 'no-store'
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+            throw new Error(data.error || 'Failed to load fan curve');
+        }
+
+		renderFanCurve(data.config);
+		drawFanCurve(data.config);
+
+		fanCurveLoaded = true;
+
+        if (status) {
+            status.textContent = data.path ? `Loaded: ${data.path}` : 'Fan curve loaded';
+        }
+    } catch (e) {
+        if (status) {
+            status.textContent = 'Load error: ' + e.message;
+        }
+    }
+}
+
+function toggleFanCurveEditor(evt) {
+    const editor = document.getElementById('fan-curve-editor');
+    if (!editor) return;
+
+    if (editor.style.display === 'block') {
+        editor.style.display = 'none';
+        if (evt && evt.target) evt.target.textContent = 'Edit Fan Curve';
+    } else {
+        editor.style.display = 'block';
+        if (evt && evt.target) evt.target.textContent = 'Hide Fan Curve';
+        if (!fanCurveLoaded) {
+            loadFanCurve();
+        }
+    }
+}
+
+function addFanCurvePoint() {
+    const box = document.getElementById('fan-curve-points');
+    if (!box) return;
+
+    const row = document.createElement('div');
+	row.className = 'fan-curve-row';
+    row.style.marginBottom = '8px';
+
+    const tempInput = document.createElement('input');
+    tempInput.type = 'number';
+    tempInput.min = '0';
+    tempInput.max = '120';
+    tempInput.className = 'fan-temp-step';
+    tempInput.placeholder = 'Temp °C';
+    tempInput.style.width = '120px';
+
+    const speedInput = document.createElement('input');
+    speedInput.type = 'number';
+    speedInput.min = '0';
+    speedInput.max = '100';
+    speedInput.className = 'fan-speed-step';
+    speedInput.placeholder = 'Speed %';
+    speedInput.style.width = '120px';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-secondary';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = () => {
+        row.remove();
+    };
+
+	row.appendChild(tempInput);
+	row.appendChild(speedInput);
+	row.appendChild(removeBtn);
+
+	tempInput.addEventListener('input', () => {
+		drawFanCurve(collectFanCurve());
+	});
+
+	speedInput.addEventListener('input', () => {
+		drawFanCurve(collectFanCurve());
+	});
+
+	box.appendChild(row);
+
+	drawFanCurve(collectFanCurve());
+}
+
+function collectFanCurve() {
+    const tempInputs = [...document.querySelectorAll('.fan-temp-step')];
+    const speedInputs = [...document.querySelectorAll('.fan-speed-step')];
+
+    const points = tempInputs.map((input, i) => ({
+        temp: parseInt(input.value, 10),
+        speed: parseInt(speedInputs[i].value, 10)
+    })).filter(p => !Number.isNaN(p.temp) && !Number.isNaN(p.speed));
+
+    points.sort((a, b) => a.temp - b.temp);
+
+    return {
+        tempSteps: points.map(p => p.temp),
+        speedSteps: points.map(p => p.speed),
+        minSpin: parseInt(document.getElementById('fan-min-spin').value, 10),
+        hystDrop: parseInt(document.getElementById('fan-hyst-drop').value, 10)
+    };
+}
+
+async function saveFanCurve() {
+    const status = document.getElementById('fan-curve-status');
+    const config = collectFanCurve();
+
+    if (config.tempSteps.length < 2) {
+        alert('Add at least two fan curve points.');
+        return;
+    }
+
+    if (!confirm('Save fan curve and restart fan-controller.service?')) {
+        return;
+    }
+
+    if (status) status.textContent = 'Saving fan curve...';
+
+    try {
+        const res = await fetch('/api/fan/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+            throw new Error(data.error || 'Save failed');
+        }
+
+		renderFanCurve(data.config);
+		drawFanCurve(data.config);
+
+		if (status) {
+            status.textContent =
+                data.restarted
+                    ? 'Saved and fan-controller.service restarted.'
+                    : 'Saved, but service restart failed.';
+        }
+
+        refreshServices();
+
+    } catch (e) {
+        if (status) {
+            status.textContent = 'Save error: ' + e.message;
+        }
+    }
+}
+
 
 async function loadIconSet() {
     try {
@@ -716,6 +1188,59 @@ async function updateModeIndicator() {
             return;
         }
         const plat = await platRes.json();
+		
+		const fanInstallRow =
+			document.getElementById('fan-install-row');
+
+		const fanServiceRow =
+			document.getElementById('service-fan-controller');
+
+		let fanInstalled = false;
+
+		try {
+
+			const fanRes =
+				await fetch('/api/fan/status');
+
+			const fan =
+				await fanRes.json();
+
+			fanInstalled = fan.installed === true;
+			const fanStatusEl =
+				document.querySelector(
+					'#service-fan-controller .service-status'
+				);
+
+			if (fanStatusEl) {
+				fanStatusEl.textContent = fan.status || 'unknown';
+			}
+
+		} catch (e) {
+
+			fanInstalled = false;
+
+		}
+
+		if (plat.fan_supported) {
+
+			if (fanInstalled) {
+
+				fanInstallRow.style.display = 'none';
+				fanServiceRow.style.display = '';
+
+			} else {
+
+				fanInstallRow.style.display = '';
+				fanServiceRow.style.display = 'none';
+
+			}
+
+		} else {
+
+			fanInstallRow.style.display = 'none';
+			fanServiceRow.style.display = 'none';
+
+		}
 		
 		if (plat.detecting) {
 
@@ -2075,7 +2600,7 @@ setInterval(async () => {
 });
 
 setInterval(() => {
-  ['lightgun.service','lightgun-monitor.service'].forEach(svc => {
+  ['lightgun.service','lightgun-monitor.service','fan-controller.service'].forEach(svc => {
     const box = document.getElementById('logs-' + svc.replace('.service',''));
     if (box && box.style.display === 'block') loadLogs(svc);
   });

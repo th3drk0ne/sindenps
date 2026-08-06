@@ -5,6 +5,7 @@ import time
 import glob
 import threading
 import subprocess
+import json
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from typing import List, Dict, Tuple
@@ -19,7 +20,7 @@ app = Flask(__name__)
 # ---------------------------
 SERVICES = [
     "lightgun.service",
-    "lightgun-monitor.service",
+    "lightgun-monitor.service"
 ]
 
 SYSTEMCTL = "/usr/bin/systemctl"
@@ -76,6 +77,135 @@ def control_service(service: str, action: str) -> bool:
     except subprocess.CalledProcessError as e:
         print("CONTROL ERROR:", e.output.decode(errors="replace"))
         return False
+
+
+# ===========================
+# Fan Controller Curve
+# ===========================
+
+FAN_CONTROLLER_SCRIPT = "/opt/fan-controller/fan_controller.py"
+FAN_CURVE_CONFIG = "/opt/fan-controller/fan_curve.json"
+
+DEFAULT_FAN_CURVE = {
+    "tempSteps": [63, 65, 70, 75, 80, 85],
+    "speedSteps": [65, 70, 75, 80, 90, 100],
+    "minSpin": 63,
+    "hystDrop": 5
+}
+
+
+def _validate_fan_curve(data):
+    temp_steps = data.get("tempSteps")
+    speed_steps = data.get("speedSteps")
+    min_spin = data.get("minSpin", DEFAULT_FAN_CURVE["minSpin"])
+    hyst_drop = data.get("hystDrop", DEFAULT_FAN_CURVE["hystDrop"])
+
+    if not isinstance(temp_steps, list) or not isinstance(speed_steps, list):
+        raise ValueError("Temperature and speed steps must be arrays")
+
+    if len(temp_steps) != len(speed_steps):
+        raise ValueError("Temperature and speed arrays must be the same length")
+
+    if len(temp_steps) < 2:
+        raise ValueError("At least two fan curve points are required")
+
+    temp_steps = [int(x) for x in temp_steps]
+    speed_steps = [int(x) for x in speed_steps]
+    min_spin = int(min_spin)
+    hyst_drop = int(hyst_drop)
+
+    if temp_steps != sorted(temp_steps):
+        raise ValueError("Temperature steps must be in ascending order")
+
+    for temp in temp_steps:
+        if temp < 0 or temp > 120:
+            raise ValueError("Temperature values must be between 0 and 120")
+
+    for speed in speed_steps:
+        if speed < 0 or speed > 100:
+            raise ValueError("Fan speed values must be between 0 and 100")
+
+    if min_spin < 0 or min_spin > 100:
+        raise ValueError("Minimum spin must be between 0 and 100")
+
+    if hyst_drop < 0 or hyst_drop > 30:
+        raise ValueError("Hysteresis drop must be between 0 and 30")
+
+    return {
+        "tempSteps": temp_steps,
+        "speedSteps": speed_steps,
+        "minSpin": min_spin,
+        "hystDrop": hyst_drop
+    }
+
+
+def _read_fan_curve():
+    try:
+        if not os.path.exists(FAN_CURVE_CONFIG):
+            return DEFAULT_FAN_CURVE.copy()
+
+        with open(FAN_CURVE_CONFIG, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        return _validate_fan_curve({
+            "tempSteps": data.get("tempSteps", DEFAULT_FAN_CURVE["tempSteps"]),
+            "speedSteps": data.get("speedSteps", DEFAULT_FAN_CURVE["speedSteps"]),
+            "minSpin": data.get("minSpin", DEFAULT_FAN_CURVE["minSpin"]),
+            "hystDrop": data.get("hystDrop", DEFAULT_FAN_CURVE["hystDrop"])
+        })
+
+    except Exception:
+        return DEFAULT_FAN_CURVE.copy()
+
+
+@app.route("/api/fan/config", methods=["GET"])
+def api_fan_config_get():
+    return jsonify({
+        "ok": True,
+        "config": _read_fan_curve(),
+        "path": FAN_CURVE_CONFIG
+    })
+
+
+@app.route("/api/fan/config", methods=["POST"])
+def api_fan_config_save():
+    try:
+        data = request.get_json(force=True) or {}
+        clean = _validate_fan_curve(data)
+
+        os.makedirs(os.path.dirname(FAN_CURVE_CONFIG), exist_ok=True)
+
+        backup_path = None
+        if os.path.exists(FAN_CURVE_CONFIG):
+            backup_path = FAN_CURVE_CONFIG + ".bak"
+            try:
+                with open(FAN_CURVE_CONFIG, "r", encoding="utf-8") as src:
+                    old = src.read()
+                with open(backup_path, "w", encoding="utf-8") as dst:
+                    dst.write(old)
+            except Exception:
+                backup_path = None
+
+        with open(FAN_CURVE_CONFIG, "w", encoding="utf-8") as f:
+            json.dump(clean, f, indent=2)
+
+        restarted = control_service("fan-controller.service", "restart")
+
+        return jsonify({
+            "ok": True,
+            "config": clean,
+            "backup": backup_path,
+            "restarted": restarted,
+            "status": get_status("fan-controller.service")
+        })
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 400
+
+
 
 # ===========================
 # System power actions
@@ -159,7 +289,71 @@ def get_cpu_temp():
             return round(int(f.read().strip()) / 1000, 1)
     except Exception:
         return None
+  
+def supports_fan_script():
+    return get_pi_model() in (
+        "Pi3",
+        "Pi4"
+    )
+        
+@app.route("/api/fan/install", methods=["POST"])
+def install_fan_service():
+    try:
+        result = subprocess.run(
+            [
+                "bash",
+                "-c",
+                "curl -fsSL https://raw.githubusercontent.com/th3drk0ne/sindenps/main/fan-ctrl/setup.sh | sudo bash"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
 
+        return jsonify({
+            "ok": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr
+        })
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
+  
+@app.route("/api/fan/status")
+def fan_status():
+    service_name = "fan-controller.service"
+    service_file = "/etc/systemd/system/fan-controller.service"
+
+    installed = os.path.exists(service_file)
+
+    if not installed:
+        return jsonify({
+            "installed": False,
+            "status": "not-installed"
+        })
+
+    try:
+        out = subprocess.check_output(
+            [SYSTEMCTL, "is-active", service_name],
+            stderr=subprocess.STDOUT
+        )
+        status = out.decode().strip()
+
+    except subprocess.CalledProcessError as e:
+        status = e.output.decode(errors="replace").strip()
+        if not status:
+            status = "inactive"
+
+    return jsonify({
+        "installed": True,
+        "status": status
+    })
+
+    
+    
 @app.route("/api/temperature")
 def api_temperature():
     temp = get_cpu_temp()
@@ -379,6 +573,31 @@ def _read_adapter_identity(path):
 
     except Exception:
         return None
+             
+def get_pi_model():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            model = f.read().strip().lower()
+
+        if "zero 2" in model:
+            return "PiZero2W"
+
+        if "pi 5" in model:
+            return "Pi5"
+
+        if "pi 4" in model:
+            return "Pi4"
+
+        if "pi 3" in model:
+            return "Pi3"
+
+        if "zero" in model:
+            return "PiZero"
+
+        return "Unknown"
+
+    except Exception:
+        return "Unknown"
 
 @app.route("/api/firmware/status")
 def api_firmware_status():
@@ -587,7 +806,9 @@ def api_platform():
                     "vendor": vendor,
                     "variant": variant,
                     "adapters": adapters,
-                    "detecting": detecting
+                    "detecting": detecting,
+                    "fan_supported": supports_fan_script(),
+                    "pi_model": get_pi_model()
                 })
 
         return jsonify({
@@ -600,10 +821,15 @@ def api_platform():
             "ok": False,
             "error": str(e)
         }), 500
+        
+
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
-    if name not in SERVICES:
+    allowed_services = SERVICES + [
+        "fan-controller.service"
+    ]
+    if name not in allowed_services:
         return jsonify({"error": "unknown service"}), 400
     if action not in ("start", "stop", "restart"):
         return jsonify({"error": "invalid action"}), 400
@@ -697,13 +923,40 @@ def api_adapters():
 
 @app.route("/api/logs/<service>")
 def service_logs(service):
-    if service not in SERVICES:
-        return jsonify({"error": "unknown service"}), 400
+
+    allowed_services = SERVICES + [
+        "fan-controller.service"
+    ]
+
+    if service not in allowed_services:
+        return jsonify({
+            "error": "unknown service"
+        }), 400
+
     try:
-        out = subprocess.check_output([SYSTEMCTL, "status", service, "--no-pager"], stderr=subprocess.STDOUT)
-        return jsonify({"logs": out.decode(errors="replace")})
+        out = subprocess.check_output(
+            [
+                SYSTEMCTL,
+                "status",
+                service,
+                "--no-pager"
+            ],
+            stderr=subprocess.STDOUT
+        )
+
+        return jsonify({
+            "logs": out.decode(
+                errors="replace"
+            )
+        })
+
     except subprocess.CalledProcessError as e:
-        return jsonify({"logs": e.output.decode(errors="replace")})
+
+        return jsonify({
+            "logs": e.output.decode(
+                errors="replace"
+            )
+        })
 
 
 @app.route("/api/sinden-log")
