@@ -580,10 +580,35 @@ def _read_adapter_identity(path):
     except Exception:
         return None
         
+#def get_pi_model():
+ #   try:
+ #       with open("/proc/device-tree/model", "r") as f:
+ #           return f.read().strip()
+ #   except Exception:
+ #       return "Unknown"
+        
 def get_pi_model():
     try:
         with open("/proc/device-tree/model", "r") as f:
-            return f.read().strip()
+            model = f.read().strip().lower()
+
+        if "zero 2" in model:
+            return "PiZero2W"
+
+        if "pi 5" in model:
+            return "Pi5"
+
+        if "pi 4" in model:
+            return "Pi4"
+
+        if "pi 3" in model:
+            return "Pi3"
+
+        if "zero" in model:
+            return "PiZero"
+
+        return "Unknown"
+
     except Exception:
         return "Unknown"
 
