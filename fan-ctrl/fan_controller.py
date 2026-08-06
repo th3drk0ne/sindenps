@@ -18,7 +18,7 @@ CONFIG_FILE = "/opt/fan-controller/fan_curve.json"
 
 DEFAULT_FAN_CONFIG = {
     "tempSteps": [63, 65, 75, 85],
-    "speedSteps": [0, 75, 85, 100],
+    "speedSteps": [65, 75, 85, 100],
     "minSpin": 63,
     "hystDrop": 5
 }
