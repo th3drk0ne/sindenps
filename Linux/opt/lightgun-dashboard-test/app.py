@@ -579,6 +579,13 @@ def _read_adapter_identity(path):
 
     except Exception:
         return None
+        
+def get_pi_model():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            return f.read().strip()
+    except Exception:
+        return "Unknown"
 
 @app.route("/api/firmware/status")
 def api_firmware_status():
@@ -788,7 +795,8 @@ def api_platform():
                     "variant": variant,
                     "adapters": adapters,
                     "detecting": detecting,
-                    "fan_supported": supports_fan_script()
+                    "fan_supported": supports_fan_script(),
+                    "pi_model": get_pi_model()
                 })
 
         return jsonify({
@@ -801,6 +809,8 @@ def api_platform():
             "ok": False,
             "error": str(e)
         }), 500
+        
+
 
 @app.route("/api/service/<name>/<action>", methods=["POST"])
 def service_action(name, action):
