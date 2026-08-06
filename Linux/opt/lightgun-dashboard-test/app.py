@@ -579,14 +579,7 @@ def _read_adapter_identity(path):
 
     except Exception:
         return None
-        
-#def get_pi_model():
- #   try:
- #       with open("/proc/device-tree/model", "r") as f:
- #           return f.read().strip()
- #   except Exception:
- #       return "Unknown"
-        
+             
 def get_pi_model():
     try:
         with open("/proc/device-tree/model", "r") as f:
