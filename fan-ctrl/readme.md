@@ -69,7 +69,7 @@ sudo ./setup.sh
   ```
 
 - Permissions:
-  - Owned by `fanctl`
+  - Owned by `sinden`
   - Executable
 
 ---
@@ -84,7 +84,7 @@ fan-controller.service
 
 Key behaviour:
 
-- Runs as non-root user (`fanctl`)
+- Runs as non-root user (`sinden`)
 - Auto restart on failure
 - Starts on boot
 - Restricted permissions (hardened service)
@@ -146,15 +146,17 @@ PWM_FREQ = 10000
 ### Temperature Curve
 
 ```python
-tempSteps  = [63, 65, 75, 85]
-speedSteps = [0, 75, 85, 100]
+tempSteps  = [63, 65, 70, 75, 80, 85]
+speedSteps = [65, 70, 75, 80, 90, 100]
 ```
 
 | Temperature | Speed |
 |------------|------|
 | <63°C      | Off  |
-| 65°C       | 75%  |
-| 75°C       | 85%  |
+| 65°C       | 70%  |
+| 70°C       | 75%  |
+| 75°C+      | 80% |
+| 80°C       | 90%  |
 | 85°C+      | 100% |
 
 ---
