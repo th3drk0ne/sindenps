@@ -815,7 +815,7 @@ def api_platform():
                     "adapters": adapters,
                     "detecting": detecting,
                     "fan_supported": supports_fan_script(),
-                    "pi_model": get_pi_model()
+                    "pi_board": get_pi_board
                 })
 
         return jsonify({
