@@ -86,9 +86,9 @@ def control_service(service: str, action: str) -> bool:
 FAN_CONTROLLER_SCRIPT = "/opt/fan-controller/fan_controller.py"
 FAN_CURVE_CONFIG = "/opt/fan-controller/fan_curve.json"
 
-DEFAULT_FAN_CONFIG = {
-    "tempSteps": [63, 65, 70, 75, 80, 85],
-    "speedSteps": [65, 70, 75, 80, 90, 100],
+DEFAULT_FAN_CURVE = {
+    "tempSteps": [63, 65, 75, 85],
+    "speedSteps": [0, 75, 85, 100],
     "minSpin": 63,
     "hystDrop": 5
 }
