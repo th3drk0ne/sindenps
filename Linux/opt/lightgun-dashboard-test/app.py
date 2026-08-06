@@ -291,16 +291,10 @@ def get_cpu_temp():
         return None
   
 def supports_fan_script():
-    try:
-        with open("/proc/device-tree/model", "r") as f:
-            model = f.read().lower()
-
-        return (
-            "raspberry pi 3" in model or
-            "raspberry pi 4" in model
-        )
-    except:
-        return True
+    return get_pi_model() in (
+        "Pi3",
+        "Pi4"
+    )
         
 @app.route("/api/fan/install", methods=["POST"])
 def install_fan_service():
