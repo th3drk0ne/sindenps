@@ -1085,8 +1085,8 @@ def update_config_preserve_layout(path: str, p1_list, p2_list) -> None:
 
 CATEGORIES = [
     (r'^(SerialPort|VideoDevice)', 'Device & Ports'),
-    (r'^(Calibrate|Offset|ColourMatch|GangstaSetting|CameraRes|EnableCalibration|AutoSaveCalibration)', 'Calibration'),
-    (r'^(CameraExposure|CameraBrightness|CameraContrast|MatchOnlyWherePointing|OffscreenReload|ConsoleOutputVerbose)', 'Camera & Exposure'),
+    (r'^(Calibrate|Offset|ColourMatch|GangstaSetting|EnableCalibration|AutoSaveCalibration)', 'Calibration'),
+    (r'^(CameraExposure|CameraRes|CameraBrightness|CameraContrast|MatchOnlyWherePointing|OffscreenReload|ConsoleOutputVerbose)', 'Camera & Exposure'),
     (r'^(IAgreeRecoil|EnableRecoil|Recoil|TriggerRecoil|AutoRecoil)', 'Recoil'),
     (r'^(Button(?!.*Offscreen)|.*Mod$)', 'Buttons (On-screen)'),
     (r'^(Button.*Offscreen|.*OffscreenMod$)', 'Buttons (Off-screen)'),
