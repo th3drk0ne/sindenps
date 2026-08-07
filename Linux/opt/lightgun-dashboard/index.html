@@ -514,6 +514,9 @@
         </div>
         <span id="config-file-path" class="config-path"></span>   
         <button id="save-restart" class="btn-danger">Save & Restart</button>
+		<button id="btn-ps2-calibration" class="btn-secondary" onclick="openPs2CalibrationModal()">
+		  PS2 Calibration
+		</button>
 		<span id="config-status" class="config-status-inline"></span>
 		<label style="display:flex;align-items:center;gap:6px;">
 			<input type="checkbox" id="show-advanced-settings">
@@ -542,6 +545,166 @@
         <div id="backup-list" style="max-height:50vh; overflow:auto; border:1px solid #444; padding:8px; border-radius:6px;"></div>
       </div>
     </div>
+
+	<div id="ps2-calibration-modal"
+		 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;">
+
+	  <div class="dialog"
+		   style="background:#111;border:1px solid var(--theme-border);border-left:6px solid var(--theme-border);width:min(900px,95vw);margin:4vh auto;padding:16px;border-radius:6px;max-height:90vh;overflow:auto;">
+
+		<div style="display:flex;justify-content:space-between;align-items:center;">
+		  <div class="service-name">G-Con2 Calibration</div>
+		  <button class="btn-tertiary" onclick="closePs2CalibrationModal()">
+			Close
+		  </button>
+		</div>
+
+		<div style="margin-top:16px;line-height:1.6;">
+
+		  <div style="padding:10px;background:#332200;border:1px solid #664400;border-radius:6px;margin:12px 0;">
+			⚠️ G-Con2 calibration on PS2 <strong>does not behave like PS1 G-Con45 calibration</strong>.<br>
+			It uses specific button combinations that are not shown on screen.
+		  </div>
+
+		  <hr>
+
+		  <h3>When Calibration Screen Appears</h3>
+
+		  <p>
+			When the PlayStation 2 detects the Arduino as a
+			<strong>G-Con2 USB device</strong>, the console will automatically display
+			the <strong>G-Con2 calibration screen</strong>.
+		  </p>
+
+		  <p>At this point:</p>
+
+		  <ul>
+			<li>You should see a <strong>calibration target</strong> but no tracking crosshair.</li>
+			<li>The gun is detected, but <strong>not yet calibrated</strong>.</li>
+		  </ul>
+
+		  <hr>
+
+		  <h3>Basic Input Test (Important)</h3>
+
+		  <p>Before calibrating:</p>
+
+		  <ol>
+			<li><strong>Press the trigger</strong></li>
+			<li>You should <strong>hear a gunshot sound</strong></li>
+		  </ol>
+
+		  <p>✅ This confirms:</p>
+
+		  <ul>
+			<li>USB communication is working</li>
+			<li>Trigger input is detected</li>
+		  </ul>
+
+		  <p>
+			If you do <strong>not</strong> hear a gunshot, calibration will not work.
+		  </p>
+
+		  <hr>
+
+		  <h3>Enabling Crosshair on G-Con2 Calibration Screen (PS2)</h3>
+
+		  <p>
+			G-Con2 calibration is <strong>not automatic</strong>.
+		  </p>
+
+		  <p>To enable actual screen tracking:</p>
+
+		  <ol>
+			<li><strong>Hold D-Pad DOWN</strong></li>
+			<li>While still holding DOWN, <strong>press the trigger</strong></li>
+			<li>Release both</li>
+		  </ol>
+
+		  <p>
+			This enables live tracking mode.
+		  </p>
+
+		  <p>
+			A crosshair should now be visible, and tracking.
+		  </p>
+
+		  <div style="padding:10px;background:#332200;border:1px solid #664400;border-radius:6px;margin:12px 0;">
+			⚠️ This is required for most G-Con2 games.
+		  </div>
+
+		  <hr>
+
+		  <h3>If Your Gun Is Already Calibrated</h3>
+
+		  <p>
+			If you see a tracking crosshair that is aligned with your gun sights:
+		  </p>
+
+		  <ul>
+			<li>Press either <strong>side button</strong> on the gun</li>
+			<li>The system will <strong>continue past calibration</strong></li>
+		  </ul>
+
+		  <p>
+			No further action is required.
+		  </p>
+
+		  <hr>
+
+		  <h3>Performing Calibration (Sinden Lightgun Global Calibration)</h3>
+
+		  <p>
+			If you see a tracking crosshair that is <strong>not</strong> aligned
+			with your gun sights, calibration is required:
+		  </p>
+
+		  <ol>
+			<li>
+			  <strong>Hold LEFT on the D-Pad for 3 seconds</strong>
+			  (until the crosshair freezes at/near the center of the screen).
+			</li>
+			<li>
+			  Aim and shoot at the frozen crosshair.
+			</li>
+		  </ol>
+
+		  <p>
+			The crosshair should begin tracking again and be aligned with your gun sights.
+			If not then repeat this process.
+		  </p>
+
+		  <p>
+			This process forces the gun's own global calibration mode.
+		  </p>
+
+		  <p>
+			You can monitor the output from the
+			Sinden Lightgun Driver log on the dashboard.
+		  </p>
+
+		  <h4>What you should see:</h4>
+
+		  <p>
+			On the <strong>Dashboard / Lightgun log</strong>,
+			a message appears:
+		  </p>
+
+		  <pre class="log-content" style="display:block;border:1px solid #333;padding:12px;background:#000;border-radius:6px;">
+	Entering Calibration mode
+
+	G-Con2 Calibration:
+
+	Point the lightgun at the center of the calibration screen and press the trigger
+
+	The log will say calibration complete, you can now press the side button to continue.
+		  </pre>
+
+		</div>
+	  </div>
+	</div>
+
+
   </div>
 <button id="scroll-top-btn" onclick="scrollToTop()">▲</button>
 <script>
@@ -704,6 +867,15 @@ function setServiceOfflineUI() {
         regionImg.style.display = 'none';
     }
 }
+
+function openPs2CalibrationModal() {
+    document.getElementById('ps2-calibration-modal').style.display = 'block';
+}
+
+function closePs2CalibrationModal() {
+    document.getElementById('ps2-calibration-modal').style.display = 'none';
+}
+
 
 function drawFanCurve(config) {
     const canvas = document.getElementById('fan-curve-canvas');
@@ -1816,6 +1988,10 @@ function scrollToTop() {
 
 
 async function loadConfig(platform) {
+  const calibBtn = document.getElementById('btn-ps2-calibration');
+	if (calibBtn) {
+		calibBtn.style.display = (platform === 'ps2') ? '' : 'none';
+	}
   const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || 'Failed to read config');
