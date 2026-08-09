@@ -1,4 +1,4 @@
-<img width="217" height="72" alt="sindenps2-removebg-preview" src="https://github.com/user-attachments/assets/1a6a643d-96ec-4cd6-9d83-8b31392c3443" />
+<img width="163" height="54" alt="sindenps" src="https://github.com/user-attachments/assets/1a6a643d-96ec-4cd6-9d83-8b31392c3443" />
 
 
 
