@@ -1,4 +1,7 @@
-![alt text](https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Media/Images/logo.png?raw=true)
+<img width="217" height="72" alt="sindenps2-removebg-preview" src="https://github.com/user-attachments/assets/1a6a643d-96ec-4cd6-9d83-8b31392c3443" />
+
+
+
  
 ### Real G-Con45 & G-Con2 Emulation for PlayStation 1 and 2 Lightgun Gaming using a Sinden Lightgun
 
