@@ -1484,8 +1484,8 @@ async function updateModeIndicator() {
 
                 document.body.classList.remove('konami-mode');
                 document.body.classList.remove('sony-mode');
-				document.body.classList.add('ps2-mode');
-				
+			          document.body.classList.add('ps2-mode');
+
                 img.src = '/philips.png';
                 img.alt = 'Philips';
 
@@ -1514,8 +1514,8 @@ async function updateModeIndicator() {
                     regionImg.src = '/analog.png';
                     regionImg.style.display = 'block';
                     break;
-				
-				case 'PHILIPS':
+                
+                case 'PHILIPS':
                     regionImg.src = '/philips.png';
                     regionImg.style.display = 'block';
                     break;
@@ -1524,7 +1524,7 @@ async function updateModeIndicator() {
                     regionImg.src = '/dht.png';
                     regionImg.style.display = 'block';
                     break;
-					
+                    
                 case 'CDI':
                     regionImg.src = '/cdi.png';
                     regionImg.style.display = 'block';
@@ -1573,6 +1573,11 @@ async function updateModeIndicator() {
 
 			case 'ANALOG':
 				regionImg2.src = '/analog.png';
+				regionImg2.style.display = 'block';
+				break;
+
+			case 'PHILIPS':
+				regionImg2.src = '/philips.png';
 				regionImg2.style.display = 'block';
 				break;
 
