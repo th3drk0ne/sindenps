@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 #
-# Sinden Lightgun setup script (fixed, hardened, adds sinden to sudoers)
-# Downloads different PS1/PS2 assets based on VERSION and architecture
-# Tested on Raspberry Pi OS variants using /boot/firmware layout
-# Test Script for Raspberry Pi OS 64-bit (Trixie) with missing libjpeg.so.8 symlinked to libjpeg.so.62
+# Sinden Peripheral System Setup Script 
 #
 
 set -euo pipefail
@@ -743,8 +740,10 @@ DHT="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgu
 LOGO_PS1U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps1-u.png"
 LOGO_PS2U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/ps2-u.png"
 LOGO_HBU="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/hb-u.png"
+LOGO_PHL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/philips.png"
+LOGO_CDI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/cdi.png"
 
-for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png favicon.ico hb.png hb-u.png pal.png ntsc.png apple-touch-icon.png analog.png sony.png dht.png; do
+for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png favicon.ico hb.png hb-u.png pal.png ntsc.png apple-touch-icon.png analog.png sony.png dht.png philips.png cdi.png; do
   case "$FILE" in
     logo.png) URL="$LOGO_URL" ;;
     ps1.png)  URL="$LOGO_PS1" ;;
@@ -762,6 +761,8 @@ for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png fa
 	analog.png)  URL="$ANLG" ;;
 	sony.png)  URL="$SONY" ;;
 	dht.png)  URL="$DHT" ;;
+	philips.png)  URL="$LOGO_PHL" ;;
+	cdi.png)  URL="$LOGO_CDI" ;;
   esac
 
   DEST="${APP_DIR}/${FILE}"

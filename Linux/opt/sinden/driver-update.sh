@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 #
-# Sinden PS updater — timestamps, file logging, unified archive layout,
-# excludes backups/profiles, auto-pruning, curl-based GitHub list,
-# correct order (list → archive → download), and rollback on failure.
+# SindenPS updater
 #
 set -euo pipefail
 

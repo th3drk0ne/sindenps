@@ -1480,6 +1480,15 @@ async function updateModeIndicator() {
                 img.src = '/sony.png';
                 img.alt = 'Sony';
 
+            } else if (adapter1?.vendor === 'PHILIPS') {
+
+                document.body.classList.remove('konami-mode');
+                document.body.classList.remove('sony-mode');
+				document.body.classList.add('ps2-mode');
+				
+                img.src = '/philips.png';
+                img.alt = 'Philips';
+
             } else {
 
                 document.body.classList.remove('konami-mode');
@@ -1505,9 +1514,19 @@ async function updateModeIndicator() {
                     regionImg.src = '/analog.png';
                     regionImg.style.display = 'block';
                     break;
+				
+				case 'PHILIPS':
+                    regionImg.src = '/philips.png';
+                    regionImg.style.display = 'block';
+                    break;
 
                 case 'DHT':
                     regionImg.src = '/dht.png';
+                    regionImg.style.display = 'block';
+                    break;
+					
+                case 'CDI':
+                    regionImg.src = '/cdi.png';
                     regionImg.style.display = 'block';
                     break;
 
@@ -1532,6 +1551,9 @@ async function updateModeIndicator() {
 		} else if (adapter2.vendor === 'SONY') {
 			img2.src = '/sony.png';
 			img2.alt = 'Sony';
+		} else if (adapter2.vendor === 'PHILIPS') {
+			img2.src = '/philips.png';
+			img2.alt = 'Philips';
 		} else {
 			img2.src = vendorIcon('ps1');
 			img2.alt = 'G-Con45';
@@ -1556,6 +1578,11 @@ async function updateModeIndicator() {
 
 			case 'DHT':
 				regionImg2.src = '/dht.png';
+				regionImg2.style.display = 'block';
+				break;
+				
+			case 'CDI':
+				regionImg2.src = '/cdi.png';
 				regionImg2.style.display = 'block';
 				break;
 
