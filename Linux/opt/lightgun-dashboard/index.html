@@ -151,6 +151,10 @@
 	  color: #000 !important;
 	}
 	body.sony-mode .update-banner button { color: #fff !important;	}
+	.modal {
+	  border: 1px solid var(--theme-border);
+	  border-left: 6px solid var(--theme-border);
+	}
 	#temperature-panel { background: #111; }
 	#temperature-status.hot { color: #ff4444; font-weight: 700;	}
 	#temperature-status.warm { color: #ffaa00; font-weight: 700; }
@@ -536,10 +540,10 @@
     </section>
 
     <div id="backup-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;">
-      <div class="dialog" style="background:#111; border:1px solid #c00; border-left:6px solid var(--theme-border); width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
+      <div class="dialog modal" style="background:#111; width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div class="service-name">Restore Backup</div>
-          <button onclick="closeBackupModal()" class="btn-tertiary">Close</button>
+          <button onclick="closeBackupModal()" class="btn-tertiary"> X </button>
         </div>
         <div id="backup-list-status" style="margin:10px 0;"></div>
         <div id="backup-list" style="max-height:50vh; overflow:auto; border:1px solid #444; padding:8px; border-radius:6px;"></div>
@@ -549,14 +553,12 @@
 	<div id="ps2-calibration-modal"
 		 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;">
 
-	  <div class="dialog"
-		   style="background:#111;border:1px solid var(--theme-border);border-left:6px solid var(--theme-border);width:min(900px,95vw);margin:4vh auto;padding:16px;border-radius:6px;max-height:90vh;overflow:auto;">
+	  <div class="dialog modal"
+		   style="background:#111;width:min(900px,95vw);margin:4vh auto;padding:16px;border-radius:6px;max-height:90vh;overflow:auto;">
 
 		<div style="display:flex;justify-content:space-between;align-items:center;">
 		  <div class="service-name">G-Con2 Calibration</div>
-		  <button class="btn-tertiary" onclick="closePs2CalibrationModal()">
-			Close
-		  </button>
+		  <button class="btn-tertiary" onclick="closePs2CalibrationModal()"> X</button>
 		</div>
 
 		<div style="margin-top:16px;line-height:1.6;">
@@ -594,7 +596,7 @@
 			<li>You should <strong>hear a gunshot sound</strong></li>
 		  </ol>
 
-		  <p>✅ This confirms:</p>
+		  <p>This confirms:</p>
 
 		  <ul>
 			<li>USB communication is working</li>

@@ -1178,7 +1178,7 @@ main() {
   log "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   log "  • Check:   gcon2_serial_status"
   log "  • Dashboard: Running at http://sindenps.local/"
-  log "  • If this is your instial install a reboot is required"
+  log "  • If this is your initial install a reboot is required"
 }
 main
 fi
