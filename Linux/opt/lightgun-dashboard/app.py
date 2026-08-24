@@ -1447,21 +1447,21 @@ def analog_png():
 def sony_png():
     return send_from_directory("/opt/lightgun-dashboard", "sony.png")
     
- @app.route("/philips.png")
+@app.route("/philips.png")
 def philips_png():
     return send_from_directory("/opt/lightgun-dashboard", "philips.png")
-    
+
 @app.route("/ntsc.png")
 def ntsc_png():
     return send_from_directory("/opt/lightgun-dashboard", "ntsc.png")
 
+@app.route("/cdi.png")
+def cdi_png():
+    return send_from_directory("/opt/lightgun-dashboard","cdi.png")
+
 @app.route("/dht.png")
 def dht_png():
     return send_from_directory("/opt/lightgun-dashboard", "dht.png")
-
-@app.route("/cdi.png")
-def cdi_png():
-    return send_from_directory("/opt/lightgun-dashboard", "cdi.png")
 
 @app.route("/")
 def index():
@@ -1500,7 +1500,7 @@ def api_sindenps_logs():
             return jsonify({"logs": f.read()})
     except:
         return jsonify({"logs": "No logs available"})
-        
+ 
 @app.route("/api/sindenps/status")
 def api_sindenps_status():
     return jsonify({
