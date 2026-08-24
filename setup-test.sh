@@ -765,6 +765,7 @@ for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png fa
 	cdi.png)  URL="$LOGO_CDI" ;;
   esac
 
+  install -d -o sinden -g sinden "${APP_DIR}/images"
   DEST="${APP_DIR}/images/${FILE}"
 
 	sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
