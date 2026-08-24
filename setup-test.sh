@@ -724,24 +724,24 @@ sudo nginx -t && sudo systemctl restart nginx
 log "=== 12) Deploy/images ==="
 
 # images 
-LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/logo.png"
-LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/ps1.png"
-LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/ps2.png"
-LOGO_HB="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/hb.png"
-LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/load.png"
-OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/offline.png"
-FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/favicon.ico"
-PAL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/pal.png"
-NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/ntsc.png"
-ATI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/apple-touch-icon.png"
-ANLG="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/analog.png"
-SONY="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/sony.png"
-DHT="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/dht.png"
-LOGO_PS1U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/ps1-u.png"
-LOGO_PS2U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/ps2-u.png"
-LOGO_HBU="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/hb-u.png"
-LOGO_PHL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/philips.png"
-LOGO_CDI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/images/cdi.png"
+LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/logo.png"
+LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps1.png"
+LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps2.png"
+LOGO_HB="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/hb.png"
+LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/load.png"
+OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/offline.png"
+FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/favicon.ico"
+PAL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/pal.png"
+NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ntsc.png"
+ATI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/apple-touch-icon.png"
+ANLG="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/analog.png"
+SONY="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/sony.png"
+DHT="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/dht.png"
+LOGO_PS1U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps1-u.png"
+LOGO_PS2U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps2-u.png"
+LOGO_HBU="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/hb-u.png"
+LOGO_PHL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/philips.png"
+LOGO_CDI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/cdi.png"
 
 for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png favicon.ico hb.png hb-u.png pal.png ntsc.png apple-touch-icon.png analog.png sony.png dht.png philips.png cdi.png; do
   case "$FILE" in
@@ -767,7 +767,7 @@ for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png fa
 
   install -d -o sinden -g sinden "${APP_DIR}/images"
   DEST="${APP_DIR}/images/${FILE}"
-
+  
 	sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
 	sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
 	
