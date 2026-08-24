@@ -1389,71 +1389,79 @@ def api_backup_restore():
 
 @app.route("/logo.png")
 def logo():
-    return send_from_directory("/opt/lightgun-dashboard", "logo.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "logo.png")
 
 @app.route("/ps1.png")
 def ps1_png():
-    return send_from_directory("/opt/lightgun-dashboard", "ps1.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "ps1.png")
 
 @app.route("/ps1-u.png")
 def ps1u_png():
-    return send_from_directory("/opt/lightgun-dashboard", "ps1-u.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "ps1-u.png")
 
 @app.route("/ps2.png")
 def ps2_png():
-    return send_from_directory("/opt/lightgun-dashboard", "ps2.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "ps2.png")
 
 @app.route("/ps2-u.png")
 def ps2u_png():
-    return send_from_directory("/opt/lightgun-dashboard", "ps2-u.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "ps2-u.png")
 
 @app.route("/load.png")
 def load_png():
-    return send_from_directory("/opt/lightgun-dashboard", "load.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "load.png")
 
 @app.route("/offline.png")
 def offline_png():
-    return send_from_directory("/opt/lightgun-dashboard", "offline.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "offline.png")
 
 @app.route("/hb.png")
 def hb_png():
-    return send_from_directory("/opt/lightgun-dashboard", "hb.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "hb.png")
     
 @app.route("/hb-u.png")
 def hbu_png():
-    return send_from_directory("/opt/lightgun-dashboard", "hb-u.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "hb-u.png")
     
 @app.route("/favicon.ico")
 def favicon_ico():
-    return send_from_directory("/opt/lightgun-dashboard", "favicon.ico")
+    return send_from_directory("/opt/lightgun-dashboard/images", "favicon.ico")
     
 @app.route("/apple-touch-icon.png")
 def apple_touch_icon():
-    return send_from_directory("/opt/lightgun-dashboard", "apple-touch-icon.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "apple-touch-icon.png")
 
 @app.route("/manifest.json")
 def manifest_json():
-    return send_from_directory("/opt/lightgun-dashboard", "manifest.json")
+    return send_from_directory("/opt/lightgun-dashboard/images", "manifest.json")
 
 @app.route("/pal.png")
 def pal_png():
-    return send_from_directory("/opt/lightgun-dashboard", "pal.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "pal.png")
     
 @app.route("/analog.png")
 def analog_png():
-    return send_from_directory("/opt/lightgun-dashboard", "analog.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "analog.png")
 
 @app.route("/sony.png")
 def sony_png():
-    return send_from_directory("/opt/lightgun-dashboard", "sony.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "sony.png")
     
+@app.route("/philips.png")
+def philips_png():
+    return send_from_directory("/opt/lightgun-dashboard/images", "philips.png")
+
 @app.route("/ntsc.png")
 def ntsc_png():
-    return send_from_directory("/opt/lightgun-dashboard", "ntsc.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "ntsc.png")
+
+@app.route("/cdi.png")
+def cdi_png():
+    return send_from_directory("/opt/lightgun-dashboard/images","cdi.png")
 
 @app.route("/dht.png")
 def dht_png():
-    return send_from_directory("/opt/lightgun-dashboard", "dht.png")
+    return send_from_directory("/opt/lightgun-dashboard/images", "dht.png")
 
 @app.route("/")
 def index():
@@ -1492,7 +1500,7 @@ def api_sindenps_logs():
             return jsonify({"logs": f.read()})
     except:
         return jsonify({"logs": "No logs available"})
-        
+ 
 @app.route("/api/sindenps/status")
 def api_sindenps_status():
     return jsonify({

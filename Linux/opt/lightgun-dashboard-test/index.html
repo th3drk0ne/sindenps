@@ -151,6 +151,10 @@
 	  color: #000 !important;
 	}
 	body.sony-mode .update-banner button { color: #fff !important;	}
+	.modal {
+	  border: 1px solid var(--theme-border);
+	  border-left: 6px solid var(--theme-border);
+	}
 	#temperature-panel { background: #111; }
 	#temperature-status.hot { color: #ff4444; font-weight: 700;	}
 	#temperature-status.warm { color: #ffaa00; font-weight: 700; }
@@ -515,7 +519,7 @@
         <span id="config-file-path" class="config-path"></span>   
         <button id="save-restart" class="btn-danger">Save & Restart</button>
 		<button id="btn-ps2-calibration" class="btn-secondary" onclick="openPs2CalibrationModal()">
-		  PS2 Calibration
+		  Calibration
 		</button>
 		<span id="config-status" class="config-status-inline"></span>
 		<label style="display:flex;align-items:center;gap:6px;">
@@ -536,10 +540,10 @@
     </section>
 
     <div id="backup-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;">
-      <div class="dialog" style="background:#111; border:1px solid #c00; border-left:6px solid var(--theme-border); width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
+      <div class="dialog modal" style="background:#111; width:min(760px,90vw); margin:10vh auto; padding:16px; border-radius:6px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div class="service-name">Restore Backup</div>
-          <button onclick="closeBackupModal()" class="btn-tertiary">Close</button>
+          <button onclick="closeBackupModal()" class="btn-tertiary"> X </button>
         </div>
         <div id="backup-list-status" style="margin:10px 0;"></div>
         <div id="backup-list" style="max-height:50vh; overflow:auto; border:1px solid #444; padding:8px; border-radius:6px;"></div>
@@ -549,14 +553,12 @@
 	<div id="ps2-calibration-modal"
 		 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;">
 
-	  <div class="dialog"
-		   style="background:#111;border:1px solid var(--theme-border);border-left:6px solid var(--theme-border);width:min(900px,95vw);margin:4vh auto;padding:16px;border-radius:6px;max-height:90vh;overflow:auto;">
+	  <div class="dialog modal"
+		   style="background:#111;width:min(900px,95vw);margin:4vh auto;padding:16px;border-radius:6px;max-height:90vh;overflow:auto;">
 
 		<div style="display:flex;justify-content:space-between;align-items:center;">
 		  <div class="service-name">G-Con2 Calibration</div>
-		  <button class="btn-tertiary" onclick="closePs2CalibrationModal()">
-			Close
-		  </button>
+		  <button class="btn-tertiary" onclick="closePs2CalibrationModal()"> X</button>
 		</div>
 
 		<div style="margin-top:16px;line-height:1.6;">
@@ -594,7 +596,7 @@
 			<li>You should <strong>hear a gunshot sound</strong></li>
 		  </ol>
 
-		  <p>✅ This confirms:</p>
+		  <p>This confirms:</p>
 
 		  <ul>
 			<li>USB communication is working</li>
@@ -1478,6 +1480,15 @@ async function updateModeIndicator() {
                 img.src = '/sony.png';
                 img.alt = 'Sony';
 
+            } else if (adapter1?.vendor === 'PHILIPS') {
+
+                document.body.classList.remove('konami-mode');
+                document.body.classList.remove('sony-mode');
+			          document.body.classList.add('ps2-mode');
+
+                img.src = '/philips.png';
+                img.alt = 'Philips';
+
             } else {
 
                 document.body.classList.remove('konami-mode');
@@ -1503,9 +1514,19 @@ async function updateModeIndicator() {
                     regionImg.src = '/analog.png';
                     regionImg.style.display = 'block';
                     break;
+                
+                case 'PHILIPS':
+                    regionImg.src = '/philips.png';
+                    regionImg.style.display = 'block';
+                    break;
 
                 case 'DHT':
                     regionImg.src = '/dht.png';
+                    regionImg.style.display = 'block';
+                    break;
+                    
+                case 'CDI':
+                    regionImg.src = '/cdi.png';
                     regionImg.style.display = 'block';
                     break;
 
@@ -1530,6 +1551,9 @@ async function updateModeIndicator() {
 		} else if (adapter2.vendor === 'SONY') {
 			img2.src = '/sony.png';
 			img2.alt = 'Sony';
+		} else if (adapter2.vendor === 'PHILIPS') {
+			img2.src = '/philips.png';
+			img2.alt = 'Philips';
 		} else {
 			img2.src = vendorIcon('ps1');
 			img2.alt = 'G-Con45';
@@ -1552,8 +1576,18 @@ async function updateModeIndicator() {
 				regionImg2.style.display = 'block';
 				break;
 
+			case 'PHILIPS':
+				regionImg2.src = '/philips.png';
+				regionImg2.style.display = 'block';
+				break;
+
 			case 'DHT':
 				regionImg2.src = '/dht.png';
+				regionImg2.style.display = 'block';
+				break;
+				
+			case 'CDI':
+				regionImg2.src = '/cdi.png';
 				regionImg2.style.display = 'block';
 				break;
 
