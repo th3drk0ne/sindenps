@@ -729,6 +729,12 @@ let iconSet = 'pal';
 
 const fwSelect = document.getElementById("firmware-select");
 
+const V3_FIRMWARES = [
+    'KONAMI.HEX',
+    'TEST.HEX'
+];
+
+
 fwSelect.addEventListener("change", () => {
     const opt = fwSelect.options[fwSelect.selectedIndex];
     fwSelect.title = opt.getAttribute("data-title") || "";
@@ -2194,12 +2200,18 @@ async function loadFirmwareList() {
       sel.appendChild(opt);
       return;
     }
-    data.files.forEach(file => {
-      const opt = document.createElement('option');
-      opt.value = file;
-      opt.textContent = file.replace(/\.hex$/i, '');
-      sel.appendChild(opt);
-    });
+	data.files.forEach(file => {
+		const opt = document.createElement('option');
+
+		const isV3 = V3_FIRMWARES.includes(file.toUpperCase());
+
+		opt.value = file;
+		opt.textContent =
+			file.replace(/\.hex$/i, '') +
+			(isV3 ? ' [V3]' : '');
+
+		sel.appendChild(opt);
+	});
   } catch (e) {
     const opt = document.createElement('option');
     opt.value = '';
@@ -2300,8 +2312,9 @@ async function flashFirmware() {
 
     if (!filename) return alert('Select firmware');
 	
-	if (filename.toUpperCase() === 'KONAMI.HEX') {
+	if (V3_FIRMWARES.includes(filename.toUpperCase())) {
 		alert('SindenPS V3 Adapter Required');
+		return;
 	}
 	
     if (!confirm('Flash firmware now?')) return;
