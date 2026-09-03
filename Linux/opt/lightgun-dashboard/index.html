@@ -60,7 +60,7 @@
 	  margin-bottom: 10px;
 	  border: 1px solid #333;
 	  border-radius: 6px;
-	  overflow: hidden;
+	  overflow: visible;
 	  background: #0d0d0d;
 	}
 	.config-section-header {
@@ -191,7 +191,16 @@
     .config-row { display:flex !important; flex-direction:column !important; align-items:flex-start !important; width:100%; gap:6px !important; margin:10px 0; }
     .config-row label { display:flex !important; flex-direction:column !important; align-items:flex-start !important; width:100% !important; font-size:17px; color:#ccc; }
     .config-row label small { display:flex !important; flex-direction:column !important; align-items:flex-start !important; width:100% !important; font-size:12px; color:#888; }
-    .config-row input { width:100% !important; max-width:100% !important; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:4px; }
+    .config-row input {
+	  width: 100% !important;
+	  max-width: 100% !important;
+	  box-sizing: border-box;
+	  padding: 10px 16px 10px 10px;
+	  background: #000;
+	  color: #fff;
+	  border: 1px solid #444;
+	  border-radius: 4px;
+	}
 	.service-buttons select { padding:10px 12px; font-size:16px; min-height:40px; background:#222; color:#fff; border:1px solid var(--theme-border); border-radius:6px;}
     .config-toolbar select { padding: 5px 6px; font-size: 13px; height: 31px; border-radius: 6px;}
 	.sinden-main-log { height: calc(100vh - 180px); max-height: none; }
