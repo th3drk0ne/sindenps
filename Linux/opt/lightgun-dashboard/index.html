@@ -102,7 +102,6 @@
 		font-weight: bold;
 		color: #ccc;
 	}
-
 	.fan-curve-row input {
 		width: 100%;
 	}
@@ -728,11 +727,7 @@ let sawSystemOffline = false;
 let iconSet = 'pal';
 
 const fwSelect = document.getElementById("firmware-select");
-
-const V3_FIRMWARES = [
-    'KONAMI.HEX',
-    'TEST.HEX'
-];
+const V3_FIRMWARES = [ 'KONAMI.HEX', 'TEST.HEX' ];
 
 
 fwSelect.addEventListener("change", () => {
@@ -2314,7 +2309,6 @@ async function flashFirmware() {
 	
 	if (V3_FIRMWARES.includes(filename.toUpperCase())) {
 		alert('SindenPS V3 Adapter Required');
-		return;
 	}
 	
     if (!confirm('Flash firmware now?')) return;
