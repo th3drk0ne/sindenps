@@ -1516,44 +1516,9 @@ async function updateModeIndicator() {
                 img.src = vendorIcon('ps1');
                 img.alt = 'G-Con45';
             }
-
-            switch ((adapter1?.variant || '').toUpperCase()) {
-
-                case 'PAL':
-                    regionImg.src = '/pal.png';
-                    regionImg.style.display = 'block';
-                    break;
-
-                case 'NTSC':
-                    regionImg.src = '/ntsc.png';
-                    regionImg.style.display = 'block';
-                    break;
-
-                case 'ANALOG':
-                    regionImg.src = '/analog.png';
-                    regionImg.style.display = 'block';
-                    break;
-                
-                case 'PHILIPS':
-                    regionImg.src = '/philips.png';
-                    regionImg.style.display = 'block';
-                    break;
-
-                case 'DHT':
-                    regionImg.src = '/dht.png';
-                    regionImg.style.display = 'block';
-                    break;
-                    
-                case 'CDI':
-                    regionImg.src = '/cdi.png';
-                    regionImg.style.display = 'block';
-                    break;
-
-                default:
-                    regionImg.style.display = 'none';
-                    break;
-            }
-
+			
+			setVariantIndicator(regionImg, adapter1?.variant);
+			
 		 // Adapter 2
 
 		if (adapter2 && img2 && regionImg2) {
@@ -1578,42 +1543,7 @@ async function updateModeIndicator() {
 			img2.alt = 'G-Con45';
 		}
 
-
-		switch ((adapter2.variant || '').toUpperCase()) {
-			case 'PAL':
-				regionImg2.src = '/pal.png';
-				regionImg2.style.display = 'block';
-				break;
-
-			case 'NTSC':
-				regionImg2.src = '/ntsc.png';
-				regionImg2.style.display = 'block';
-				break;
-
-			case 'ANALOG':
-				regionImg2.src = '/analog.png';
-				regionImg2.style.display = 'block';
-				break;
-
-			case 'PHILIPS':
-				regionImg2.src = '/philips.png';
-				regionImg2.style.display = 'block';
-				break;
-
-			case 'DHT':
-				regionImg2.src = '/dht.png';
-				regionImg2.style.display = 'block';
-				break;
-				
-			case 'CDI':
-				regionImg2.src = '/cdi.png';
-				regionImg2.style.display = 'block';
-				break;
-
-			default:
-				regionImg2.style.display = 'none';
-				break;
-		}
+		setVariantIndicator(regionImg2, adapter2?.variant);
 
 		} else {
 
@@ -2462,6 +2392,49 @@ function vendorIcon(name) {
 
     return `/${name}${suffix}.png`;
 }
+
+function variantIcon(variant) {
+    const safeVariant = String(variant || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '');
+
+    return safeVariant
+        ? `/${safeVariant}.png`
+        : '';
+}
+
+function setVariantIndicator(element, variant) {
+    if (!element) return;
+
+    const icon = variantIcon(variant);
+
+    if (!icon) {
+        element.removeAttribute('src');
+        element.style.display = 'none';
+        return;
+    }
+
+    // Nothing changed, do nothing
+    if (element.dataset.currentIcon === icon) {
+        return;
+    }
+
+    element.dataset.currentIcon = icon;
+
+    element.onerror = () => {
+        element.onerror = null;
+        element.style.display = 'none';
+    };
+
+    element.onload = () => {
+        element.style.display = 'block';
+    };
+
+    element.alt = variant;
+    element.src = icon;
+}
+
 
 async function refreshSindenpsStatus() {
   const status = document.getElementById('sindenps-update-status');
