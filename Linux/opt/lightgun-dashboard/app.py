@@ -1387,87 +1387,22 @@ def api_backup_restore():
 # Logo App Routes
 # ===========================
 
-@app.route("/logo.png")
-def logo():
-    return send_from_directory("/opt/lightgun-dashboard/images", "logo.png")
-
-@app.route("/ps1.png")
-def ps1_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "ps1.png")
-
-@app.route("/ps1-u.png")
-def ps1u_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "ps1-u.png")
-
-@app.route("/ps2.png")
-def ps2_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "ps2.png")
-
-@app.route("/ps2-u.png")
-def ps2u_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "ps2-u.png")
-
-@app.route("/load.png")
-def load_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "load.png")
-
-@app.route("/offline.png")
-def offline_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "offline.png")
-
-@app.route("/hb.png")
-def hb_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "hb.png")
-    
-@app.route("/hb-u.png")
-def hbu_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "hb-u.png")
+@app.route("/<path:filename>")
+def images(filename):
+    return send_from_directory("/opt/lightgun-dashboard/images", filename)
     
 @app.route("/favicon.ico")
 def favicon_ico():
     return send_from_directory("/opt/lightgun-dashboard/images", "favicon.ico")
-    
-@app.route("/apple-touch-icon.png")
-def apple_touch_icon():
-    return send_from_directory("/opt/lightgun-dashboard/images", "apple-touch-icon.png")
 
 @app.route("/manifest.json")
 def manifest_json():
     return send_from_directory("/opt/lightgun-dashboard/images", "manifest.json")
 
-@app.route("/pal.png")
-def pal_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "pal.png")
-    
-@app.route("/analog.png")
-def analog_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "analog.png")
-
-@app.route("/sony.png")
-def sony_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "sony.png")
-    
-@app.route("/philips.png")
-def philips_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "philips.png")
-
-@app.route("/ntsc.png")
-def ntsc_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "ntsc.png")
-
-@app.route("/cdi.png")
-def cdi_png():
-    return send_from_directory("/opt/lightgun-dashboard/images","cdi.png")
-
-@app.route("/dht.png")
-def dht_png():
-    return send_from_directory("/opt/lightgun-dashboard/images", "dht.png")
-
 @app.route("/")
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
-
 
 @app.route("/api/version")
 def api_version():
