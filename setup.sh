@@ -721,59 +721,48 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
+
+
+
+
 log "=== 12) Deploy/images ==="
 
-# images 
-LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/logo.png"
-LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps1.png"
-LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps2.png"
-LOGO_HB="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/hb.png"
-LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/load.png"
-OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/offline.png"
-FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/favicon.ico"
-PAL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/pal.png"
-NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ntsc.png"
-ATI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/apple-touch-icon.png"
-ANLG="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/analog.png"
-SONY="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/sony.png"
-DHT="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/dht.png"
-LOGO_PS1U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps1-u.png"
-LOGO_PS2U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps2-u.png"
-LOGO_HBU="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/hb-u.png"
-LOGO_PHL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/philips.png"
-LOGO_CDI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/cdi.png"
+IMAGE_REPO_PATH="Linux/opt/lightgun-dashboard/images"
+IMAGE_DEST="${APP_DIR}/images"
 
-for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png favicon.ico hb.png hb-u.png pal.png ntsc.png apple-touch-icon.png analog.png sony.png dht.png philips.png cdi.png; do
-  case "$FILE" in
-    logo.png) URL="$LOGO_URL" ;;
-    ps1.png)  URL="$LOGO_PS1" ;;
-    ps2.png)  URL="$LOGO_PS2" ;;
-	hb.png)  URL="$LOGO_HB" ;;
-	ps1-u.png)  URL="$LOGO_PS1U" ;;
-    ps2-u.png)  URL="$LOGO_PS2U" ;;
-	hb-u.png)  URL="$LOGO_HBU" ;;
-    load.png)  URL="$LOAD" ;;
-    offline.png)  URL="$OFFLINE" ;;
-    favicon.ico)  URL="$FAVICON" ;;
-	pal.png)  URL="$PAL" ;;
-    ntsc.png)  URL="$NTSC" ;;
-	apple-touch-icon.png)  URL="$ATI" ;;
-	analog.png)  URL="$ANLG" ;;
-	sony.png)  URL="$SONY" ;;
-	dht.png)  URL="$DHT" ;;
-	philips.png)  URL="$LOGO_PHL" ;;
-	cdi.png)  URL="$LOGO_CDI" ;;
-  esac
-	
-	sudo rm -f "${APP_DIR}"/*.png
-	sudo rm -f "${APP_DIR}"/*.ico
-	install -d -o sinden -g sinden "${APP_DIR}/images"
-	DEST="${APP_DIR}/images/${FILE}"
+install -d -o "${APP_USER}" -g "${APP_GROUP}" "${IMAGE_DEST}"
 
-	sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
-	sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
-	
-done
+# Clean out old images first
+find "${IMAGE_DEST}" -type f -delete
+
+# Query GitHub for all files in the images folder
+mapfile -t image_files < <(
+    curl -s \
+    "https://api.github.com/repos/th3drk0ne/sindenps/contents/${IMAGE_REPO_PATH}?ref=main" |
+    jq -r '.[] | select(.type=="file") | .download_url'
+)
+
+if [[ ${#image_files[@]} -eq 0 ]]; then
+    warn "No image files found in GitHub repository."
+else
+    log "Downloading ${#image_files[@]} image(s)..."
+
+    for url in "${image_files[@]}"; do
+        filename="$(basename "$url")"
+        dest="${IMAGE_DEST}/${filename}"
+
+        sudo -u "${APP_USER}" wget \
+            --quiet \
+            --show-progress \
+            --https-only \
+            --timestamping \
+            -O "$dest" \
+            "$url"
+
+        chown "${APP_USER}:${APP_GROUP}" "$dest"
+        log "Downloaded: ${filename}"
+    done
+fi
 
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
