@@ -724,6 +724,7 @@ let sindenpsLastRunning = 0;
 let lastFirmwarePorts = [];
 let systemPowerPending = false;
 let sawSystemOffline = false;
+let modeIndicatorUpdating = false;
 let iconSet = 'pal';
 
 const fwSelect = document.getElementById("firmware-select");
@@ -1326,7 +1327,23 @@ async function loadIconSet() {
     } catch {}
 }
 
+
+
 async function updateModeIndicator() {
+    if (modeIndicatorUpdating) {
+        return;
+    }
+
+    modeIndicatorUpdating = true;
+
+    try {
+        await updateModeIndicatorInternal();
+    } finally {
+        modeIndicatorUpdating = false;
+    }
+}
+
+async function updateModeIndicatorInternal() {
 
     const img = document.getElementById('mode-indicator');
     const txt = document.getElementById('mode-text');
@@ -2411,46 +2428,41 @@ function setVariantIndicator(element, variant) {
 
     if (!icon) {
         delete element.dataset.currentIcon;
+        element.onload = null;
+        element.onerror = null;
         element.removeAttribute('src');
         element.style.display = 'none';
         return;
     }
 
-    // Icon is already assigned and successfully loaded.
-    // Ensure it is visible because the detection UI may have hidden it.
-    if (
-        element.dataset.currentIcon === icon &&
-        element.complete &&
-        element.naturalWidth > 0
-    ) {
-        element.style.display = 'block';
-        return;
-    }
-
-    // Icon is already loading, so do not restart the request.
-    if (
-        element.dataset.currentIcon === icon &&
-        !element.complete
-    ) {
+    if (element.dataset.currentIcon === icon) {
+        if (element.complete && element.naturalWidth > 0) {
+            element.style.display = 'block';
+        }
         return;
     }
 
     element.dataset.currentIcon = icon;
+    element.style.display = 'none';
 
     element.onload = () => {
-        element.style.display = 'block';
+        if (element.dataset.currentIcon === icon) {
+            element.style.display = 'block';
+        }
     };
 
     element.onerror = () => {
-        element.onerror = null;
-        delete element.dataset.currentIcon;
-        element.removeAttribute('src');
-        element.style.display = 'none';
+        if (element.dataset.currentIcon === icon) {
+            delete element.dataset.currentIcon;
+            element.removeAttribute('src');
+            element.style.display = 'none';
+        }
     };
 
-    element.alt = variant;
+    element.alt = String(variant || '');
     element.src = icon;
 }
+
 
 
 async function refreshSindenpsStatus() {
