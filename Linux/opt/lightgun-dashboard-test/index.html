@@ -2410,25 +2410,42 @@ function setVariantIndicator(element, variant) {
     const icon = variantIcon(variant);
 
     if (!icon) {
+        delete element.dataset.currentIcon;
         element.removeAttribute('src');
         element.style.display = 'none';
         return;
     }
 
-    // Nothing changed, do nothing
-    if (element.dataset.currentIcon === icon) {
+    // Icon is already assigned and successfully loaded.
+    // Ensure it is visible because the detection UI may have hidden it.
+    if (
+        element.dataset.currentIcon === icon &&
+        element.complete &&
+        element.naturalWidth > 0
+    ) {
+        element.style.display = 'block';
+        return;
+    }
+
+    // Icon is already loading, so do not restart the request.
+    if (
+        element.dataset.currentIcon === icon &&
+        !element.complete
+    ) {
         return;
     }
 
     element.dataset.currentIcon = icon;
 
-    element.onerror = () => {
-        element.onerror = null;
-        element.style.display = 'none';
-    };
-
     element.onload = () => {
         element.style.display = 'block';
+    };
+
+    element.onerror = () => {
+        element.onerror = null;
+        delete element.dataset.currentIcon;
+        element.removeAttribute('src');
+        element.style.display = 'none';
     };
 
     element.alt = variant;
