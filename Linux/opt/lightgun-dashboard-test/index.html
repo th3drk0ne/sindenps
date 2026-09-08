@@ -2410,16 +2410,29 @@ function setVariantIndicator(element, variant) {
     const icon = variantIcon(variant);
 
     if (!icon) {
+        element.removeAttribute('src');
         element.style.display = 'none';
         return;
     }
 
-    if (element.src.endsWith(icon)) {
+    // Nothing changed, do nothing
+    if (element.dataset.currentIcon === icon) {
         return;
     }
 
+    element.dataset.currentIcon = icon;
+
+    element.onerror = () => {
+        element.onerror = null;
+        element.style.display = 'none';
+    };
+
+    element.onload = () => {
+        element.style.display = 'block';
+    };
+
+    element.alt = variant;
     element.src = icon;
-    element.style.display = 'block';
 }
 
 
