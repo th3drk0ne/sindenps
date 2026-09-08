@@ -2410,24 +2410,16 @@ function setVariantIndicator(element, variant) {
     const icon = variantIcon(variant);
 
     if (!icon) {
-        element.removeAttribute('src');
         element.style.display = 'none';
         return;
     }
 
-    element.onerror = () => {
-        element.onerror = null;
-        element.removeAttribute('src');
-        element.style.display = 'none';
-    };
+    if (element.src.endsWith(icon)) {
+        return;
+    }
 
-    element.onload = () => {
-        element.style.display = 'block';
-    };
-
-    element.alt = variant;
-    element.style.display = 'none';
     element.src = icon;
+    element.style.display = 'block';
 }
 
 
