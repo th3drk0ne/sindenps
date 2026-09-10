@@ -813,7 +813,8 @@ function showTab(name) {
       if (s) s.textContent = 'Load error: ' + err.message;
     });
 
-    refreshProfilesUI(p);
+    refreshProfilesUI(p)
+    .then(() => loadLastProfile(p));
   }
 
   // Services
@@ -2305,6 +2306,27 @@ async function listProfiles(platform) {
   return data.profiles || [];
 }
 
+async function loadLastProfile(platform) {
+
+    const res = await fetch(
+        `/api/settings/profile?platform=${encodeURIComponent(platform)}`
+    );
+
+    const data = await res.json();
+
+    if (!data.ok) {
+        return;
+    }
+
+    const sel = document.getElementById('profile-select');
+
+    if (!sel) {
+        return;
+    }
+
+    sel.value = data.profile || '';
+}
+
 function populateProfileSelect(items) {
   const sel = document.getElementById('profile-select');
   sel.innerHTML = '';
@@ -2714,9 +2736,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (selPlatform && detected) selPlatform.value = detected;
   if (platDisplay) platDisplay.textContent = (detected || 'loading…').toUpperCase();
 
-  const initialPlatform = selPlatform.value || 'ps2';
-  loadConfig(initialPlatform).catch(err => { if (status) status.textContent = 'Load error: ' + err.message; });
-  refreshProfilesUI(initialPlatform);
+	const initialPlatform = selPlatform.value || 'ps2';
+
+	loadConfig(initialPlatform).catch(err => {
+		if (status) status.textContent =
+			'Load error: ' + err.message;
+	});
+
+	refreshProfilesUI(initialPlatform)
+		.then(() => loadLastProfile(initialPlatform));
   refreshUpdateStatus();
   refreshFirmwareStatus();
   loadFirmwareList();
@@ -2780,7 +2808,8 @@ setInterval(async () => {
         }
 
         loadConfig(platform).catch(() => {});
-        refreshProfilesUI(platform);
+        refreshProfilesUI(platform)
+			.then(() => loadLastProfile(platform));
       }
 
       await updateModeIndicator();

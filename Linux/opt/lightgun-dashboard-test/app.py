@@ -229,8 +229,32 @@ UPDATE_LOGF = "/var/log/sindenps-update.log"
 VERSION_FILE = "/home/sinden/Lightgun/VERSION"
 SINDENPS_UPDATE_LOG = "/var/log/platform-update.log"
 SINDENPS_LOCK = "/tmp/sindenps-update.lock"
-ICONSET_FILE = "/opt/lightgun-dashboard/iconset.conf"
+SETTINGS_FILE = "/opt/lightgun-dashboard/settings.json"
 
+DEFAULT_SETTINGS = {
+    "iconset": "pal"
+}
+
+def load_settings():
+    try:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            return DEFAULT_SETTINGS.copy()
+
+        return {
+            **DEFAULT_SETTINGS,
+            **data
+        }
+
+    except Exception:
+        return DEFAULT_SETTINGS.copy()
+
+
+def save_settings(settings):
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2)
 
 def get_icon_set():
     try:
@@ -245,12 +269,74 @@ def get_icon_set():
     return "pal"
 
 
+def get_icon_set():
+    settings = load_settings()
+
+    value = str(
+        settings.get("iconset", "pal")
+    ).lower()
+
+    if value not in ("pal", "us"):
+        value = "pal"
+
+    return value
+
+
 def set_icon_set(value):
     if value not in ("pal", "us"):
         raise ValueError("Invalid icon set")
 
-    with open(ICONSET_FILE, "w", encoding="utf-8") as f:
-        f.write(value)
+    settings = load_settings()
+    settings["iconset"] = value
+
+    save_settings(settings)
+
+def migrate_iconset():
+    old_file = "/opt/lightgun-dashboard/iconset.conf"
+
+    if os.path.exists(SETTINGS_FILE):
+        return
+
+    iconset = "pal"
+
+    try:
+        with open(old_file, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+
+        if value in ("pal", "us"):
+            iconset = value
+
+    except Exception:
+        pass
+
+    save_settings({
+        "iconset": iconset
+    })
+
+def get_last_profile(platform):
+    settings = load_settings()
+
+    return (
+        settings
+        .get("profiles", {})
+        .get(platform, {})
+        .get("lastApplied", "")
+    )
+
+
+def set_last_profile(platform, profile):
+    settings = load_settings()
+
+    settings.setdefault("profiles", {})
+    settings["profiles"].setdefault(platform, {})
+
+    settings["profiles"][platform]["lastApplied"] = profile
+
+    save_settings(settings)
+    
+    
+    
+
 
 def _read_version_marker():
     try:
@@ -1297,7 +1383,9 @@ def api_profile_load():
             dst.write(src.read())
         with open(prof_path, "rb") as src, open(live_path, "wb") as dst:
             dst.write(src.read())
-
+            
+        set_last_profile(platform, name)
+        
         os.chmod(live_path, 0o664)
         return jsonify({"ok": True, "platform": platform, "profile": name, "path": live_path, "backup": backup_path})
     except Exception as e:
@@ -1384,6 +1472,12 @@ def api_backup_restore():
         return jsonify({"ok": False, "error": str(e)}), 400
 
 # ===========================
+# Migrate old config
+# ===========================
+
+migrate_iconset()
+
+# ===========================
 # Logo App Routes
 # ===========================
 
@@ -1441,6 +1535,17 @@ def api_sindenps_status():
     return jsonify({
         "ok": True,
         "running": os.path.exists(SINDENPS_LOCK)
+    })
+
+@app.route("/api/settings/profile")
+def api_last_profile():
+    platform = _resolve_platform(
+        request.args.get("platform")
+    )
+
+    return jsonify({
+        "ok": True,
+        "profile": get_last_profile(platform)
     })
 
 @app.route("/api/iconset")
