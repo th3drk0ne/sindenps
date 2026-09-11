@@ -2307,7 +2307,6 @@ async function listProfiles(platform) {
 }
 
 async function loadLastProfile(platform) {
-
     const res = await fetch(
         `/api/settings/profile?platform=${encodeURIComponent(platform)}`
     );
@@ -2324,7 +2323,18 @@ async function loadLastProfile(platform) {
         return;
     }
 
-    sel.value = data.profile || '';
+    const savedProfile = data.profile || '';
+
+    const profileExists = [...sel.options].some(
+        option => option.value === savedProfile
+    );
+
+    if (profileExists) {
+        sel.value = savedProfile;
+    } else {
+        sel.value = '';
+        sel.selectedIndex = 0;
+    }
 }
 
 function populateProfileSelect(items) {
@@ -2829,9 +2839,10 @@ setInterval(async () => {
       const res = await fetch('/api/config/profile/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name: profile }) });
       const data = await res.json();
       if (!data.ok) { alert('Delete failed: ' + (data.error || 'unknown error')); return; }
-      alert(`Profile "${profile}" deleted.`);
-      refreshProfilesUI(platform);
-      selProfile.value = '';
+		alert(`Profile "${profile}" deleted.`);
+
+		await refreshProfilesUI(platform);
+		selProfile.selectedIndex = 0;
     } catch (e) { alert('Delete error: ' + e.message); }
   };
 
