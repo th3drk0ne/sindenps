@@ -299,7 +299,7 @@ def set_icon_set(value):
 
     save_settings(settings)
 
-ddef migrate_iconset():
+def migrate_iconset():
     old_file = "/opt/lightgun-dashboard/iconset.conf"
 
     iconset = "pal"
