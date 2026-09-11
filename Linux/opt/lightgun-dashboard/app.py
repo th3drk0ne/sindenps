@@ -313,15 +313,26 @@ def migrate_iconset():
         "iconset": iconset
     })
 
+    try:
+        if os.path.exists(old_file):
+            os.remove(old_file)
+    except Exception:
+        pass
+
 def get_last_profile(platform):
     settings = load_settings()
 
-    return (
+    profile = (
         settings
         .get("profiles", {})
         .get(platform, {})
         .get("lastApplied", "")
     )
+
+    if not profile:
+        return "Default"
+
+    return profile
 
 
 def set_last_profile(platform, profile):
