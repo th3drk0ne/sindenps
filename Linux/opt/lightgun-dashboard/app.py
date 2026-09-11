@@ -232,7 +232,15 @@ SINDENPS_LOCK = "/tmp/sindenps-update.lock"
 SETTINGS_FILE = "/opt/lightgun-dashboard/settings.json"
 
 DEFAULT_SETTINGS = {
-    "iconset": "pal"
+    "iconset": "pal",
+    "profiles": {
+        "ps1": {
+            "lastApplied": "Default"
+        },
+        "ps2": {
+            "lastApplied": "Default"
+        }
+    }
 }
 
 def load_settings():
@@ -291,33 +299,53 @@ def set_icon_set(value):
 
     save_settings(settings)
 
-def migrate_iconset():
+ddef migrate_iconset():
     old_file = "/opt/lightgun-dashboard/iconset.conf"
-
-    if os.path.exists(SETTINGS_FILE):
-        return
 
     iconset = "pal"
 
-    try:
-        with open(old_file, "r", encoding="utf-8") as f:
-            value = f.read().strip().lower()
+    if os.path.exists(old_file):
+        try:
+            with open(old_file, "r", encoding="utf-8") as f:
+                value = f.read().strip().lower()
 
-        if value in ("pal", "us"):
-            iconset = value
+            if value in ("pal", "us"):
+                iconset = value
 
-    except Exception:
-        pass
+        except Exception:
+            pass
 
-    save_settings({
-        "iconset": iconset
-    })
+    if os.path.exists(SETTINGS_FILE):
+        settings = load_settings()
+    else:
+        settings = {}
 
-    try:
-        if os.path.exists(old_file):
+    settings.setdefault("iconset", iconset)
+    settings.setdefault("profiles", {})
+
+    settings["profiles"].setdefault("ps1", {})
+    settings["profiles"].setdefault("ps2", {})
+
+    settings["profiles"]["ps1"].setdefault(
+        "lastApplied",
+        "Default"
+    )
+
+    settings["profiles"]["ps2"].setdefault(
+        "lastApplied",
+        "Default"
+    )
+
+    save_settings(settings)
+
+    if os.path.exists(old_file):
+        try:
             os.remove(old_file)
-    except Exception:
-        pass
+        except OSError as e:
+            print(
+                f"WARNING: Could not remove legacy config "
+                f"{old_file}: {e}"
+            )
 
 def get_last_profile(platform):
     settings = load_settings()
