@@ -870,7 +870,19 @@ backup_file() {
   local f="$1"
   local ts; ts="$(timestamp)"
   local b="${f}.${ts}.bak"
+
   cp -a -- "$f" "$b" 2>/dev/null || true
+
+  # Keep only the newest 5 backups
+  local backups
+  mapfile -t backups < <(
+    ls -1t "${f}".*.bak 2>/dev/null
+  )
+
+  if [ "${#backups[@]}" -gt 5 ]; then
+    printf '%s\n' "${backups[@]:5}" | xargs -r rm -f
+  fi
+
   echo "$b"
 }
 
