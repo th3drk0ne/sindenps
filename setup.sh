@@ -263,6 +263,12 @@ sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-de
 sudo apt-get upgrade -y
 log "Prerequisites installed."
 
+# Cleanup unused packages and package cache
+log "Running package cleanup..."
+sudo apt-get autoremove -y
+sudo apt-get clean
+log "Package cleanup complete."
+
 #-----------------------------------------------------------
 # Step 6) Create folders, download VERSION-based assets
 #-----------------------------------------------------------
@@ -860,14 +866,14 @@ backup_file() {
 
   cp -a -- "$f" "$b" 2>/dev/null || true
 
-  # Keep only the newest 5 backups
+  # Keep only the newest 3 backups
   local backups
   mapfile -t backups < <(
     ls -1t "${f}".*.bak 2>/dev/null
   )
 
-  if [ "${#backups[@]}" -gt 5 ]; then
-    printf '%s\n' "${backups[@]:5}" | xargs -r rm -f
+  if [ "${#backups[@]}" -gt 3 ]; then
+    printf '%s\n' "${backups[@]:3}" | xargs -r rm -f
   fi
 
   echo "$b"
