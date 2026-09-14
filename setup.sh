@@ -629,16 +629,6 @@ sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
 
-SERVICE="ModemManager.service"
-
-if systemctl list-unit-files | grep -q "^${SERVICE}"; then
-    log "$SERVICE exists. Disabling and stopping..."
-    sudo systemctl disable --now "$SERVICE"
-else
-    log "$SERVICE does not exist. Skipping."
-fi
-
-
 log "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
   cfg="/home/${APP_USER}/Lightgun/${p}/LightgunMono.exe.config"
@@ -835,7 +825,7 @@ if [ "$ARCH" != "x86_64" ]; then
 # -----------------------------
 GPU_MEM_TARGET="64"                  # gpu_mem MB target
 DISABLE_BLUETOOTH="1"                 # 1=disable bluetooth/hciuart
-DISABLE_BACKGROUND_SERVICES="0"       # 1=disable avahi-daemon, triggerhappy (and optionally rsyslog)
+DISABLE_BACKGROUND_SERVICES="1"       # 1=disable triggerhappy and ModemManager
 
 # -----------------------------
 # Apply Pi-model specific presets (Pi4 / Pi5)
@@ -845,18 +835,15 @@ if [ "$PI_MODEL" = "PiZero2W" ]; then
   # Pi Zero 2 W: keep GPU split low, free RAM for camera + mono/.NET
   GPU_MEM_TARGET="32"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying PiZero2W presets"
 elif [ "$PI_MODEL" = "Pi5" ]; then
   # Pi5 ignores gpu_mem in many setups; keep your intent here if you want
   GPU_MEM_TARGET="128"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi5 presets"
 elif [ "$PI_MODEL" = "Pi4" ]; then
   GPU_MEM_TARGET="128"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi4 presets"
 else
   log "Unknown model: applying generic defaults (no model-specific cuts)."
@@ -914,9 +901,12 @@ set_kv_in_boot_config() {
 
 service_disable_now_and_boot() {
   local svc="$1"
+
   if systemctl list-unit-files | grep -q "^${svc}\.service"; then
     systemctl disable --now "${svc}.service" || true
     log "  • Disabled service: ${svc}.service"
+  else
+    log "  • ${svc}.service not installed"
   fi
 }
 
@@ -993,10 +983,8 @@ fi
 
 # 4) Background services (Pi4 preset enables this by default)
 if [ "${DISABLE_BACKGROUND_SERVICES}" = "1" ]; then
-  #service_disable_now_and_boot "avahi-daemon"
   service_disable_now_and_boot "triggerhappy"
-  # Optional and **invasive**: disable rsyslog (local syslog)
-  # service_disable_now_and_boot "rsyslog"
+  service_disable_now_and_boot "ModemManager"
 fi
 
 # 5) USB link check
