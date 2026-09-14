@@ -1342,15 +1342,21 @@ async function loadIconSet() {
 
 
 
+let modeIndicatorRefreshPending = false;
+
 async function updateModeIndicator() {
     if (modeIndicatorUpdating) {
+        modeIndicatorRefreshPending = true;
         return;
     }
 
     modeIndicatorUpdating = true;
 
     try {
-        await updateModeIndicatorInternal();
+        do {
+            modeIndicatorRefreshPending = false;
+            await updateModeIndicatorInternal();
+        } while (modeIndicatorRefreshPending);
     } finally {
         modeIndicatorUpdating = false;
     }
@@ -1465,33 +1471,54 @@ async function updateModeIndicatorInternal() {
 
 		}
 		
-		if (plat.detecting) {
+	if (plat.detecting) {
+		/*
+		 * Clear cached vendor and variant image state.
+		 * This ensures the newly detected adapter logos are loaded
+		 * after detection finishes.
+		 */
+		delete img.dataset.currentIcon;
 
-			if (divider) {
-				divider.style.display = 'none';
-			}
-
-			img.style.display = 'none';
-
-			if (txt) {
-				txt.textContent = 'LOADING...';
-				txt.style.display = 'inline-block';
-			}
-
-			if (regionImg) {
-				regionImg.style.display = 'none';
-			}
-
-			if (img2) {
-				img2.style.display = 'none';
-			}
-
-			if (regionImg2) {
-				regionImg2.style.display = 'none';
-			}
-
-			return;
+		if (regionImg) {
+			delete regionImg.dataset.currentIcon;
+			regionImg.onload = null;
+			regionImg.onerror = null;
+			regionImg.removeAttribute('src');
+			regionImg.style.display = 'none';
 		}
+
+		if (img2) {
+			delete img2.dataset.currentIcon;
+			img2.onload = null;
+			img2.onerror = null;
+			img2.removeAttribute('src');
+			img2.style.display = 'none';
+		}
+
+		if (regionImg2) {
+			delete regionImg2.dataset.currentIcon;
+			regionImg2.onload = null;
+			regionImg2.onerror = null;
+			regionImg2.removeAttribute('src');
+			regionImg2.style.display = 'none';
+		}
+
+		if (divider) {
+			divider.style.display = 'none';
+		}
+
+		img.onload = null;
+		img.onerror = null;
+		img.removeAttribute('src');
+		img.style.display = 'none';
+
+		if (txt) {
+			txt.textContent = 'LOADING...';
+			txt.style.display = 'inline-block';
+		}
+
+		return;
+	}
 
         const adapter1 = plat.adapters?.[0] || {
             firmware: plat.firmware,
@@ -2821,8 +2848,6 @@ setInterval(async () => {
         refreshProfilesUI(platform)
 			.then(() => loadLastProfile(platform));
       }
-
-      await updateModeIndicator();
 
   } catch (e) {
       setSystemOfflineUI();
