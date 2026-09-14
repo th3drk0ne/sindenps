@@ -873,8 +873,10 @@ function setSystemOfflineUI() {
 		}
 
 		if (txt) {
+			txt.textContent = 'OFFLINE';
 			txt.style.display = 'inline-block';
 		}
+
 	}
 
 function setServiceOfflineUI() {
@@ -1903,7 +1905,7 @@ async function systemAction(action) {
 
 	systemPowerPending = true;
 	sawSystemOffline = false;
-	setSystemOfflineUI();
+	setLoadingUI();
 
     const res = await fetch(`/api/system/${action}`, { method: 'POST' });
 
