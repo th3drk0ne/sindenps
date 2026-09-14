@@ -884,8 +884,9 @@ detect_boot_config() {
 
 set_kv_in_boot_config() {
   local file="$1" key="$2" value="$3"
-  local bak; bak="$(backup_file "$file")"
-  local tmp; tmp="$(mktemp)"
+  local tmp
+  tmp="$(mktemp)"
+
   awk -v KEY="$key" '
     BEGIN{IGNORECASE=1}
     {
@@ -893,10 +894,12 @@ set_kv_in_boot_config() {
       print
     }
   ' "$file" > "$tmp"
+
   echo "${key}=${value}" >> "$tmp"
   install -m 644 "$tmp" "$file"
   rm -f "$tmp"
-  log "  • ${key} set to '${value}' (backup: $bak)"
+
+  log "  • ${key} set to '${value}'"
 }
 
 service_disable_now_and_boot() {
@@ -1040,7 +1043,11 @@ ensure_tools_and_groups() {
 
 enable_overlays_and_mini_uart() {
   log "Ensuring overlays and UART settings in $CONFIG_FILE"
-  cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+
+  local bak
+  bak="$(backup_file "$CONFIG_FILE")"
+  log "Config backup created: $bak"
+
 
   if [[ $IS_PI5 -eq 1 ]]; then
     # Pi 5 specific settings
@@ -1055,7 +1062,7 @@ enable_overlays_and_mini_uart() {
     grep -q "^dtoverlay=uart5" "$CONFIG_FILE" || echo "dtoverlay=uart5" >> "$CONFIG_FILE"
   fi
 
-  log "Config updated. Backup created: ${CONFIG_FILE}.bak.*"
+  log "Config updated successfully."
 }
 
 write_udev_rules() {
