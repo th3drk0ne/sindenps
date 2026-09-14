@@ -2408,14 +2408,58 @@ async function refreshProfilesUI(platform) {
   }
 }
 
+
 async function saveCurrentAsProfile(platform) {
-  const name = prompt('Enter a profile name (letters, digits, _ or -, max 60 chars):');
-  if (!name) return;
-  const res = await fetch('/api/config/profile/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform, name }) });
-  const data = await res.json();
-  if (!data.ok) { alert('Save failed: ' + (data.error || 'unknown error')); return; }
-  await refreshProfilesUI(platform);
-  document.getElementById('profile-select').value = name;
+    const name = prompt(
+        'Enter a profile name (letters, digits, _ or -, max 60 chars):'
+    );
+
+    if (!name) {
+        return;
+    }
+
+    try {
+        const saveResult = await saveConfig(
+            platform,
+            collectForm('p1-form'),
+            collectForm('p2-form')
+        );
+
+        if (!saveResult.ok) {
+            alert(
+                'Failed to save current settings: ' +
+                (saveResult.error || 'unknown error')
+            );
+            return;
+        }
+
+        const res = await fetch('/api/config/profile/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                platform,
+                name
+            })
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+            alert(
+                'Save failed: ' +
+                (data.error || 'unknown error')
+            );
+            return;
+        }
+
+        await refreshProfilesUI(platform);
+        document.getElementById('profile-select').value = name;
+
+    } catch (e) {
+        alert('Save profile error: ' + e.message);
+    }
 }
 
 async function activateProfile(platform, name) {
