@@ -841,26 +841,41 @@ window.addEventListener('scroll', () => {
 });
 
 function setSystemOfflineUI() {
-  document.body.classList.remove('ps2-mode');
-  document.body.classList.remove('konami-mode');
-  document.body.classList.remove('sony-mode');
-  const divider = document.getElementById('adapter-divider');
+	document.body.classList.remove('ps2-mode');
+	document.body.classList.remove('konami-mode');
+	document.body.classList.remove('sony-mode');
+
+	const divider = document.getElementById('adapter-divider');
+	const img = document.getElementById('mode-indicator');
+	const txt = document.getElementById('mode-text');
+	const regionImg = document.getElementById('region-indicator');
+	const img2 = document.getElementById('mode-indicator-2');
+	const regionImg2 = document.getElementById('region-indicator-2');
 
 	if (divider) {
-		divider.style.display = 'none';
+			divider.style.display = 'none';
+		}
+
+		if (img) {
+			img.style.display = 'none';
+		}
+
+		if (regionImg) {
+			regionImg.style.display = 'none';
+		}
+
+		if (img2) {
+			img2.style.display = 'none';
+		}
+
+		if (regionImg2) {
+			regionImg2.style.display = 'none';
+		}
+
+		if (txt) {
+			txt.style.display = 'inline-block';
+		}
 	}
-	
-  const img = document.getElementById('mode-indicator');
-  const txt = document.getElementById('mode-text');
-  const regionImg = document.getElementById('region-indicator');
-
-  if (img) img.style.display = 'none';
-  if (txt) txt.style.display = 'inline-block';
-
-  if (regionImg) {
-    regionImg.style.display = 'none';
-  }
-}
 
 function setServiceOfflineUI() {
 
