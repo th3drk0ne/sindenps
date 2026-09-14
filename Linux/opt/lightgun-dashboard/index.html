@@ -1391,29 +1391,30 @@ async function updateModeIndicatorInternal() {
 		
     if (!img) return;
 
-    if (systemPowerPending) {
-        try {
-            const health = await fetch('/healthz', {
-                cache: 'no-store'
-            });
+	if (systemPowerPending) {
+		try {
+			const health = await fetch('/healthz', {
+				cache: 'no-store'
+			});
 
-            if (!health.ok) {
-                throw new Error('offline');
-            }
+			if (!health.ok) {
+				throw new Error('offline');
+			}
 
-            if (!sawSystemOffline) {
-                return;
-            }
+			/*
+			 * The dashboard is responding again.
+			 * Do not require the browser to have observed the offline period,
+			 * because the reboot may complete between polling attempts.
+			 */
+			systemPowerPending = false;
+			sawSystemOffline = false;
 
-            systemPowerPending = false;
-            sawSystemOffline = false;
-
-        } catch (e) {
-            sawSystemOffline = true;
-            setSystemOfflineUI();
-            return;
-        }
-    }
+		} catch (e) {
+			sawSystemOffline = true;
+			setLoadingUI();
+			return;
+		}
+	}
 
     try {
 
