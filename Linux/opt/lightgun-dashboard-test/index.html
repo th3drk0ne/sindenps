@@ -772,24 +772,28 @@ const THEME_TABLE = {
 const ADAPTER_DISPLAY_TABLE = {
     NAMCO: {
         icon: 'ps1',
+        regionalIcon: true,
         alt: 'G-Con45',
         theme: 'namco'
     },
 
     KONAMI: {
         icon: 'hb',
+        regionalIcon: true,
         alt: 'Hyper Blaster',
         theme: 'konami'
     },
 
     SONY: {
         icon: 'sony',
+        regionalIcon: false,
         alt: 'Sony',
         theme: 'sony'
     },
 
     PHILIPS: {
         icon: 'philips',
+        regionalIcon: false,
         alt: 'Philips',
         theme: 'philips'
     }
@@ -1633,25 +1637,23 @@ async function updateModeIndicatorInternal() {
         img.style.display = 'block';
 
         if (plat.platform === 'ps1') {
+		// Adapter 1
+		const adapter1Display = getAdapterDisplay(
+			adapter1?.vendor
+		);
 
+		applyTheme(adapter1Display.theme);
 
-         // Adapter 1
+		img.src = adapterIcon(adapter1Display);
+		img.alt = adapter1Display.alt;
 
-            const adapter1Display = getAdapterDisplay(
-				adapter1?.vendor
-			);
+		setVariantIndicator(
+			regionImg,
+			adapter1?.variant
+		);
 
-			applyTheme(adapter1Display.theme);
-
-			img.src = adapterIcon(adapter1Display);
-			img.alt = adapter1Display.alt;
-			
-			setVariantIndicator(regionImg, adapter1?.variant);
-			
-		 // Adapter 2
-
+		// Adapter 2
 		if (adapter2 && img2 && regionImg2) {
-
 			if (divider) {
 				divider.style.display = 'block';
 			}
@@ -1663,12 +1665,13 @@ async function updateModeIndicatorInternal() {
 			);
 
 			img2.src = adapterIcon(adapter2Display);
-			img2.alt = adapter2Display.alt;}
+			img2.alt = adapter2Display.alt;
 
-		setVariantIndicator(regionImg2, adapter2?.variant);
-
+			setVariantIndicator(
+				regionImg2,
+				adapter2.variant
+			);
 		} else {
-
 			if (divider) {
 				divider.style.display = 'none';
 			}
@@ -1681,28 +1684,26 @@ async function updateModeIndicatorInternal() {
 				regionImg2.style.display = 'none';
 			}
 		}
+	} else {
+		applyTheme('ps2');
 
-        } else {
-
-			applyTheme('ps2');
-
-			if (divider) {
-				divider.style.display = 'none';
-			}
-
-			img.src = vendorIcon('ps2');
-			img.alt = 'PS2 Mode';
-
-			regionImg.style.display = 'none';
-
-			if (img2) {
-				img2.style.display = 'none';
-			}
-
-			if (regionImg2) {
-				regionImg2.style.display = 'none';
-			}
+		if (divider) {
+			divider.style.display = 'none';
 		}
+
+		img.src = vendorIcon('ps2');
+		img.alt = 'PS2 Mode';
+
+		regionImg.style.display = 'none';
+
+		if (img2) {
+			img2.style.display = 'none';
+		}
+
+		if (regionImg2) {
+			regionImg2.style.display = 'none';
+		}
+	}
 
     } catch (e) {
 
