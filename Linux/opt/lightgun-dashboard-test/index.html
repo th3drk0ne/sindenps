@@ -733,7 +733,9 @@ const THEME_TABLE = {
         main: '#cc0000',
         border: '#cc0000',
         accent: '#ff3333',
-        danger: '#aa0000'
+        danger: '#aa0000',
+        updateButton: '#aa0000',
+        configButton: '#cc0000'
     },
 
     ps2: {
@@ -741,7 +743,9 @@ const THEME_TABLE = {
         main: '#0040ff',
         border: '#0040ff',
         accent: '#3385ff',
-        danger: '#0033aa'
+        danger: '#0033aa',
+        updateButton: '#0033aa',
+        configButton: '#0040ff'
     },
 
     konami: {
@@ -749,7 +753,9 @@ const THEME_TABLE = {
         main: '#d7ec10',
         border: '#d7ec10',
         accent: '#d7ec10',
-        danger: '#d7ec10'
+        danger: '#d7ec10',
+        updateButton: '#d7ec10',
+        configButton: '#d7ec10'
     },
 
     sony: {
@@ -757,7 +763,9 @@ const THEME_TABLE = {
         main: '#00cc44',
         border: '#00cc44',
         accent: '#66ff99',
-        danger: '#009933'
+        danger: '#009933',
+        updateButton: '#aa0000',
+        configButton: '#00cc44'
     },
 
     philips: {
@@ -765,7 +773,9 @@ const THEME_TABLE = {
         main: '#0040ff',
         border: '#0040ff',
         accent: '#3385ff',
-        danger: '#0033aa'
+        danger: '#0033aa',
+        updateButton: '#0033aa',
+        configButton: '#0040ff'
     }
 };
 
@@ -797,21 +807,50 @@ const ADAPTER_DISPLAY_TABLE = {
 
 
 function applyTheme(themeName) {
-    const theme = THEME_TABLE[themeName] || THEME_TABLE.namco;
+    const theme =
+        THEME_TABLE[themeName] ||
+        THEME_TABLE.namco;
+
     const root = document.documentElement;
 
-    document.body.classList.remove(...THEME_CLASSES);
+    document.body.classList.remove(
+        ...THEME_CLASSES
+    );
 
     if (theme.className) {
-        document.body.classList.add(theme.className);
+        document.body.classList.add(
+            theme.className
+        );
     }
 
-    root.style.setProperty('--theme-main', theme.main);
-    root.style.setProperty('--theme-border', theme.border);
-    root.style.setProperty('--theme-accent', theme.accent);
+    root.style.setProperty(
+        '--theme-main',
+        theme.main
+    );
+
+    root.style.setProperty(
+        '--theme-border',
+        theme.border
+    );
+
+    root.style.setProperty(
+        '--theme-accent',
+        theme.accent
+    );
+
     root.style.setProperty(
         '--theme-button-danger',
         theme.danger
+    );
+
+    root.style.setProperty(
+        '--theme-update-button',
+        theme.updateButton
+    );
+
+    root.style.setProperty(
+        '--theme-config-button',
+        theme.configButton
     );
 
     document.body.dataset.theme = themeName;
