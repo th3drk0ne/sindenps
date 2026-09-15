@@ -21,7 +21,6 @@
       --theme-light-text: #fff;
       --theme-dark-text: #000;
 	  --theme-action-button: #33ccff;
-	  --theme-action-text: #000000;
     }
     html { box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
@@ -192,11 +191,11 @@
     .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:6px 8px; border:1px solid #444; border-radius:6px; cursor:pointer; }
     .btn-danger { background:var(--theme-button-danger); color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
 	#btn-toggle-sindenps-logs { background: #333 !important; color: #fff !important; }
-	#btn-update-now,
-	#btn-flash-firmware {
-    background: var(--theme-action-button);
-    color: var(--theme-action-text);
-    font-weight: 700;
+	#btn-flash-firmware { background: var(--theme-action-button); color: var(--theme-dark-text); font-weight: 700; }
+	body.philips-mode #btn-update-now,
+	body.philips-mode #btn-flash-firmware {
+		background: var(--theme-action-button);
+		color: var(--theme-light-text);
 	}
 	.config-panels { display:flex; gap:16px; flex-wrap:wrap; margin:0 16px 20px; }
     .config-card { flex:1 1 460px; background:#111; border-left:6px solid var(--theme-border); padding:12px; border-radius:6px; }
@@ -759,7 +758,6 @@ const THEME_TABLE = {
         updateButton: '#aa0000',
         configButton: '#cc0000',
         actionButton: '#33ccff',
-		actionText: '#000000',
         lightText: '#ffffff',
         darkText: '#000000'
     },
@@ -773,7 +771,6 @@ const THEME_TABLE = {
         updateButton: '#0033aa',
         configButton: '#0040ff',
         actionButton: '#33ccff',
-		actionText: '#000000',
         lightText: '#ffffff',
         darkText: '#000000'
     },
@@ -787,7 +784,6 @@ const THEME_TABLE = {
         updateButton: '#d7ec10',
         configButton: '#d7ec10',
         actionButton: '#d7ec10',
-		actionText: '#000000',
         lightText: '#ffffff',
         darkText: '#000000'
     },
@@ -801,7 +797,6 @@ const THEME_TABLE = {
         updateButton: '#aa0000',
         configButton: '#00cc44',
         actionButton: '#00cc44',
-		actionText: '#000000',
         lightText: '#ffffff',
         darkText: '#000000'
     },
@@ -815,7 +810,6 @@ const THEME_TABLE = {
         updateButton: '#6600cc',
         configButton: '#8000ff',
         actionButton: '#8000ff',
-		actionText: '#ffffff',
         lightText: '#ffffff',
         darkText: '#000000'
     }
@@ -908,11 +902,6 @@ function applyTheme(themeName) {
 	root.style.setProperty(
 		'--theme-action-button',
 		theme.actionButton
-	);
-	
-	root.style.setProperty(
-		'--theme-action-text',
-		theme.actionText
 	);
 
     document.body.dataset.theme = themeName;
