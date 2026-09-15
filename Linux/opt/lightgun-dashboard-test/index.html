@@ -772,28 +772,24 @@ const THEME_TABLE = {
 const ADAPTER_DISPLAY_TABLE = {
     NAMCO: {
         icon: 'ps1',
-        regionalIcon: true,
         alt: 'G-Con45',
         theme: 'namco'
     },
 
     KONAMI: {
         icon: 'hb',
-        regionalIcon: true,
         alt: 'Hyper Blaster',
         theme: 'konami'
     },
 
     SONY: {
         icon: 'sony',
-        regionalIcon: false,
         alt: 'Sony',
         theme: 'sony'
     },
 
     PHILIPS: {
         icon: 'philips',
-        regionalIcon: false,
         alt: 'Philips',
         theme: 'philips'
     }
@@ -831,12 +827,9 @@ function getAdapterDisplay(vendor) {
 }
 
 function adapterIcon(display) {
-    if (display.regionalIcon) {
-        return vendorIcon(display.icon);
-    }
-
     return `/${display.icon}.png`;
 }
+
 
 const fwSelect = document.getElementById("firmware-select");
 const V3_FIRMWARES = [ 'KONAMI.HEX', 'TEST.HEX' ];
