@@ -916,8 +916,21 @@ function getAdapterDisplay(vendor) {
         ADAPTER_DISPLAY_TABLE.NAMCO;
 }
 
+
+
 function adapterIcon(display) {
-    return `/${display.icon}.png`;
+	const regionalIcons = [
+		'ps1',
+		'hb'
+	];
+
+    const suffix =
+        iconSet === 'us' &&
+        regionalIcons.includes(display.icon)
+            ? '-u'
+            : '';
+
+    return `/${display.icon}${suffix}.png`;
 }
 
 
