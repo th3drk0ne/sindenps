@@ -84,7 +84,6 @@
 		align-items: center;
 		margin-bottom: 8px;
 	}
-
 	.fan-curve-header {
 		font-weight: bold;
 		color: #ccc;
@@ -117,33 +116,28 @@
 	body.sony-mode #system-actions .btn-secondary {
 		color: var(--theme-dark-text) !important;
 	}
-
 	body.sony-mode .tabs button.active,
 	body.sony-mode .tabs button:hover,
 	body.sony-mode #scroll-top-btn {
 		color: var(--theme-dark-text) !important;
 	}
-
 	/* Keep only service stop/update buttons red */
 	body.sony-mode .service-buttons button:nth-child(2),
 	body.sony-mode #btn-update-now {
 		background: var(--theme-update-button) !important;
 		color: var(--theme-light-text) !important;
 	}
-
 	/* Check button stays green */
 	body.sony-mode #btn-check-updates {
 		background: var(--theme-config-button) !important;
 		color: var(--theme-dark-text) !important;
 	}
-
 	/* Config buttons stay green */
 	body.sony-mode #btn-activate-profile,
 	body.sony-mode #save-restart {
 		background: var(--theme-config-button) !important;
 		color: var(--theme-dark-text) !important;
 	}
-
 	body.sony-mode .update-banner button {
 		color: var(--theme-light-text) !important;
 	}
@@ -841,7 +835,6 @@ const ADAPTER_DISPLAY_TABLE = {
     }
 };
 
-
 function applyTheme(themeName) {
     const theme =
         THEME_TABLE[themeName] ||
@@ -916,8 +909,6 @@ function getAdapterDisplay(vendor) {
         ADAPTER_DISPLAY_TABLE.NAMCO;
 }
 
-
-
 function adapterIcon(display) {
 	const regionalIcons = [
 		'ps1',
@@ -932,7 +923,6 @@ function adapterIcon(display) {
 
     return `/${display.icon}${suffix}.png`;
 }
-
 
 const fwSelect = document.getElementById("firmware-select");
 const V3_FIRMWARES = [ 'KONAMI.HEX', 'TEST.HEX' ];
