@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#
+# -------------------------------------
 # Sinden Peripheral System Setup Script 
-#
+# -------------------------------------
 
 set -euo pipefail
 
@@ -66,68 +66,6 @@ if [[ $EUID -ne 0 ]]; then
 fi
 log "Running as root."
 
-#-----------------------------------------------------------
-# Step 0) Version selection (no changes to download module)
-# Supported values: latest, beta, previous
-# 'current' now maps to 'latest'
-#-----------------------------------------------------------
-normalize_version() {
-  local v="${1,,}"  # lowercase input
-  case "$v" in
-    latest|current|new|1|n)   echo "latest"   ;;  # 'current' → 'latest'
-    previous|prev|2|p)        echo "previous"   ;;
-    beta|3|b)                 echo "beta"     ;;
-    *)                        echo ""         ;;
-  esac
-}
-
-if [[ -z "${VERSION:-}" ]]; then
-  log "Select Sinden setup version:"
-  echo "  [1] latest    (current release)"
-  echo "  [2] previous  (prior release)"
-  echo "  [3] beta      (pre-release/test)"
-  while true; do
-    read -r -p "Enter choice (1/2/3) [default: 1]: " choice
-    choice="${choice:-1}"
-    case "$choice" in
-      1) VERSION="latest";   break ;;
-      2) VERSION="previous";   break ;;
-      3) VERSION="beta";     break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–3." ;;
-    esac
-  done
-else
-  VERSION="$(normalize_version "$VERSION")"
-  if [[ -z "$VERSION" ]]; then
-    warn "Unrecognized VERSION value. Falling back to interactive selection."
-    unset VERSION
-    echo "  [1] latest"
-    echo "  [2] previous"
-    echo "  [3] beta"
-     while true; do
-      read -r -p "Enter choice (1/2/3) [default: 1]: " choice
-      choice="${choice:-1}"
-      case "$choice" in
-        1) VERSION="latest";   break ;;
-        2) VERSION="previous";   break ;;
-        3) VERSION="beta";     break ;;
-        *) warn "Invalid selection: '$choice'. Please choose 1–3." ;;
-      esac
-    done
-  fi
-fi
-
-# Optional tag for branching (e.g., URLs/flags)
-if [[ "$VERSION" == "latest" ]]; then
-  VERSION_TAG="v2"
-else
-  VERSION_TAG="v1"
-fi
-log "Version selected: ${VERSION} (${VERSION_TAG})"
-
-log "Selected update channel: $VERSION"
-
-VERSION_FILE="/home/sinden/Lightgun/VERSION"
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
@@ -263,6 +201,12 @@ sudo apt-get install -y mono-complete v4l-utils libsdl1.2-dev libsdl-image1.2-de
 sudo apt-get upgrade -y
 log "Prerequisites installed."
 
+# Cleanup unused packages and package cache
+log "Running package cleanup..."
+sudo apt-get autoremove -y
+sudo apt-get clean
+log "Package cleanup complete."
+
 #-----------------------------------------------------------
 # Step 6) Create folders, download VERSION-based assets
 #-----------------------------------------------------------
@@ -278,12 +222,11 @@ install -d -o sinden -g sinden /opt/sinden
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/query-dongle.sh"
 
-  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
-  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
+  chmod +x lightgun.sh lightgun-monitor.sh update-sindenps.sh query-dongle.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh update-sindenps.sh query-dongle.sh
 )
 
 USER_HOME="/home/sinden"
@@ -460,21 +403,9 @@ fi
 
 log "Backup complete."
 
-# --- Map VERSION → repo folder ---
-map_version_to_repo_folder() {
-  case "$VERSION" in
-    latest)   echo "latest" ;;
-    beta)     echo "beta" ;;
-    previous) echo "previous" ;;
-    ubuntu) echo "ubuntu" ;;
-    *)        err "Invalid VERSION: $VERSION"; return 1 ;;
-  esac
-}
-REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
-
 # --- Remote paths ---
-PS1_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS1"
-PS2_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS2"
+PS1_REMOTE="driver/version/${ARCH}/latest/PS1"
+PS2_REMOTE="driver/version/${ARCH}/latest/PS2"
 
 # --- PS1: list → download ---
 ps1_files=()
@@ -508,8 +439,6 @@ if ! download_files_from_list "$PS2_DIR" ps2_files; then
   exit 9
 fi
 
-echo "$VERSION" > "$VERSION_FILE"
-chmod 0644 "$VERSION_FILE"
 
 ##################################################################
 
@@ -583,19 +512,19 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 log "=== 4) Backend: Flask app  ==="
 sudo wget -O ${APP_DIR}/app.py \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard-test/app.py
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/app.py
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 log "Flask Application downloaded to ${APP_DIR}/app.py"
 
 log "=== Downloading clean UTF-8 index.html from GitHub ==="
 sudo wget -O /opt/lightgun-dashboard/index.html \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard-test/index.html
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
 
 log "=== Downloading manifest.json from GitHub ==="
 sudo wget -O /opt/lightgun-dashboard/manifest.json \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard-test/manifest.json
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/manifest.json
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/manifest.json"
 log "manifest.json Downloaded to ${APP_DIR}/manifest.json"
 
@@ -628,16 +557,6 @@ Cmnd_Alias LIGHTGUN_CMDS = \
 sinden ALL=(root) NOPASSWD: LIGHTGUN_CMDS
 SUDO_EOF
 sudo chmod 440 /etc/sudoers.d/90-sinden-systemctl
-
-SERVICE="ModemManager.service"
-
-if systemctl list-unit-files | grep -q "^${SERVICE}"; then
-    log "$SERVICE exists. Disabling and stopping..."
-    sudo systemctl disable --now "$SERVICE"
-else
-    log "$SERVICE does not exist. Skipping."
-fi
-
 
 log "=== 8) Ensure PS1/PS2 config files exist & are writable ==="
 for p in PS1 PS2; do
@@ -721,57 +640,48 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
+
+
+
+
 log "=== 12) Deploy/images ==="
 
-# images 
-LOGO_URL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/logo.png"
-LOGO_PS1="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps1.png"
-LOGO_PS2="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps2.png"
-LOGO_HB="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/hb.png"
-LOAD="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/load.png"
-OFFLINE="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/offline.png"
-FAVICON="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/favicon.ico"
-PAL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/pal.png"
-NTSC="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ntsc.png"
-ATI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/apple-touch-icon.png"
-ANLG="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/analog.png"
-SONY="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/sony.png"
-DHT="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/dht.png"
-LOGO_PS1U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps1-u.png"
-LOGO_PS2U="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/ps2-u.png"
-LOGO_HBU="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/hb-u.png"
-LOGO_PHL="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/philips.png"
-LOGO_CDI="https://raw.githubusercontent.com/th3drk0ne/sindenps/main/Linux/opt/lightgun-dashboard/images/cdi.png"
+IMAGE_REPO_PATH="Linux/opt/lightgun-dashboard/images"
+IMAGE_DEST="${APP_DIR}/images"
 
-for FILE in logo.png ps1.png ps2.png ps1-u.png ps2-u.png load.png offline.png favicon.ico hb.png hb-u.png pal.png ntsc.png apple-touch-icon.png analog.png sony.png dht.png philips.png cdi.png; do
-  case "$FILE" in
-    logo.png) URL="$LOGO_URL" ;;
-    ps1.png)  URL="$LOGO_PS1" ;;
-    ps2.png)  URL="$LOGO_PS2" ;;
-	hb.png)  URL="$LOGO_HB" ;;
-	ps1-u.png)  URL="$LOGO_PS1U" ;;
-    ps2-u.png)  URL="$LOGO_PS2U" ;;
-	hb-u.png)  URL="$LOGO_HBU" ;;
-    load.png)  URL="$LOAD" ;;
-    offline.png)  URL="$OFFLINE" ;;
-    favicon.ico)  URL="$FAVICON" ;;
-	pal.png)  URL="$PAL" ;;
-    ntsc.png)  URL="$NTSC" ;;
-	apple-touch-icon.png)  URL="$ATI" ;;
-	analog.png)  URL="$ANLG" ;;
-	sony.png)  URL="$SONY" ;;
-	dht.png)  URL="$DHT" ;;
-	philips.png)  URL="$LOGO_PHL" ;;
-	cdi.png)  URL="$LOGO_CDI" ;;
-  esac
+install -d -o "${APP_USER}" -g "${APP_GROUP}" "${IMAGE_DEST}"
 
-  install -d -o sinden -g sinden "${APP_DIR}/images"
-  DEST="${APP_DIR}/images/${FILE}"
-  
-	sudo -u "${APP_USER}" wget -q -O "$DEST" "$URL" || true
-	sudo chown "${APP_USER}:${APP_GROUP}" "$DEST" || true
-	
-done
+# Clean out old images first
+find "${IMAGE_DEST}" -type f -delete
+
+# Query GitHub for all files in the images folder
+mapfile -t image_files < <(
+    curl -s \
+    "https://api.github.com/repos/th3drk0ne/sindenps/contents/${IMAGE_REPO_PATH}?ref=main" |
+    jq -r '.[] | select(.type=="file") | .download_url'
+)
+
+if [[ ${#image_files[@]} -eq 0 ]]; then
+    warn "No image files found in GitHub repository."
+else
+    log "Downloading ${#image_files[@]} image(s)..."
+
+    for url in "${image_files[@]}"; do
+        filename="$(basename "$url")"
+        dest="${IMAGE_DEST}/${filename}"
+
+        sudo -u "${APP_USER}" wget \
+            --quiet \
+            --show-progress \
+            --https-only \
+            --timestamping \
+            -O "$dest" \
+            "$url"
+
+        chown "${APP_USER}:${APP_GROUP}" "$dest"
+        log "Downloaded: ${filename}"
+    done
+fi
 
 log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
@@ -844,7 +754,7 @@ if [ "$ARCH" != "x86_64" ]; then
 # -----------------------------
 GPU_MEM_TARGET="64"                  # gpu_mem MB target
 DISABLE_BLUETOOTH="1"                 # 1=disable bluetooth/hciuart
-DISABLE_BACKGROUND_SERVICES="0"       # 1=disable avahi-daemon, triggerhappy (and optionally rsyslog)
+DISABLE_BACKGROUND_SERVICES="1"       # 1=disable triggerhappy and ModemManager
 
 # -----------------------------
 # Apply Pi-model specific presets (Pi4 / Pi5)
@@ -854,18 +764,15 @@ if [ "$PI_MODEL" = "PiZero2W" ]; then
   # Pi Zero 2 W: keep GPU split low, free RAM for camera + mono/.NET
   GPU_MEM_TARGET="32"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying PiZero2W presets"
 elif [ "$PI_MODEL" = "Pi5" ]; then
   # Pi5 ignores gpu_mem in many setups; keep your intent here if you want
   GPU_MEM_TARGET="128"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi5 presets"
 elif [ "$PI_MODEL" = "Pi4" ]; then
   GPU_MEM_TARGET="128"
   DISABLE_BLUETOOTH="1"
-  DISABLE_BACKGROUND_SERVICES="0"
   log "Applying Pi4 presets"
 else
   log "Unknown model: applying generic defaults (no model-specific cuts)."
@@ -879,7 +786,19 @@ backup_file() {
   local f="$1"
   local ts; ts="$(timestamp)"
   local b="${f}.${ts}.bak"
+
   cp -a -- "$f" "$b" 2>/dev/null || true
+
+  # Keep only the newest 3 backups
+  local backups
+  mapfile -t backups < <(
+    ls -1t "${f}".*.bak 2>/dev/null
+  )
+
+  if [ "${#backups[@]}" -gt 3 ]; then
+    printf '%s\n' "${backups[@]:3}" | xargs -r rm -f
+  fi
+
   echo "$b"
 }
 
@@ -894,8 +813,9 @@ detect_boot_config() {
 
 set_kv_in_boot_config() {
   local file="$1" key="$2" value="$3"
-  local bak; bak="$(backup_file "$file")"
-  local tmp; tmp="$(mktemp)"
+  local tmp
+  tmp="$(mktemp)"
+
   awk -v KEY="$key" '
     BEGIN{IGNORECASE=1}
     {
@@ -903,17 +823,22 @@ set_kv_in_boot_config() {
       print
     }
   ' "$file" > "$tmp"
+
   echo "${key}=${value}" >> "$tmp"
   install -m 644 "$tmp" "$file"
   rm -f "$tmp"
-  log "  • ${key} set to '${value}' (backup: $bak)"
+
+  log "  • ${key} set to '${value}'"
 }
 
 service_disable_now_and_boot() {
   local svc="$1"
+
   if systemctl list-unit-files | grep -q "^${svc}\.service"; then
     systemctl disable --now "${svc}.service" || true
     log "  • Disabled service: ${svc}.service"
+  else
+    log "  • ${svc}.service not installed"
   fi
 }
 
@@ -990,10 +915,8 @@ fi
 
 # 4) Background services (Pi4 preset enables this by default)
 if [ "${DISABLE_BACKGROUND_SERVICES}" = "1" ]; then
-  #service_disable_now_and_boot "avahi-daemon"
   service_disable_now_and_boot "triggerhappy"
-  # Optional and **invasive**: disable rsyslog (local syslog)
-  # service_disable_now_and_boot "rsyslog"
+  service_disable_now_and_boot "ModemManager"
 fi
 
 # 5) USB link check
@@ -1049,7 +972,11 @@ ensure_tools_and_groups() {
 
 enable_overlays_and_mini_uart() {
   log "Ensuring overlays and UART settings in $CONFIG_FILE"
-  cp "$CONFIG_FILE" "${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+
+  local bak
+  bak="$(backup_file "$CONFIG_FILE")"
+  log "Config backup created: $bak"
+
 
   if [[ $IS_PI5 -eq 1 ]]; then
     # Pi 5 specific settings
@@ -1064,7 +991,7 @@ enable_overlays_and_mini_uart() {
     grep -q "^dtoverlay=uart5" "$CONFIG_FILE" || echo "dtoverlay=uart5" >> "$CONFIG_FILE"
   fi
 
-  log "Config updated. Backup created: ${CONFIG_FILE}.bak.*"
+  log "Config updated successfully."
 }
 
 write_udev_rules() {
