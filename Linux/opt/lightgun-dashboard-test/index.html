@@ -11,17 +11,15 @@
 	<link rel="manifest" href="/manifest.json">
 	<meta name="theme-color" content="#000000">
   <style>
-    :root {
-      --theme-main: #cc0000;
-      --theme-border: #c00;
-      --theme-accent: #f33;
-      --theme-button-danger: #a00;
-      --theme-update-button: #aa0000;
-      --theme-config-button: #cc0000;
-      --theme-light-text: #fff;
-      --theme-dark-text: #000;
-	  --theme-action-button: #33ccff;
-    }
+	:root {
+		--theme-main: #cc0000;
+		--theme-border: #c00;
+		--theme-accent: #f33;
+		--theme-button-danger: #a00;
+		--theme-config-button: #cc0000;
+		--theme-light-text: #fff;
+		--theme-dark-text: #000;
+	}
     html { box-sizing: border-box; }
     *, *::before, *::after { box-sizing: inherit; }
     html, body { height: 100%; }
@@ -101,11 +99,7 @@
 	body.konami-mode .tabs button:hover,
 	body.konami-mode .btn-danger,
 	body.konami-mode #scroll-top-btn,
-	body.konami-mode .service-buttons button:nth-child(2),
-	body.konami-mode #btn-check-updates {
-		color: var(--theme-dark-text) !important;
-	}
-	body.konami-mode #btn-update-now {
+	body.konami-mode .service-buttons button:nth-child(2) {
 		color: var(--theme-dark-text) !important;
 	}
 	body.konami-mode .update-banner button { color: var(--theme-light-text) !important; }
@@ -124,16 +118,10 @@
 	body.sony-mode #scroll-top-btn {
 		color: var(--theme-dark-text) !important;
 	}
-	/* Keep only service stop/update buttons red */
-	body.sony-mode .service-buttons button:nth-child(2),
-	body.sony-mode #btn-update-now {
-		background: var(--theme-update-button) !important;
+	/* Keep service Stop buttons red */
+	body.sony-mode .service-buttons button:nth-child(2) {
+		background: #aa0000 !important;
 		color: var(--theme-light-text) !important;
-	}
-	/* Check button stays green */
-	body.philips-mode #btn-check-updates, body.sony-mode #btn-check-updates {
-		background: var(--theme-config-button) !important;
-		color: var(--theme-dark-text) !important;
 	}
 	/* Config buttons stay green */
 	body.sony-mode #btn-activate-profile,
@@ -143,10 +131,6 @@
 	}
 	body.sony-mode .update-banner button {
 		color: var(--theme-light-text) !important;
-	}
-	body.philips-mode #btn-update-now {
-		background: var(--theme-action-button);
-		color: var(--theme-light-text);
 	}
 	#btn-flash-firmware {
 		background: #00cc44;
@@ -208,7 +192,7 @@
     .config-toolbar select { padding: 5px 6px; font-size: 13px; height: 31px; border-radius: 6px;}
 	.sinden-main-log { height: calc(100vh - 180px); max-height: none; }
 	#platform-select, label[for="platform-select"] { display:none !important; }
-    #firmware-select, #firmware-port, #update-channel, #profile-select, #firmware-baud { background:#000; color:#fff; border:1px solid #444; border-radius:6px; }
+    #firmware-select, #firmware-port, #profile-select, #firmware-baud { background:#000; color:#fff; border:1px solid #444; border-radius:6px; }
     #firmware-select { min-width:280px; }
     #firmware-port { min-width:180px; }
     @media (max-width:768px) {
@@ -430,22 +414,6 @@
           <button class="btn-secondary" onclick="confirmSystemAction('reboot')">Reboot OS</button>
           <button class="btn-danger" onclick="confirmSystemAction('shutdown')">Shutdown OS</button>
         </div>
-      </div>
-
-      <div class="service-row" id="software-update">
-        <span class="service-name">Driver Update</span>
-        <span class="service-status" id="update-status">idle…</span>
-        <div class="service-buttons">
-          <select id="update-channel" aria-label="Update channel">
-            <option value="latest" selected>LATEST</option>
-            <option value="previous">PREVIOUS</option>
-            <option value="beta">BETA</option>
-          </select>
-          <button id="btn-check-updates">Check</button>
-          <button id="btn-update-now" disabled>Update Now</button>
-          <button class="log-toggle" id="btn-toggle-logs">Show Logs</button>
-        </div>
-        <div class="log-box" id="update-logs" style="display:none"><pre class="log-content" id="update-log-content">Loading…</pre></div>
       </div>
 
       <div class="service-row" id="firmware-flash">
@@ -749,71 +717,61 @@ const THEME_CLASSES = [
 ];
 
 const THEME_TABLE = {
-    namco: {
-        className: '',
-        main: '#cc0000',
-        border: '#cc0000',
-        accent: '#ff3333',
-        danger: '#aa0000',
-        updateButton: '#aa0000',
-        configButton: '#cc0000',
-        actionButton: '#33ccff',
-        lightText: '#ffffff',
-        darkText: '#000000'
-    },
+	namco: {
+		className: '',
+		main: '#cc0000',
+		border: '#cc0000',
+		accent: '#ff3333',
+		danger: '#aa0000',
+		configButton: '#cc0000',
+		lightText: '#ffffff',
+		darkText: '#000000'
+	},
 
-    ps2: {
-        className: 'ps2-mode',
-        main: '#0040ff',
-        border: '#0040ff',
-        accent: '#3385ff',
-        danger: '#0033aa',
-        updateButton: '#0033aa',
-        configButton: '#0040ff',
-        actionButton: '#33ccff',
-        lightText: '#ffffff',
-        darkText: '#000000'
-    },
+	ps2: {
+		className: 'ps2-mode',
+		main: '#0040ff',
+		border: '#0040ff',
+		accent: '#3385ff',
+		danger: '#0033aa',
+		configButton: '#0040ff',
+		lightText: '#ffffff',
+		darkText: '#000000'
+	},
 
-    konami: {
-        className: 'konami-mode',
-        main: '#d7ec10',
-        border: '#d7ec10',
-        accent: '#d7ec10',
-        danger: '#d7ec10',
-        updateButton: '#d7ec10',
-        configButton: '#d7ec10',
-        actionButton: '#33ccff',
-        lightText: '#ffffff',
-        darkText: '#000000'
-    },
+	konami: {
+		className: 'konami-mode',
+		main: '#d7ec10',
+		border: '#d7ec10',
+		accent: '#d7ec10',
+		danger: '#d7ec10',
+		configButton: '#d7ec10',
+		lightText: '#ffffff',
+		darkText: '#000000'
+	},
 
-    sony: {
-        className: 'sony-mode',
-        main: '#00cc44',
-        border: '#00cc44',
-        accent: '#66ff99',
-        danger: '#009933',
-        updateButton: '#aa0000',
-        configButton: '#00cc44',
-        actionButton: '#aa0000',
-        lightText: '#ffffff',
-        darkText: '#000000'
-    },
-
-    philips: {
-        className: 'philips-mode',
-        main: '#8000ff',
-        border: '#8000ff',
-        accent: '#b366ff',
-        danger: '#6600cc',
-        updateButton: '#6600cc',
-        configButton: '#8000ff',
-        actionButton: '#8000ff',
-        lightText: '#ffffff',
-        darkText: '#000000'
-    }
-};
+	sony: {
+		className: 'sony-mode',
+		main: '#00cc44',
+		border: '#00cc44',
+		accent: '#66ff99',
+		danger: '#009933',
+		configButton: '#00cc44',
+		lightText: '#ffffff',
+		darkText: '#000000'
+	},
+	
+	philips: {
+		className: 'philips-mode',
+		main: '#8000ff',
+		border: '#8000ff',
+		accent: '#b366ff',
+		danger: '#6600cc',
+		configButton: '#8000ff',
+		lightText: '#ffffff',
+		darkText: '#000000'
+	}
+	};
 
 const ADAPTER_DISPLAY_TABLE = {
     NAMCO: {
@@ -878,10 +836,6 @@ function applyTheme(themeName) {
         theme.danger
     );
 
-    root.style.setProperty(
-        '--theme-update-button',
-        theme.updateButton
-    );
 
     root.style.setProperty(
         '--theme-config-button',
@@ -898,11 +852,6 @@ function applyTheme(themeName) {
 		theme.darkText
 	);
 	
-	root.style.setProperty(
-		'--theme-action-button',
-		theme.actionButton
-	);
-
     document.body.dataset.theme = themeName;
 }
 
@@ -2236,74 +2185,6 @@ async function restartLightgunService() {
   } catch (e) { return false; }
 }
 
-function setUpdateState(label, canUpdate = false) {
-  const status = document.getElementById('update-status');
-  if (status) status.textContent = label;
-  const btnUpdate = document.getElementById('btn-update-now');
-  if (btnUpdate) btnUpdate.disabled = !canUpdate;
-}
-
-async function refreshUpdateStatus() {
-  try {
-    const res = await fetch('/api/update/status');
-    const s = await res.json();
-    if (!s || s.ok === false) { setUpdateState('status error'); return; }
-    const channel = s.installed?.version || 'unknown';
-    setUpdateState(`Channel: ${channel}`, true);
-  } catch (e) {
-    setUpdateState('status error: ' + e.message);
-  }
-}
-
-async function checkForUpdates() {
-  try {
-    setUpdateState('checking…');
-    const channel = document.getElementById('update-channel').value;
-    const res = await fetch(`/api/update/check?channel=${encodeURIComponent(channel)}`);
-    const data = await res.json();
-    if (!data || data.ok === false) {
-      setUpdateState('check failed');
-      alert('Check failed: ' + (data?.error || 'unknown'));
-      return;
-    }
-    setUpdateState(`Channel ready: ${channel}`, true);
-  } catch (e) {
-    setUpdateState('check error: ' + e.message);
-  }
-}
-
-async function applyUpdate() {
-  if (!confirm('Apply the selected update channel now? Services may restart.')) return;
-  try {
-    setUpdateState('applying…');
-    const channel = document.getElementById('update-channel').value;
-    const res = await fetch('/api/update/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel }) });
-    const data = await res.json();
-    if (!data || data.ok === false) { setUpdateState('update failed'); alert('Update failed: ' + (data && data.error ? data.error : 'unknown error')); return; }
-    await refreshUpdateStatus();
-    loadUpdateLogs();
-    refreshServices();
-  } catch (e) { setUpdateState('update error: ' + e.message); }
-}
-
-function toggleUpdateLogs() {
-  const box = document.getElementById('update-logs');
-  const btn = document.getElementById('btn-toggle-logs');
-  if (box.style.display === 'block') { box.style.display = 'none'; btn.textContent = 'Show Logs'; }
-  else { box.style.display = 'block'; btn.textContent = 'Hide Logs'; loadUpdateLogs(); }
-}
-
-async function loadUpdateLogs() {
-  const pre = document.getElementById('update-log-content');
-  try {
-    const res = await fetch('/api/update/logs');
-    const data = await res.json();
-    pre.textContent = (data && data.logs) ? data.logs : 'No update logs available';
-  } catch (e) {
-    pre.textContent = 'Error loading update logs: ' + e.message;
-  }
-}
-
 function setFirmwareState(label) {
   const el = document.getElementById('firmware-status');
   if (el) el.textContent = label;
@@ -2982,7 +2863,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	refreshProfilesUI(initialPlatform)
 		.then(() => loadLastProfile(initialPlatform));
-  refreshUpdateStatus();
   refreshFirmwareStatus();
   loadFirmwareList();
   loadFirmwarePorts();
@@ -3106,9 +2986,6 @@ setInterval(async () => {
     } finally { btnSaveRestart.disabled = false; }
   };
 
-  document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
-  document.getElementById('btn-update-now').addEventListener('click', applyUpdate);
-  document.getElementById('btn-toggle-logs').addEventListener('click', toggleUpdateLogs);
   document.getElementById('btn-flash-firmware').addEventListener('click', flashFirmware);
   document.getElementById('btn-toggle-fw-logs').addEventListener('click', toggleFirmwareLogs);
 });
@@ -3131,26 +3008,27 @@ setInterval(refreshServices, 1000);
 setInterval(() => {
   const panel = document.getElementById('service-panel');
 
-  if (panel && panel.style.display === 'block') {
+	if (panel && panel.style.display === 'block') {
+	  refreshFirmwareStatus();
+	  refreshTemperature();
 
-    refreshUpdateStatus();
-    refreshFirmwareStatus();
-	refreshTemperature();
+	  const fwBox =
+		document.getElementById('firmware-logs');
 
-    const updateBox = document.getElementById('update-logs');
-    const fwBox = document.getElementById('firmware-logs');
-    const sindenBox = document.getElementById('sindenps-update-logs');
+	  const sindenBox =
+		document.getElementById('sindenps-update-logs');
 
-	if (updateBox && updateBox.style.display === 'block') {
-	  loadUpdateLogs();
+	  if (fwBox && fwBox.style.display === 'block') {
+		loadFirmwareLogs();
+	  }
+
+	  if (
+		sindenBox &&
+		sindenBox.style.display === 'block'
+	  ) {
+		loadSindenpsLogs();
+	  }
 	}
-	if (fwBox && fwBox.style.display === 'block') {
-	  loadFirmwareLogs();
-	}
-	if (sindenBox && sindenBox.style.display === 'block') {
-	  loadSindenpsLogs();
-	}
-  }
   refreshSindenpsStatus();
 }, 5000);
 
