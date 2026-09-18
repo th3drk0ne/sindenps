@@ -150,7 +150,15 @@
 		background: var(--theme-action-button);
 		color: var(--theme-light-text);
 	}
-	#btn-flash-firmware { background: var(--theme-action-button); color: var(--theme-dark-text); font-weight: 700; }
+	#btn-flash-firmware {
+		background: var(--theme-action-button);
+		color: var(--theme-dark-text);
+		font-weight: 700;
+	}
+	body.sony-mode #btn-flash-firmware,
+	body.philips-mode #btn-flash-firmware {
+		color: var(--theme-light-text);
+	}
 	.modal {
 	  border: 1px solid var(--theme-border);
 	  border-left: 6px solid var(--theme-border);
