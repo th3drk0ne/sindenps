@@ -646,7 +646,7 @@ sudo nginx -t && sudo systemctl restart nginx
 
 log "=== 12) Deploy/images ==="
 
-IMAGE_REPO_PATH="Linux/opt/lightgun-dashboard/images"
+IMAGE_REPO_PATH="Linux/opt/${SITEVERSION}/images"
 IMAGE_DEST="${APP_DIR}/images"
 
 install -d -o "${APP_USER}" -g "${APP_GROUP}" "${IMAGE_DEST}"
