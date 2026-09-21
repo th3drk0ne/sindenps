@@ -430,10 +430,10 @@
 				  <option value="" title="No SindenPS Adapter Detected">No Adapter Connected</option>
 			  </select>
 			  <!-- Baud rate dropdown -->
-			  <select id="firmware-baud" title="Select baud rate">
-				  <option value="57600" selected title="Default Baud Rate for SindenPS adapter using an Arduino Nano (recommended)">57600 (Nano)</option>
-				  <option value="115200" title="Baud Rate for Adapter using a Genuine Arduino UNO">115200 (UNO)</option>
-			  </select>
+				<select id="firmware-baud" title="Automatically detected baud rate" disabled>
+					<option value="57600" selected>57600</option>
+					<option value="115200">115200</option>
+				</select>
 			  <button id="btn-flash-firmware">Flash Firmware</button>
 			  <button class="log-toggle" id="btn-toggle-fw-logs">Show Logs</button>
 		  </div>
@@ -2240,48 +2240,115 @@ async function loadFirmwareList() {
 }
 
 async function loadFirmwarePorts() {
-  const sel = document.getElementById('firmware-port');
+    const sel =
+        document.getElementById('firmware-port');
 
-  try {
-    const res = await fetch('/api/firmware/ports');
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Failed to load ports');
+    const baudSel =
+        document.getElementById('firmware-baud');
 
-    const ports = data.ports || [];
+    const previousPort = sel.value;
 
-    const changed =
-      ports.length !== lastFirmwarePorts.length ||
-      ports.some((p, i) => p !== lastFirmwarePorts[i]);
+    try {
+        const res =
+            await fetch('/api/firmware/ports');
 
-    if (!changed) return; // nothing new → do not rebuild UI
+        const data =
+            await res.json();
 
-    lastFirmwarePorts = ports;
+        if (!data.ok) {
+            throw new Error(
+                data.error ||
+                'Failed to load ports'
+            );
+        }
 
-    sel.innerHTML = '';
+        const ports =
+            data.ports || [];
 
-    if (!ports.length) {
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = 'No Adapter Connected';
-      sel.appendChild(opt);
-      return;
+        const changed =
+            JSON.stringify(ports) !==
+            JSON.stringify(lastFirmwarePorts);
+
+        if (!changed) {
+            return;
+        }
+
+        lastFirmwarePorts = ports;
+
+        sel.innerHTML = '';
+
+        if (!ports.length) {
+            const opt =
+                document.createElement('option');
+
+            opt.value = '';
+            opt.textContent =
+                'No Adapter Connected';
+
+            sel.appendChild(opt);
+
+            baudSel.value = '57600';
+
+            return;
+        }
+
+        ports.forEach((adapter, idx) => {
+            const opt =
+                document.createElement('option');
+
+            opt.value =
+                adapter.port;
+
+            opt.textContent =
+                `${adapter.port.replace('/dev/', '')} (${adapter.device})`;
+
+            opt.dataset.baud =
+                adapter.expected_baud || '57600';
+
+            if (
+                adapter.port === previousPort ||
+                (!previousPort && idx === 0)
+            ) {
+                opt.selected = true;
+            }
+
+            sel.appendChild(opt);
+        });
+
+        if (sel.selectedIndex < 0) {
+            sel.selectedIndex = 0;
+        }
+
+        const selectedOption =
+            sel.options[sel.selectedIndex];
+
+        baudSel.value =
+            selectedOption.dataset.baud ||
+            '57600';
+
+        sel.onchange = () => {
+            const option =
+                sel.options[sel.selectedIndex];
+
+            baudSel.value =
+                option.dataset.baud ||
+                '57600';
+        };
+
+    } catch (e) {
+        sel.innerHTML = '';
+
+        const opt =
+            document.createElement('option');
+
+        opt.value = '';
+        opt.textContent =
+            'Error loading ports';
+
+        sel.appendChild(opt);
+
+        baudSel.value = '57600';
     }
-
-    ports.forEach((port, idx) => {
-      const opt = document.createElement('option');
-      opt.value = port;
-      opt.textContent = port.replace('/dev/', '');
-      if (idx === 0) opt.selected = true;
-      sel.appendChild(opt);
-    });
-
-  } catch (e) {
-    sel.innerHTML = '';
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = 'Error loading ports';
-    sel.appendChild(opt);
-  }
 }
 
 
@@ -2323,13 +2390,11 @@ function toggleFirmwareLogs() {
 async function flashFirmware() {
     const fileSel = document.getElementById('firmware-select');
     const portSel = document.getElementById('firmware-port');
-    const baudSel = document.getElementById('firmware-baud');
-
-    const filename = fileSel.value;
-    const port = portSel.value;
-    const baud = baudSel.value;
+	const filename = fileSel.value;
+	const port = portSel.value;
 
     if (!filename) return alert('Select firmware');
+	if (!port) return alert('No adapter connected');
 	
 	if (V3_FIRMWARES.includes(filename.toUpperCase())) {
 		alert('SindenPS V3 Adapter Required');
@@ -2343,11 +2408,10 @@ async function flashFirmware() {
         const res = await fetch('/api/firmware/flash', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                filename,
-                port,
-                baud
-            })
+		body: JSON.stringify({
+			filename,
+			port
+		})
         });
 
         const data = await res.json();

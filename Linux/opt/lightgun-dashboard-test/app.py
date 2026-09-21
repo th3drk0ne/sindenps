@@ -487,6 +487,67 @@ FIRMWARE_STATE = {
     "last_result": "",
 }
 
+DEVICE_BAUD_MAP = {
+    "2341:0043": {
+        "name": "Arduino UNO",
+        "baud": "115200"
+    },
+    "1a86:7523": {
+        "name": "CH340 Clone",
+        "baud": "57600"
+    },
+    "0403:6001": {
+        "name": "FTDI Clone",
+        "baud": "57600"
+    },
+    "10c4:ea60": {
+        "name": "CP2102 Clone",
+        "baud": "57600"
+    }
+}
+
+def _fw_detect_device(port):
+    try:
+        real_port = os.path.realpath(port)
+
+        for dev in glob.glob("/sys/class/tty/*"):
+            tty_name = os.path.basename(dev)
+
+            if not real_port.endswith(tty_name):
+                continue
+
+            device_path = os.path.realpath(
+                os.path.join(dev, "device")
+            )
+
+            while device_path != "/":
+                vid_file = os.path.join(device_path, "idVendor")
+                pid_file = os.path.join(device_path, "idProduct")
+
+                if os.path.exists(vid_file) and os.path.exists(pid_file):
+                    with open(vid_file) as vf:
+                        vid = vf.read().strip().lower()
+
+                    with open(pid_file) as pf:
+                        pid = pf.read().strip().lower()
+
+                    vidpid = f"{vid}:{pid}"
+
+                    if vidpid in DEVICE_BAUD_MAP:
+                        return {
+                            "vidpid": vidpid,
+                            **DEVICE_BAUD_MAP[vidpid]
+                        }
+
+                device_path = os.path.dirname(device_path)
+
+    except Exception:
+        pass
+
+    return {
+        "name": "Unknown",
+        "baud": "57600"
+    }
 
 def _fw_append_log(text: str):
     if not text:
@@ -639,12 +700,29 @@ def api_firmware_list():
 def api_firmware_ports():
     try:
         ports = []
+
         for f in sorted(os.listdir("/dev")):
             if "ttyGCON45" in f:
-                ports.append("/dev/" + f)
-        return jsonify({"ok": True, "ports": ports})
+
+                port = "/dev/" + f
+                device = _fw_detect_device(port)
+
+                ports.append({
+                    "port": port,
+                    "device": device["name"],
+                    "expected_baud": device["baud"]
+                })
+
+        return jsonify({
+            "ok": True,
+            "ports": ports
+        })
+
     except Exception as e:
-        return jsonify({"ok": False, "error": str(e)})
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        })
 
 
 @app.route("/api/firmware/flash", methods=["POST"])
@@ -658,7 +736,8 @@ def api_firmware_flash():
         data = request.get_json(force=True) or {}
         filename = data.get("filename")
         port = data.get("port") or _fw_detect_port()
-        baud = str(data.get("baud", "57600"))
+        device = _fw_detect_device(port)
+        baud = device["baud"]
         full_path = _fw_valid_library_file(filename)
 
 
@@ -681,6 +760,8 @@ def api_firmware_flash():
         _fw_append_log("Starting firmware flash")
         _fw_append_log(f"File: {os.path.basename(full_path)}")
         _fw_append_log(f"Port: {port}")
+        _fw_append_log(f"Device: {device['name']}")
+        _fw_append_log(f"Detected baud: {baud}")
 
         _fw_reset_port(port)
         result = _fw_flash_hex(
@@ -703,6 +784,7 @@ def api_firmware_flash():
             f"Flashing {name} ({port_name})",
             port=port,
             file=os.path.basename(full_path),
+            device=device["name"],
             baud=baud,
             last_result=""
         )
