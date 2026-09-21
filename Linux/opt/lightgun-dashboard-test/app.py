@@ -1008,12 +1008,15 @@ def api_adapters():
 
                     firmware = f.read().strip()
 
+        serial_info = _fw_detect_device(alias)
+
         adapters.append({
             "player": player,
             "alias": alias,
             "target": os.path.realpath(alias),
             "firmware": firmware,
-            "serial_type": serial_type
+            "serial_type": serial_info["name"],
+            "expected_baud": serial_info["baud"]
         })
 
 
