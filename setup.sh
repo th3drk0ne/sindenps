@@ -739,12 +739,6 @@ fi
 # Creates exactly TWO symlinks via udev:
 #   /dev/ttyGCON2S_0  -> the active primary UART (whatever /dev/serial0 resolves to)
 #   /dev/ttyGCON2S_1  -> UART5 (ttyAMA5 or ttyS5, depending on overlay/SoC)
-#
-# And TWO picocom aliases (loaded system-wide):
-#   ttyGCON2S_0
-#   ttyGCON2S_1
-#
-# Default baud: 115200 (override: export BAUD=9600 before running)
 
 if [ "$ARCH" != "x86_64" ]; then
 ### Performance Optimization
@@ -958,10 +952,6 @@ detect_model() {
 }
 
 ensure_tools_and_groups() {
-  if ! command -v picocom >/dev/null 2>&1; then
-    log "picocom not found; installing via apt..."
-    apt-get update -y && apt-get install -y picocom
-  fi
   getent group dialout >/dev/null 2>&1 || groupadd dialout
   local u="${SUDO_USER:-$USER}"
   if ! id -nG "$u" | grep -qw dialout; then
