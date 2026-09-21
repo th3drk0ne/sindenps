@@ -644,7 +644,7 @@ sudo nginx -t && sudo systemctl restart nginx
 
 
 
-log "=== 12) Deploy/images ==="
+log "=== 12) Deploy/images from ${SITEVERSION} ==="
 
 IMAGE_REPO_PATH="Linux/opt/${SITEVERSION}/images"
 IMAGE_DEST="${APP_DIR}/images"
