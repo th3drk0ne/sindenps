@@ -982,42 +982,31 @@ def api_adapters():
         if not os.path.exists(alias):
             continue
         
-        serial_type = ""
+        serial_info = _fw_detect_device(alias)
 
-        try:
-            serial_info = _fw_detect_device(alias)
-            serial_type = serial_info["name"]
-        except Exception:
-            serial_type = "Unknown"
-        
         firmware = ""
 
         if ps1_mode:
-
             firmware_file = (
                 f"/run/lightgun/firmware_type_{player}"
             )
 
             if os.path.exists(firmware_file):
-
                 with open(
                     firmware_file,
                     "r",
                     encoding="utf-8"
                 ) as f:
-
                     firmware = f.read().strip()
 
-        serial_info = _fw_detect_device(alias)
-
-        adapters.append({
-            "player": player,
-            "alias": alias,
-            "target": os.path.realpath(alias),
-            "firmware": firmware,
-            "serial_type": serial_info["name"],
-            "expected_baud": serial_info["baud"]
-        })
+                adapters.append({
+                    "player": player,
+                    "alias": alias,
+                    "target": os.path.realpath(alias),
+                    "firmware": firmware,
+                    "serial_type": serial_info["name"],
+                    "expected_baud": serial_info["baud"]
+                })
 
 
     adapters.sort(

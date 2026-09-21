@@ -448,11 +448,16 @@
 			<span class="service-name">
 				Connected Adapters
 			</span>
-
+			
 			<span class="service-status"
 				  id="adapter-status">
 				Loading...
 			</span>
+			
+			<div id="serial-type-warning" class="flash-warning" style="display:none;">
+			⚠️ Incompatible PS1 adapter serial types detected.
+			Both adapters must use the same serial type.
+			</div>
 
 			<pre id="adapter-content"
 				 class="log-content">
@@ -1768,15 +1773,21 @@ async function refreshServices() {
 }
 
 async function refreshAdapters() {
-
     const status =
         document.getElementById('adapter-status');
 
     const content =
         document.getElementById('adapter-content');
 
+    const serialWarning =
+        document.getElementById('serial-type-warning');
+
     if (!content) {
         return;
+    }
+
+    if (serialWarning) {
+        serialWarning.style.display = 'none';
     }
 
     try {
@@ -1835,13 +1846,45 @@ async function refreshAdapters() {
             return;
         }
 
-        if (status) {
+		if (status) {
+			status.textContent =
+				`${adapterData.adapters.length} Adapter(s) Connected`;
+		}
 
-            status.textContent =
-                `${adapterData.adapters.length} Adapter(s) Connected`;
-        }
+		const adapters =
+			adapterData.adapters;
 
-        let output = '';
+		const serialTypes =
+			adapters.map(adapter =>
+				String(adapter.serial_type || '')
+					.trim()
+					.toUpperCase()
+			);
+
+		const serialTypesKnown =
+			serialTypes.every(type =>
+				type &&
+				type !== 'UNKNOWN'
+			);
+
+		const serialTypeMismatch =
+			platform === 'ps1' &&
+			adapters.length === 2 &&
+			serialTypesKnown &&
+			serialTypes[0] !== serialTypes[1];
+
+		if (serialWarning && serialTypeMismatch) {
+			serialWarning.textContent =
+				`⚠️ Incompatible PS1 adapters detected: ` +
+				`${adapters[0].serial_type} and ` +
+				`${adapters[1].serial_type}. ` +
+				`Both adapters must use the same serial type.`;
+
+			serialWarning.style.display = 'block';
+		}
+
+		let output = '';
+
 
         adapterData.adapters.forEach((adapter) => {
 
