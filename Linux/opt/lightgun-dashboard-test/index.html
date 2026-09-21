@@ -1870,22 +1870,27 @@ async function refreshAdapters() {
 const TEST_SERIAL_WARNING = true;
 
 const serialTypeMismatch =
-    TEST_SERIAL_WARNING ||
-    (
-        platform === 'ps1' &&
-        adapters.length === 2 &&
-        serialTypesKnown &&
-        serialTypes[0] !== serialTypes[1]
-    );
+    platform === 'ps1' &&
+    adapters.length === 2 &&
+    serialTypesKnown &&
+    serialTypes[0] !== serialTypes[1];
 
-if (serialWarning && serialTypeMismatch) {
-    serialWarning.textContent =
-        `⚠️ Incompatible PS1 adapters detected: ` +
-        `${adapters[0].serial_type} and ` +
-        `${adapters[1].serial_type}. ` +
-        `Both adapters must use the same serial type.`;
+if (serialWarning) {
+    if (TEST_SERIAL_WARNING) {
+        serialWarning.textContent =
+            `⚠️ TEST: Incompatible PS1 adapter serial types detected. ` +
+            `Both adapters must use the same serial type.`;
 
-    serialWarning.style.display = 'block';
+        serialWarning.style.display = 'block';
+    } else if (serialTypeMismatch) {
+        serialWarning.textContent =
+            `⚠️ Incompatible PS1 adapters detected: ` +
+            `${adapters[0].serial_type} and ` +
+            `${adapters[1].serial_type}. ` +
+            `Both adapters must use the same serial type.`;
+
+        serialWarning.style.display = 'block';
+    }
 }
 
 
