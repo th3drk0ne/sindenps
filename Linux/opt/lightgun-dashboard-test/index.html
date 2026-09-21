@@ -453,11 +453,6 @@
 				  id="adapter-status">
 				Loading...
 			</span>
-			
-			<div id="serial-type-warning" class="flash-warning" style="display:none;">
-			⚠️ Incompatible PS1 adapter serial types detected.
-			Both adapters must use the same serial type.
-			</div>
 
 			<pre id="adapter-content"
 				 class="log-content">
@@ -1779,19 +1774,11 @@ async function refreshAdapters() {
     const content =
         document.getElementById('adapter-content');
 
-    const serialWarning =
-        document.getElementById('serial-type-warning');
-
     if (!content) {
         return;
     }
 
-    if (serialWarning) {
-        serialWarning.style.display = 'none';
-    }
-
     try {
-
         const [adapterRes, platformRes] = await Promise.all([
             fetch('/api/adapters'),
             fetch('/api/platform')
@@ -1799,31 +1786,27 @@ async function refreshAdapters() {
 
         const adapterData = await adapterRes.json();
 
-		let platform = 'ps1';
-		let detecting = false;
+        let platform = 'ps1';
+        let detecting = false;
 
-		if (platformRes.ok) {
+        if (platformRes.ok) {
+            const plat = await platformRes.json();
+            platform = plat.platform || 'ps1';
+            detecting = !!plat.detecting;
+        }
 
-			const plat = await platformRes.json();
+        if (detecting) {
+            if (status) {
+                status.textContent = 'Configuring Adapters...';
+            }
 
-			platform = plat.platform || 'ps1';
-			detecting = !!plat.detecting;
-		}
+            content.textContent =
+                'Please wait while adapters are being detected and configured';
 
-		if (detecting) {
-
-			if (status) {
-				status.textContent = 'Configuring Adapters...';
-			}
-
-			content.textContent =
-				'Please wait while adapters are being detected and configured';
-
-			return;
-		}
+            return;
+        }
 
         if (!adapterData.ok) {
-
             if (status) {
                 status.textContent = 'Detection Error';
             }
@@ -1835,7 +1818,6 @@ async function refreshAdapters() {
         }
 
         if (!adapterData.adapters || !adapterData.adapters.length) {
-
             if (status) {
                 status.textContent = 'No Adapters Connected';
             }
@@ -1846,45 +1828,12 @@ async function refreshAdapters() {
             return;
         }
 
-		if (status) {
-			status.textContent =
-				`${adapterData.adapters.length} Adapter(s) Connected`;
-		}
+        if (status) {
+            status.textContent =
+                `${adapterData.adapters.length} Adapter(s) Connected`;
+        }
 
-		const adapters =
-			adapterData.adapters;
-
-		const serialTypes =
-			adapters.map(adapter =>
-				String(adapter.serial_type || '')
-					.trim()
-					.toUpperCase()
-			);
-
-		const serialTypesKnown =
-			serialTypes.every(type =>
-				type &&
-				type !== 'UNKNOWN'
-			);
-
-		const serialTypeMismatch =
-			platform === 'ps1' &&
-			adapters.length === 2 &&
-			serialTypesKnown &&
-			serialTypes[0] !== serialTypes[1];
-
-		if (serialWarning && serialTypeMismatch) {
-			serialWarning.textContent =
-				`⚠️ Incompatible PS1 adapters detected: ` +
-				`${adapters[0].serial_type} and ` +
-				`${adapters[1].serial_type}. ` +
-				`Both adapters must use the same serial type.`;
-
-			serialWarning.style.display = 'block';
-		}
-
-		let output = '';
-
+        let output = '';
 
         adapterData.adapters.forEach((adapter) => {
 
@@ -1897,13 +1846,13 @@ async function refreshAdapters() {
 
             } else {
 
-				output +=
-					`Player ${adapter.player}\n` +
-					`Alias       : ${adapter.alias}\n` +
-					`Device      : ${adapter.target}\n` +
-					`Serial Type : ${adapter.serial_type || 'Unknown'}\n` +
-					`Baud        : ${adapter.expected_baud || 'Unknown'}\n` +
-					`Firmware    : ${adapter.firmware || 'Unknown'}\n\n`;
+                output +=
+                    `Player ${adapter.player}\n` +
+                    `Alias       : ${adapter.alias}\n` +
+                    `Device      : ${adapter.target}\n` +
+                    `Serial Type : ${adapter.serial_type || 'Unknown'}\n` +
+                    `Baud        : ${adapter.expected_baud || 'Unknown'}\n` +
+                    `Firmware    : ${adapter.firmware || 'Unknown'}\n\n`;
             }
         });
 
