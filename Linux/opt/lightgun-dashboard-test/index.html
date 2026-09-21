@@ -1854,11 +1854,13 @@ async function refreshAdapters() {
 
             } else {
 
-                output +=
-                    `Player ${adapter.player}\n` +
-                    `Alias    : ${adapter.alias}\n` +
-                    `Device   : ${adapter.target}\n` +
-                    `Firmware : ${adapter.firmware || 'Unknown'}\n\n`;
+				output +=
+					`Player ${adapter.player}\n` +
+					`Alias       : ${adapter.alias}\n` +
+					`Device      : ${adapter.target}\n` +
+					`Serial Type : ${adapter.serial_type || 'Unknown'}\n` +
+					`Baud        : ${adapter.expected_baud}\n` +
+					`Firmware    : ${adapter.firmware || 'Unknown'}\n\n`;
             }
         });
 

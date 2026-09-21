@@ -981,7 +981,15 @@ def api_adapters():
 
         if not os.path.exists(alias):
             continue
+        
+        serial_type = ""
 
+        try:
+            serial_info = _fw_detect_device(alias)
+            serial_type = serial_info["name"]
+        except Exception:
+            serial_type = "Unknown"
+        
         firmware = ""
 
         if ps1_mode:
@@ -1004,8 +1012,10 @@ def api_adapters():
             "player": player,
             "alias": alias,
             "target": os.path.realpath(alias),
-            "firmware": firmware
+            "firmware": firmware,
+            "serial_type": serial_type
         })
+
 
     adapters.sort(
         key=lambda a: a["player"]
