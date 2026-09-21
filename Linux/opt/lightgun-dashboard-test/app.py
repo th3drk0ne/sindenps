@@ -489,19 +489,19 @@ FIRMWARE_STATE = {
 
 DEVICE_BAUD_MAP = {
     "2341:0043": {
-        "name": "Arduino UNO",
+        "name": "ATmega16U2",
         "baud": "115200"
     },
     "1a86:7523": {
-        "name": "CH340 Clone",
+        "name": "CH340",
         "baud": "57600"
     },
     "0403:6001": {
-        "name": "FTDI Clone",
+        "name": "FTDI",
         "baud": "57600"
     },
     "10c4:ea60": {
-        "name": "CP2102 Clone",
+        "name": "CP2102",
         "baud": "57600"
     }
 }
