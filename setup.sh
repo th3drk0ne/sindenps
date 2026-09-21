@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#
+# -------------------------------------
 # Sinden Peripheral System Setup Script 
-#
+# -------------------------------------
 
 set -euo pipefail
 
@@ -66,68 +66,6 @@ if [[ $EUID -ne 0 ]]; then
 fi
 log "Running as root."
 
-#-----------------------------------------------------------
-# Step 0) Version selection (no changes to download module)
-# Supported values: latest, beta, previous
-# 'current' now maps to 'latest'
-#-----------------------------------------------------------
-normalize_version() {
-  local v="${1,,}"  # lowercase input
-  case "$v" in
-    latest|current|new|1|n)   echo "latest"   ;;  # 'current' → 'latest'
-    previous|prev|2|p)        echo "previous"   ;;
-    beta|3|b)                 echo "beta"     ;;
-    *)                        echo ""         ;;
-  esac
-}
-
-if [[ -z "${VERSION:-}" ]]; then
-  log "Select Sinden setup version:"
-  echo "  [1] latest    (current release)"
-  echo "  [2] previous  (prior release)"
-  echo "  [3] beta      (pre-release/test)"
-  while true; do
-    read -r -p "Enter choice (1/2/3) [default: 1]: " choice
-    choice="${choice:-1}"
-    case "$choice" in
-      1) VERSION="latest";   break ;;
-      2) VERSION="previous";   break ;;
-      3) VERSION="beta";     break ;;
-      *) warn "Invalid selection: '$choice'. Please choose 1–3." ;;
-    esac
-  done
-else
-  VERSION="$(normalize_version "$VERSION")"
-  if [[ -z "$VERSION" ]]; then
-    warn "Unrecognized VERSION value. Falling back to interactive selection."
-    unset VERSION
-    echo "  [1] latest"
-    echo "  [2] previous"
-    echo "  [3] beta"
-     while true; do
-      read -r -p "Enter choice (1/2/3) [default: 1]: " choice
-      choice="${choice:-1}"
-      case "$choice" in
-        1) VERSION="latest";   break ;;
-        2) VERSION="previous";   break ;;
-        3) VERSION="beta";     break ;;
-        *) warn "Invalid selection: '$choice'. Please choose 1–3." ;;
-      esac
-    done
-  fi
-fi
-
-# Optional tag for branching (e.g., URLs/flags)
-if [[ "$VERSION" == "latest" ]]; then
-  VERSION_TAG="v2"
-else
-  VERSION_TAG="v1"
-fi
-log "Version selected: ${VERSION} (${VERSION_TAG})"
-
-log "Selected update channel: $VERSION"
-
-VERSION_FILE="/home/sinden/Lightgun/VERSION"
 
 #-----------------------------------------------------------
 # Step 3) Ensure 'sinden' user exists
@@ -143,8 +81,6 @@ else
   log "User 'sinden' already exists."
 fi
 
-# Optionally add device-access groups (uncomment if needed)
-# usermod -aG video,plugdev,dialout sinden
 
 #-----------------------------------------------------------
 # Step 3a) Add 'sinden' to sudoers (validated)
@@ -284,12 +220,11 @@ install -d -o sinden -g sinden /opt/sinden
   wget --quiet --show-progress --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
-    "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/driver-update.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/query-dongle.sh"
 
-  chmod +x lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
-  chown sinden:sinden lightgun.sh lightgun-monitor.sh driver-update.sh update-sindenps.sh query-dongle.sh
+  chmod +x lightgun.sh lightgun-monitor.sh update-sindenps.sh query-dongle.sh
+  chown sinden:sinden lightgun.sh lightgun-monitor.sh update-sindenps.sh query-dongle.sh
 )
 
 USER_HOME="/home/sinden"
@@ -398,7 +333,7 @@ download_files_from_list() {
   local -n files_ref="$1"        # nameref to caller's array
   install -d -o sinden -g sinden "$dest_dir"
 
-  log "Downloading ${#files_ref[@]} asset(s) from ${ARCH}/${VERSION} into $dest_dir"
+  log "Downloading ${#files_ref[@]} asset(s) from ${ARCH} into $dest_dir"
 
   local rel url fname out rc
   for rel in "${files_ref[@]}"; do
@@ -466,21 +401,9 @@ fi
 
 log "Backup complete."
 
-# --- Map VERSION → repo folder ---
-map_version_to_repo_folder() {
-  case "$VERSION" in
-    latest)   echo "latest" ;;
-    beta)     echo "beta" ;;
-    previous) echo "previous" ;;
-    ubuntu) echo "ubuntu" ;;
-    *)        err "Invalid VERSION: $VERSION"; return 1 ;;
-  esac
-}
-REPO_VERSION_FOLDER="$(map_version_to_repo_folder)" || exit 9
-
 # --- Remote paths ---
-PS1_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS1"
-PS2_REMOTE="driver/version/${ARCH}/${REPO_VERSION_FOLDER}/PS2"
+PS1_REMOTE="driver/version/${ARCH}/latest/PS1"
+PS2_REMOTE="driver/version/${ARCH}/latest/PS2"
 
 # --- PS1: list → download ---
 ps1_files=()
@@ -514,8 +437,6 @@ if ! download_files_from_list "$PS2_DIR" ps2_files; then
   exit 9
 fi
 
-echo "$VERSION" > "$VERSION_FILE"
-chmod 0644 "$VERSION_FILE"
 
 ##################################################################
 
@@ -558,6 +479,7 @@ PY_BIN="python3"
 SYSTEMCTL="/usr/bin/systemctl"
 SUDO="/usr/bin/sudo"
 GUNICORN_BIND="0.0.0.0:5000"
+SITEVERSION="lightgun-dashboard"
 
 # PS config files
 CFG_PS1="/home/${APP_USER}/Lightgun/PS1/LightgunMono.exe.config"
@@ -588,20 +510,21 @@ pip install --upgrade pip
 pip install "flask==3.*" "gunicorn==21.*"
 
 log "=== 4) Backend: Flask app  ==="
+
 sudo wget -O ${APP_DIR}/app.py \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/app.py
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/app.py
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 log "Flask Application downloaded to ${APP_DIR}/app.py"
 
 log "=== Downloading clean UTF-8 index.html from GitHub ==="
 sudo wget -O /opt/lightgun-dashboard/index.html \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/index.html
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
 
 log "=== Downloading manifest.json from GitHub ==="
 sudo wget -O /opt/lightgun-dashboard/manifest.json \
-  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/lightgun-dashboard/manifest.json
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/manifest.json
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/manifest.json"
 log "manifest.json Downloaded to ${APP_DIR}/manifest.json"
 
@@ -721,9 +644,9 @@ sudo nginx -t && sudo systemctl restart nginx
 
 
 
-log "=== 12) Deploy/images ==="
+log "=== 12) Deploy/images from ${SITEVERSION} ==="
 
-IMAGE_REPO_PATH="Linux/opt/lightgun-dashboard/images"
+IMAGE_REPO_PATH="Linux/opt/${SITEVERSION}/images"
 IMAGE_DEST="${APP_DIR}/images"
 
 install -d -o "${APP_USER}" -g "${APP_GROUP}" "${IMAGE_DEST}"

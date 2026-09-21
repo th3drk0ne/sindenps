@@ -224,9 +224,6 @@ def system_power_action(action: str) -> bool:
 # ===========================
 # (Bash-script wrapper)
 # ===========================
-UPDATE_SCRIPT = "/opt/sinden/driver-update.sh"
-UPDATE_LOGF = "/var/log/sindenps-update.log"
-VERSION_FILE = "/home/sinden/Lightgun/VERSION"
 SINDENPS_UPDATE_LOG = "/var/log/platform-update.log"
 SINDENPS_LOCK = "/tmp/sindenps-update.lock"
 SETTINGS_FILE = "/opt/lightgun-dashboard/settings.json"
@@ -263,18 +260,6 @@ def load_settings():
 def save_settings(settings):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(settings, f, indent=2)
-
-def get_icon_set():
-    try:
-        with open(ICONSET_FILE, "r", encoding="utf-8") as f:
-            value = f.read().strip().lower()
-
-        if value in ("pal", "us"):
-            return value
-    except Exception:
-        pass
-
-    return "pal"
 
 
 def get_icon_set():
@@ -372,41 +357,6 @@ def set_last_profile(platform, profile):
     settings["profiles"][platform]["lastApplied"] = profile
 
     save_settings(settings)
-    
-    
-    
-
-
-def _read_version_marker():
-    try:
-        with open(VERSION_FILE, "r", encoding="utf-8") as f:
-            return (f.read().strip() or "")
-    except Exception:
-        return ""
-
-
-UPDATE_STATE = {
-    "ok": True,
-    "state": "idle",
-    "installed": {"version": _read_version_marker()},
-    "latest": None,
-    "message": ""
-}
-UPDATE_LOG_RING: List[str] = []
-
-
-def _append_log(lines: str):
-    if not lines:
-        return
-    for ln in lines.splitlines():
-        UPDATE_LOG_RING.append(ln)
-    if len(UPDATE_LOG_RING) > 2000:
-        UPDATE_LOG_RING.pop(0)
-
-
-def _set_state(st, msg=""):
-    UPDATE_STATE["state"] = st
-    UPDATE_STATE["message"] = msg
 
 def get_cpu_temp():
     try:
@@ -499,58 +449,6 @@ def api_temperature():
         "state": state
     })
 
-@app.route("/api/update/status")
-def api_update_status():
-    UPDATE_STATE["installed"]["version"] = _read_version_marker()
-    return jsonify({"ok": True, **UPDATE_STATE})
-
-
-@app.route("/api/update/check")
-def api_update_check():
-    channel = (request.args.get("channel") or "latest").lower()
-    allowed = {"latest", "beta", "previous", "ubuntu"}
-    if channel not in allowed:
-        _set_state("error", f"unsupported channel: {channel}")
-        return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
-    UPDATE_STATE["latest"] = {"version": channel, "notesUrl": "", "asset": None}
-    _set_state("idle", f"channel {channel} ready")
-    return jsonify({"ok": True, "latest": UPDATE_STATE["latest"]})
-
-
-@app.route("/api/update/apply", methods=["POST"])
-def api_update_apply():
-    data = request.get_json(force=True) or {}
-    channel = (data.get("channel") or "latest").lower()
-    allowed = {"latest", "beta", "previous", "ubuntu"}
-    if channel not in allowed:
-        _set_state("error", f"unsupported channel: {channel}")
-        return jsonify({"ok": False, "error": f"unsupported channel: {channel}"}), 400
-
-    try:
-        _set_state("applying", f"running {UPDATE_SCRIPT} for {channel}")
-        proc = subprocess.run(
-            [SUDO, "-n", "env", f"VERSION={channel}", UPDATE_SCRIPT],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            timeout=1800,
-        )
-        _append_log(proc.stdout)
-
-        if proc.returncode != 0:
-            _set_state("error", "update script failed")
-            return jsonify({"ok": False, "error": "update script failed"}), 500
-
-        UPDATE_STATE["installed"]["version"] = _read_version_marker() or channel
-        _set_state("idle", "updated successfully")
-        return jsonify({"ok": True})
-    except subprocess.TimeoutExpired:
-        _set_state("error", "update timed out")
-        return jsonify({"ok": False, "error": "update timed out"}), 504
-    except Exception as e:
-        _set_state("error", str(e))
-        return jsonify({"ok": False, "error": str(e)}), 500
-
       
 def supports_player2(platform):
     try:
@@ -568,16 +466,6 @@ def supports_player2(platform):
     except Exception:
         return True
         
-@app.route("/api/update/logs")
-def api_update_logs():
-    try:
-        with open(UPDATE_LOGF, "r", encoding="utf-8", errors="replace") as f:
-            return jsonify({"logs": f.read()})
-    except Exception as e:
-        if UPDATE_LOG_RING:
-            return jsonify({"logs": "\n".join(UPDATE_LOG_RING)})
-        return jsonify({"logs": f"Logs unavailable: {e}"})
-
 # ===========================
 # Firmware flashing
 # ===========================
