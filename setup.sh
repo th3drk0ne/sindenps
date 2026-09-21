@@ -17,7 +17,7 @@ case "$UNAME_ARCH:$DEB_ARCH" in
         ARCH="arm32"
         ;;
     aarch64:armhf)
-        ARCH="arm32"   # 32‑bit userland, 64‑bit kernel
+        ARCH="arm32"
         ;;
     aarch64:arm64)
         ARCH="aarch64"
@@ -51,11 +51,6 @@ esac
 log "Detected board: ${MODEL_FULL:-unknown}  =>  ${PI_MODEL}"
 
 log "ARCH=$ARCH"
-
-#if [ "$ARCH" != "aarch64" ]; then
-#    warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
-#    exit 1
-#fi
 
 #-----------------------------------------------------------
 # Step 1) Check if root
@@ -735,10 +730,10 @@ fi
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules and performance tweaks for Pi4 and Pi5
 #-----------------------------------------------------------
-#
 # Creates exactly TWO symlinks via udev:
 #   /dev/ttyGCON2S_0  -> the active primary UART (whatever /dev/serial0 resolves to)
 #   /dev/ttyGCON2S_1  -> UART5 (ttyAMA5 or ttyS5, depending on overlay/SoC)
+#-----------------------------------------------------------
 
 if [ "$ARCH" != "x86_64" ]; then
 ### Performance Optimization
