@@ -479,6 +479,7 @@ PY_BIN="python3"
 SYSTEMCTL="/usr/bin/systemctl"
 SUDO="/usr/bin/sudo"
 GUNICORN_BIND="0.0.0.0:5000"
+SITEVERSION="lightgun-dashboard-test"
 
 # PS config files
 CFG_PS1="/home/${APP_USER}/Lightgun/PS1/LightgunMono.exe.config"
@@ -509,7 +510,6 @@ pip install --upgrade pip
 pip install "flask==3.*" "gunicorn==21.*"
 
 log "=== 4) Backend: Flask app  ==="
-SITEVERSION="lightgun-dashboard-test"
 
 sudo wget -O ${APP_DIR}/app.py \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/app.py
