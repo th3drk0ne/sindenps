@@ -5,19 +5,11 @@
 ## [Installation Guide](https://github.com/th3drk0ne/sindenps/wiki/Installation-Guide)
 
 
-Run the below command from a remote SSH session, you will be prompted to select the version
+Run the below command from a remote SSH session
 
 
 ```bash
-sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
-```
-
-Or with these if you want a specific version
-
-
-Install latest official Sinden driver
-```bash
-VERSION=latest sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+sudo bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
 
 ---
@@ -26,7 +18,7 @@ For Linux installs that do not have a sinden user please specify a password belo
 
 Install latest official Sinden driver
 ```bash
-VERSION=latest SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
+SINDEN\_PASSWORD='StrongP@ssw0rd!' sudo -E bash -c "$(wget -qO- "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/setup.sh")"
 ```
 
 
