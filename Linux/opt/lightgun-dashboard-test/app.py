@@ -982,9 +982,14 @@ def api_adapters():
         if not os.path.exists(alias):
             continue
         
-        serial_info = _fw_detect_device(alias)
-
         firmware = ""
+
+        adapter = {
+            "player": player,
+            "alias": alias,
+            "target": os.path.realpath(alias),
+            "firmware": firmware
+        }
 
         if ps1_mode:
             firmware_file = (
@@ -999,14 +1004,13 @@ def api_adapters():
                 ) as f:
                     firmware = f.read().strip()
 
-                adapters.append({
-                    "player": player,
-                    "alias": alias,
-                    "target": os.path.realpath(alias),
-                    "firmware": firmware,
-                    "serial_type": serial_info["name"],
-                    "expected_baud": serial_info["baud"]
-                })
+            serial_info = _fw_detect_device(alias)
+
+            adapter["firmware"] = firmware
+            adapter["serial_type"] = serial_info["name"]
+            adapter["expected_baud"] = serial_info["baud"]
+
+        adapters.append(adapter)
 
 
     adapters.sort(
