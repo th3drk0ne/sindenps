@@ -1867,11 +1867,7 @@ async function refreshAdapters() {
 				type !== 'UNKNOWN'
 			);
 
-		const serialTypeMismatch =
-			platform === 'ps1' &&
-			adapters.length === 2 &&
-			serialTypesKnown &&
-			serialTypes[0] !== serialTypes[1];
+		const serialTypeMismatch = true;
 
 		if (serialWarning && serialTypeMismatch) {
 			serialWarning.textContent =
