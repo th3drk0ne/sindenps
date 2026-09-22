@@ -478,4 +478,63 @@
     ],
     "notes": []
   }
+  ,
+{
+  "title": "Time Crisis",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Guncon / G-Con45 lightgun adapter"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Uses the standard Time Crisis cover and reload mechanic.",
+    "Guncon or G-Con45 mode is the recommended configuration."
+  ]
+},
+{
+  "title": "Time Crisis: Project Titan",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Guncon / G-Con45 lightgun adapter"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Uses the standard Time Crisis cover and reload mechanic.",
+    "Guncon or G-Con45 mode is the recommended configuration."
+  ]
+}
 ]
