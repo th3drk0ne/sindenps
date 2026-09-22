@@ -162,6 +162,44 @@
     ]
   },
   {
+  "title": "Galaxian^3",
+  "players": 4,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "No"
+    },
+    {
+      "name": "Sony Dual Analog",
+      "support": "Custom Firmware"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "SindenPS adapter running Sony Dual Analog firmware"
+    }
+  ],
+  "requirements": [
+    "Flash or select the custom Sony Dual Analog firmware.",
+    "Do not use Hyper Blaster / Justifier or Guncon / G-Con45 firmware."
+  ],
+  "notes": [
+    "Galaxian 3 does not use a PlayStation lightgun protocol.",
+    "SindenPS support works by emulating the Sony Dual Analog controller.",
+	"Four Player configuration requires SindenPS running on two Raspberry Pi's running SindenPS.",
+    "The PlayStation version supports up to four players, but additional multiplayer configuration may be required."
+  ]
+},
+  {
     "title": "Judge Dredd",
     "players": 2,
     "regions": {
