@@ -528,6 +528,12 @@ sudo wget -O /opt/lightgun-dashboard/manifest.json \
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/manifest.json"
 log "manifest.json Downloaded to ${APP_DIR}/manifest.json"
 
+log "=== Downloading ps1_games.json from GitHub ==="
+sudo wget -O /opt/lightgun-dashboard/ps1_games.json \
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/ps1_games.json
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/ps1_games.json"
+log "manifest.json Downloaded to ${APP_DIR}/ps1_games.json"
+
 log "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
 [Unit]
