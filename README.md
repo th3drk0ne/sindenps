@@ -162,7 +162,7 @@ Community Contributors that made this project possible
 - Prof_gLX & titchgamer: Created the Original Raspberry Pi Image that made all this possible.
 - Psiloc: Created the base image for the Raspberry Pi that I used to start this project.
 - RayneX: Created a 3D Printable case for the SindenPS adapter for the PlayStation 1.
-- Widge<sup>™</sup>: Firmware developed for the Sony Analog Adpater for Galaxian<sup>3</sup>, Konmai Firmware and the Konami Interface Board for video desync data for the sadapter
+- Widge<sup>™</sup>: Firmware developed for the Sony Analog Adpater for Galaxian<sup>3</sup>, Konmai Firmware and the Konami Interface Board for video desync data for the V3 Adapter
 
 --- 
 
