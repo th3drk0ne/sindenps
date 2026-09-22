@@ -1632,9 +1632,8 @@ async function loadPs1Games() {
         select.disabled = false;
         select.selectedIndex = 0;
 
-        status.textContent =
-            `${ps1Games.length} game(s) available`;
-
+        status.textContent = "";
+ 
         renderPs1GameCard();
 
     } catch (error) {
