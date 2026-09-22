@@ -312,13 +312,15 @@
 	  #update-progress { display: block; width: 100%; text-align: center; color: #3cf; font-size: 14px; }
 	  #pull-refresh { display: block; position: fixed; top: -40px; left: 0; right: 0; text-align: center; color: #ccc; transition: top 0.2s ease; z-index: 1000; pointer-events: none; }
       #pull-refresh.active { top: 10px; }
-	  #ps1-game-guide-modal > .dialog {
+		#ps1-game-guide-modal > .dialog {
 			width: 95vw !important;
 			margin: 2vh auto !important;
 			max-height: 96vh !important;
-			padding: 12px !important;
+			padding: 12px 12px calc(20px + env(safe-area-inset-bottom)) 12px !important;
 		}
-
+		#ps1-game-card {
+			padding-bottom: 6px;
+		}
 		.ps1-game-summary {
 			grid-template-columns: 1fr 1fr;
 		}
