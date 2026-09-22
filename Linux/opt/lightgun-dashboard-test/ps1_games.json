@@ -1,0 +1,481 @@
+[
+  {
+    "title": "Area 51",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "No"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "An improvement over PCSX-ReARMed emulation, which only worked with a specific region and revision ROM."
+    ]
+  },
+  {
+    "title": "Crypt Killer",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Patch"
+      }
+    ],
+    "ports": [],
+    "requirements": [
+      "Guncon support requires a patch."
+    ],
+    "notes": []
+  },
+  {
+    "title": "Die Hard Trilogy",
+    "players": 1,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Patch"
+      }
+    ],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Gun or lightgun adapter"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Optional standard controller"
+      }
+    ],
+    "requirements": [
+      "Only one gun or lightgun adapter must be connected to the console.",
+      "Connect the gun or lightgun adapter to Controller Port 1.",
+      "Guncon support requires a patch."
+    ],
+    "notes": [
+      "The adapter has been calibrated for Die Hard Trilogy because it is the only official game without in-game calibration.",
+      "The Guncon patch is imperfect, so the Hyper Blaster solution is preferable."
+    ]
+  },
+  {
+    "title": "Die Hard Trilogy 2",
+    "players": 1,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Standard controller"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Gun or lightgun adapter"
+      }
+    ],
+    "requirements": [
+      "A standard controller must be connected to Controller Port 1.",
+      "The gun or lightgun adapter must be connected to Controller Port 2."
+    ],
+    "notes": []
+  },
+  {
+    "title": "Elemental Gearbolt",
+    "players": 2,
+    "regions": {
+      "pal": null,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": []
+  },
+  {
+    "title": "Extreme Ghostbusters",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": null
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Unofficial"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "The game does not officially support or document Hyper Blaster compatibility.",
+      "One player using only one gun can use the game if the gun behaves like a G-Con.",
+      "Two guns can connect, but the guns interfere with each other, matching the behaviour of real hardware."
+    ]
+  },
+  {
+    "title": "Judge Dredd",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "The NTSC version warns against third-party peripherals but allows the game to be played with the adapters anyway."
+    ]
+  },
+  {
+    "title": "Lethal Enforcers",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Patch"
+      }
+    ],
+    "ports": [],
+    "requirements": [
+      "Guncon support requires a patch."
+    ],
+    "notes": [
+      "Known as Lethal Enforcers I & II in PAL regions."
+    ]
+  },
+  {
+    "title": "Maximum Force",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": []
+  },
+  {
+    "title": "Mighty Hits",
+    "players": 2,
+    "regions": {
+      "pal": null,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "No"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": []
+  },
+  {
+    "title": "Mighty Hits Special",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": []
+  },
+  {
+    "title": "Moorhuhn 2",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": null
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "The calibration screen displays G-Con regardless of the gun type.",
+      "All three Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
+      "The alignment and scaling behaviour is accurate to original hardware."
+    ]
+  },
+  {
+    "title": "Moorhuhn 3",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": null
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "All three Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
+      "The alignment and scaling behaviour is accurate to original hardware."
+    ]
+  },
+  {
+    "title": "Moorhuhn X",
+    "players": 2,
+    "regions": {
+      "pal": true,
+      "ntsc": null
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Native"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "All three Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
+      "The alignment and scaling behaviour is accurate to original hardware."
+    ]
+  },
+  {
+    "title": "Police 24/7",
+    "players": 1,
+    "regions": {
+      "pal": true,
+      "ntsc": null
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "No"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "Also known as The Keisatsukan: Shinjuku Ni Ju Yon Ji in Japan."
+    ]
+  },
+  {
+    "title": "Project Horned Owl",
+    "players": 2,
+    "regions": {
+      "pal": null,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Patch"
+      }
+    ],
+    "ports": [],
+    "requirements": [
+      "Guncon support requires a patch."
+    ],
+    "notes": [
+      "The imperfect Guncon patch for this game prevents the calibration screen from working.",
+      "Calibration works with the Konami adapter and an unpatched version of the game."
+    ]
+  },
+  {
+    "title": "Silent Hill",
+    "players": 0,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Secret Weapon"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "No"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "The game has no shooting gameplay.",
+      "Having the Hyper Blaster connected awards the player a secret weapon."
+    ]
+  },
+  {
+    "title": "Sporting Clays",
+    "players": 1,
+    "regions": {
+      "pal": null,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Preferred"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Needs Work"
+      }
+    ],
+    "ports": [],
+    "requirements": [],
+    "notes": [
+      "This is a homebrew game.",
+      "The author, Charles Doty, documents that Guncon compatibility needs work.",
+      "The Konami adapter may currently provide the better result.",
+      "A patch may be created to correct the alignment."
+    ]
+  },
+  {
+    "title": "Star Wars Rebel Assault 2",
+    "players": 1,
+    "regions": {
+      "pal": true,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "Native"
+      },
+      {
+        "name": "Guncon / G-Con45",
+        "support": "Patch"
+      }
+    ],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Standard controller"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Gun or lightgun adapter"
+      }
+    ],
+    "requirements": [
+      "A standard controller must be connected to Controller Port 1.",
+      "The gun or lightgun adapter must be connected to Controller Port 2.",
+      "Guncon support requires a patch."
+    ],
+    "notes": []
+  }
+]

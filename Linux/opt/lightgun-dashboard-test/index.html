@@ -152,6 +152,95 @@
 		font-weight: 700;
 		line-height: 1.3;
 	}
+	#ps1-game-select {
+		width: 100%;
+		padding: 10px;
+		background: #000;
+		color: #fff;
+		border: 1px solid #444;
+		border-radius: 6px;
+	}
+
+	.ps1-game-title {
+		color: var(--theme-accent);
+		font-size: 24px;
+		margin: 18px 0 12px;
+	}
+
+	.ps1-game-summary {
+		display: grid;
+		grid-template-columns: repeat(
+			auto-fit,
+			minmax(130px, 1fr)
+		);
+		gap: 10px;
+		margin-bottom: 12px;
+	}
+
+	.ps1-game-summary-card {
+		background: #181818;
+		border: 1px solid #333;
+		border-radius: 6px;
+		padding: 12px;
+		text-align: center;
+	}
+
+	.ps1-game-summary-label {
+		color: #aaa;
+		font-size: 13px;
+		margin-bottom: 6px;
+	}
+
+	.ps1-game-summary-value {
+		color: #fff;
+		font-size: 18px;
+		font-weight: 700;
+	}
+
+	.ps1-game-section {
+		background: #0d0d0d;
+		border: 1px solid #333;
+		border-left: 6px solid var(--theme-border);
+		border-radius: 6px;
+		margin-top: 12px;
+		padding: 12px;
+	}
+
+	.ps1-game-section h3 {
+		color: var(--theme-accent);
+		margin: 0 0 10px;
+	}
+
+	.ps1-game-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.ps1-game-list li {
+		background: #181818;
+		border: 1px solid #333;
+		border-radius: 6px;
+		margin-top: 8px;
+		padding: 10px;
+	}
+
+	.ps1-game-empty {
+		color: #888;
+		font-style: italic;
+	}
+
+	.ps1-game-native {
+		color: #66ff99;
+	}
+
+	.ps1-game-patch {
+		color: #ffcc44;
+	}
+
+	.ps1-game-unsupported {
+		color: #ff6666;
+	}
 	#temperature-panel { background: #111; }
 	#temperature-status.hot { color: #ff4444; font-weight: 700;	}
 	#temperature-status.warm { color: #ffaa00; font-weight: 700; }
@@ -222,7 +311,17 @@
       #backup-modal > .dialog { width:95vw !important; margin-top:20vh !important; padding:12px; }
 	  #update-progress { display: block; width: 100%; text-align: center; color: #3cf; font-size: 14px; }
 	  #pull-refresh { display: block; position: fixed; top: -40px; left: 0; right: 0; text-align: center; color: #ccc; transition: top 0.2s ease; z-index: 1000; pointer-events: none; }
-      #pull-refresh.active { top: 10px; }	  
+      #pull-refresh.active { top: 10px; }
+	  #ps1-game-guide-modal > .dialog {
+			width: 95vw !important;
+			margin: 2vh auto !important;
+			max-height: 96vh !important;
+			padding: 12px !important;
+		}
+
+		.ps1-game-summary {
+			grid-template-columns: 1fr 1fr;
+		}
     }
   </style>
 </head>
@@ -512,6 +611,13 @@
 		<button id="btn-ps2-calibration" class="btn-secondary" onclick="openPs2CalibrationModal()">
 		  ⌖ Calibration
 		</button>
+		<button
+			id="btn-ps1-game-guide"
+			class="btn-secondary"
+			style="display:none;"
+			onclick="openPs1GameGuideModal()">
+			Game Guide
+		</button>
 		<span id="config-status" class="config-status-inline"></span>
 		<label style="display:flex;align-items:center;gap:6px;">
 			<input type="checkbox" id="show-advanced-settings">
@@ -540,6 +646,73 @@
         <div id="backup-list" style="max-height:50vh; overflow:auto; border:1px solid #444; padding:8px; border-radius:6px;"></div>
       </div>
     </div>
+	
+	<div
+		id="ps1-game-guide-modal"
+		style="
+			display:none;
+			position:fixed;
+			inset:0;
+			background:rgba(0,0,0,.75);
+			z-index:1000;
+		">
+
+		<div
+			class="dialog modal"
+			style="
+				background:#111;
+				width:min(1000px,95vw);
+				margin:4vh auto;
+				padding:16px;
+				border-radius:6px;
+				max-height:90vh;
+				overflow:auto;
+			">
+
+			<div
+				style="
+					display:flex;
+					justify-content:space-between;
+					align-items:center;
+					gap:12px;
+				">
+
+				<div class="service-name">
+					PS1 Lightgun Game Guide
+				</div>
+
+				<button
+					class="btn-tertiary"
+					onclick="closePs1GameGuideModal()">
+					X
+				</button>
+			</div>
+
+			<div class="config-row" style="margin-top:16px;">
+				<label for="ps1-game-select">
+					Select Game
+
+					<small>
+						Select a game to view gun compatibility,
+						port configuration and additional requirements.
+					</small>
+				</label>
+
+				<select
+					id="ps1-game-select"
+					onchange="renderPs1GameCard()">
+				</select>
+			</div>
+
+			<div
+				id="ps1-game-guide-status"
+				class="service-status"
+				style="margin:12px 0;">
+			</div>
+
+			<div id="ps1-game-card"></div>
+		</div>
+	</div>
 
 	<div id="ps2-calibration-modal"
 		 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;">
@@ -704,6 +877,7 @@
 let lastFirmwareLog = "";
 let sindenpsLastRunning = 0;
 let lastFirmwarePorts = [];
+let ps1Games = [];
 let systemPowerPending = false;
 let sawSystemOffline = false;
 let modeIndicatorUpdating = false;
@@ -1064,6 +1238,429 @@ function closePs2CalibrationModal() {
     document.getElementById('ps2-calibration-modal').style.display = 'none';
 }
 
+function closePs1GameGuideModal() {
+    const modal = document.getElementById(
+        'ps1-game-guide-modal'
+    );
+
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function ps1RegionValue(value) {
+    if (value === true) {
+        return 'Yes';
+    }
+
+    if (value === false) {
+        return 'No';
+    }
+
+    return 'N/A';
+}
+
+
+function ps1GunSupportClass(value) {
+    const support = String(value || '')
+        .trim()
+        .toLowerCase();
+
+    if (
+        support === 'native' ||
+        support === 'preferred' ||
+        support === 'secret weapon'
+    ) {
+        return 'ps1-game-native';
+    }
+
+    if (
+        support.includes('patch') ||
+        support.includes('patched') ||
+        support.includes('needs work') ||
+        support === 'unofficial'
+    ) {
+        return 'ps1-game-patch';
+    }
+
+    if (
+        support.includes('not supported') ||
+        support === 'no'
+    ) {
+        return 'ps1-game-unsupported';
+    }
+
+    return '';
+}
+
+function createPs1SummaryCard(labelText, valueText) {
+    const card = document.createElement('div');
+    card.className = 'ps1-game-summary-card';
+
+    const label = document.createElement('div');
+    label.className = 'ps1-game-summary-label';
+    label.textContent = labelText;
+
+    const value = document.createElement('div');
+    value.className = 'ps1-game-summary-value';
+    value.textContent = valueText;
+
+    card.appendChild(label);
+    card.appendChild(value);
+
+    return card;
+}
+
+function createPs1GameSection(titleText) {
+    const section = document.createElement('section');
+    section.className = 'ps1-game-section';
+
+    const heading = document.createElement('h3');
+    heading.textContent = titleText;
+
+    section.appendChild(heading);
+
+    return section;
+}
+
+function appendPs1TextList(
+    section,
+    items,
+    emptyText
+) {
+    if (!Array.isArray(items) || !items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'ps1-game-empty';
+        empty.textContent = emptyText;
+        section.appendChild(empty);
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'ps1-game-list';
+
+    items.forEach(item => {
+        const row = document.createElement('li');
+        row.textContent = String(item);
+        list.appendChild(row);
+    });
+
+    section.appendChild(list);
+}
+
+function renderPs1GameCard() {
+    const select = document.getElementById(
+        'ps1-game-select'
+    );
+
+    const container = document.getElementById(
+        'ps1-game-card'
+    );
+
+    if (!select || !container) {
+        return;
+    }
+
+    const index = Number(select.value);
+    const game = ps1Games[index];
+
+    container.innerHTML = '';
+
+    if (!game) {
+        container.textContent =
+            'Game information is unavailable.';
+        return;
+    }
+
+    /*
+     * Game title
+     */
+    const title = document.createElement('h2');
+
+    title.className = 'ps1-game-title';
+    title.textContent =
+        game.title || 'Unknown Game';
+
+    container.appendChild(title);
+
+    /*
+     * Summary cards
+     */
+    const regions = game.regions || {};
+
+    const summary = document.createElement('div');
+
+    summary.className = 'ps1-game-summary';
+
+    summary.appendChild(
+        createPs1SummaryCard(
+            'Shooters',
+            String(game.players ?? 'Unknown')
+        )
+    );
+
+    summary.appendChild(
+        createPs1SummaryCard(
+            'PAL',
+            ps1RegionValue(regions.pal)
+        )
+    );
+
+    summary.appendChild(
+        createPs1SummaryCard(
+            'NTSC',
+            ps1RegionValue(regions.ntsc)
+        )
+    );
+
+    container.appendChild(summary);
+
+    /*
+     * Gun support
+     */
+    const gunSupportSection =
+        createPs1GameSection('Gun Support');
+
+    const gunSupport =
+        Array.isArray(game.gun_support)
+            ? game.gun_support
+            : [];
+
+    if (!gunSupport.length) {
+        const empty = document.createElement('div');
+
+        empty.className = 'ps1-game-empty';
+        empty.textContent =
+            'No gun support information documented.';
+
+        gunSupportSection.appendChild(empty);
+    } else {
+        const list = document.createElement('ul');
+
+        list.className = 'ps1-game-list';
+
+        gunSupport.forEach(item => {
+            const row = document.createElement('li');
+
+            const name = document.createElement(
+                'strong'
+            );
+
+            name.textContent =
+                item.name || 'Unknown gun type';
+
+            const separator =
+                document.createTextNode(': ');
+
+            const support =
+                document.createElement('span');
+
+            support.className =
+                ps1GunSupportClass(item.support);
+
+            support.textContent =
+                item.support || 'Unknown';
+
+            row.appendChild(name);
+            row.appendChild(separator);
+            row.appendChild(support);
+
+            list.appendChild(row);
+        });
+
+        gunSupportSection.appendChild(list);
+    }
+
+    container.appendChild(gunSupportSection);
+
+    /*
+     * Port configuration
+     */
+    const portsSection =
+        createPs1GameSection(
+            'Port Configuration'
+        );
+
+    const ports = Array.isArray(game.ports)
+        ? game.ports
+        : [];
+
+    if (!ports.length) {
+        const empty = document.createElement('div');
+
+        empty.className = 'ps1-game-empty';
+        empty.textContent =
+            'No special port configuration documented.';
+
+        portsSection.appendChild(empty);
+    } else {
+        const list = document.createElement('ul');
+
+        list.className = 'ps1-game-list';
+
+        ports.forEach(port => {
+            const row = document.createElement('li');
+
+            const portName =
+                document.createElement('strong');
+
+            portName.textContent =
+                port.port || 'Port';
+
+            const device =
+                document.createTextNode(
+                    ': ' +
+                    (port.device || 'Not specified')
+                );
+
+            row.appendChild(portName);
+            row.appendChild(device);
+
+            list.appendChild(row);
+        });
+
+        portsSection.appendChild(list);
+    }
+
+    container.appendChild(portsSection);
+
+    /*
+     * Requirements
+     */
+    const requirementsSection =
+        createPs1GameSection('Requirements');
+
+    appendPs1TextList(
+        requirementsSection,
+        game.requirements,
+        'No additional requirements documented.'
+    );
+
+    container.appendChild(
+        requirementsSection
+    );
+
+    /*
+     * Notes
+     */
+    const notesSection =
+        createPs1GameSection('Notes');
+
+    appendPs1TextList(
+        notesSection,
+        game.notes,
+        'No additional notes.'
+    );
+
+    container.appendChild(notesSection);
+}
+
+
+
+async function loadPs1Games() {
+    const select = document.getElementById(
+        'ps1-game-select'
+    );
+
+    const status = document.getElementById(
+        'ps1-game-guide-status'
+    );
+
+    const container = document.getElementById(
+        'ps1-game-card'
+    );
+
+    if (!select || !status || !container) {
+        return;
+    }
+
+    select.disabled = true;
+    status.textContent = 'Loading game information...';
+    container.innerHTML = '';
+
+    try {
+        const response = await fetch(
+            '/api/ps1/games',
+            {
+                cache: 'no-store'
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            throw new Error(
+                data.error ||
+                'Failed to load PS1 game information'
+            );
+        }
+
+        ps1Games = Array.isArray(data.games)
+            ? data.games
+            : [];
+
+        ps1Games.sort((a, b) => {
+            return String(a.title || '').localeCompare(
+                String(b.title || ''),
+                undefined,
+                {
+                    sensitivity: 'base'
+                }
+            );
+        });
+
+        select.innerHTML = '';
+
+        if (!ps1Games.length) {
+            status.textContent =
+                'No PS1 games are configured.';
+            return;
+        }
+
+        ps1Games.forEach((game, index) => {
+            const option = document.createElement(
+                'option'
+            );
+
+            option.value = String(index);
+            option.textContent =
+                game.title || 'Unknown Game';
+
+            select.appendChild(option);
+        });
+
+        select.disabled = false;
+        select.selectedIndex = 0;
+
+        status.textContent =
+            `${ps1Games.length} game(s) available`;
+
+        renderPs1GameCard();
+
+    } catch (error) {
+        ps1Games = [];
+        select.innerHTML = '';
+        select.disabled = true;
+
+        status.textContent =
+            'Unable to load game information: ' +
+            error.message;
+    }
+}
+
+async function openPs1GameGuideModal() {
+    const modal = document.getElementById(
+        'ps1-game-guide-modal'
+    );
+
+    if (!modal) {
+        return;
+    }
+
+    modal.style.display = 'block';
+
+    await loadPs1Games();
+}
 
 function drawFanCurve(config) {
     const canvas = document.getElementById('fan-curve-canvas');
@@ -2127,34 +2724,88 @@ function scrollToTop() {
 
 
 async function loadConfig(platform) {
-  const calibBtn = document.getElementById('btn-ps2-calibration');
-	if (calibBtn) {
-		calibBtn.style.display = (platform === 'ps2') ? '' : 'none';
-	}
-  const res = await fetch(`/api/config?platform=${encodeURIComponent(platform)}`);
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || 'Failed to read config');
-  const p1Groups = data.player1Groups || [{ name: 'All Settings', items: data.player1 || [] }];
-  const p2Groups = data.player2Groups || [{ name: 'All Settings', items: data.player2 || [] }];
-  document.getElementById('config-file-path').textContent = data.path ? `File: ${data.path}` : '';
-  const p2Card =
-  document.getElementById('p2-card');
+    const calibBtn = document.getElementById(
+        'btn-ps2-calibration'
+    );
 
-	const hidePlayer2 =
-		data.player2_supported === false;
+    const gameGuideBtn = document.getElementById(
+        'btn-ps1-game-guide'
+    );
 
-	buildGroupedConfigForm('p1-form', p1Groups);
+    if (calibBtn) {
+        calibBtn.style.display =
+            platform === 'ps2'
+                ? ''
+                : 'none';
+    }
 
-	if (hidePlayer2) {
+    if (gameGuideBtn) {
+        gameGuideBtn.style.display =
+            platform === 'ps1'
+                ? ''
+                : 'none';
+    }
 
-	  p2Card.style.display = 'none';
+    if (platform !== 'ps1') {
+        closePs1GameGuideModal();
+    }
 
-	} else {
+    const res = await fetch(
+        `/api/config?platform=${encodeURIComponent(platform)}`
+    );
 
-	  p2Card.style.display = '';
-	  buildGroupedConfigForm('p2-form', p2Groups);
+    const data = await res.json();
 
-	}
+    if (!data.ok) {
+        throw new Error(
+            data.error || 'Failed to read config'
+        );
+    }
+
+    const p1Groups =
+        data.player1Groups || [
+            {
+                name: 'All Settings',
+                items: data.player1 || []
+            }
+        ];
+
+    const p2Groups =
+        data.player2Groups || [
+            {
+                name: 'All Settings',
+                items: data.player2 || []
+            }
+        ];
+
+    document.getElementById(
+        'config-file-path'
+    ).textContent = data.path
+        ? `File: ${data.path}`
+        : '';
+
+    const p2Card = document.getElementById(
+        'p2-card'
+    );
+
+    const hidePlayer2 =
+        data.player2_supported === false;
+
+    buildGroupedConfigForm(
+        'p1-form',
+        p1Groups
+    );
+
+    if (hidePlayer2) {
+        p2Card.style.display = 'none';
+    } else {
+        p2Card.style.display = '';
+
+        buildGroupedConfigForm(
+            'p2-form',
+            p2Groups
+        );
+    }
 }
 
 function collectForm(containerId) {
