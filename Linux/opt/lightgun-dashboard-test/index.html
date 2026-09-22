@@ -322,6 +322,21 @@
 		.ps1-game-summary {
 			grid-template-columns: 1fr 1fr;
 		}
+
+		.ps1-game-summary-card:nth-child(1) {
+			grid-column: 1 / -1;
+			grid-row: 2;
+		}
+
+		.ps1-game-summary-card:nth-child(2) {
+			grid-column: 1;
+			grid-row: 1;
+		}
+
+		.ps1-game-summary-card:nth-child(3) {
+			grid-column: 2;
+			grid-row: 1;
+		}
     }
   </style>
 </head>
@@ -1633,7 +1648,7 @@ async function loadPs1Games() {
         select.selectedIndex = 0;
 
         status.textContent = "";
- 
+
         renderPs1GameCard();
 
     } catch (error) {
