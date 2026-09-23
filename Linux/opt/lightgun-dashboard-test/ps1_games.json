@@ -190,12 +190,12 @@
   ],
   "requirements": [
     "Flash or select the custom Sony Dual Analog firmware.",
+    "SindenPS supports 2 Players, to use 4 Players requires two Raspberry Pi's running SindenPS.",
     "Do not use Hyper Blaster / Justifier or Guncon / G-Con45 firmware."
   ],
   "notes": [
   "Galaxian 3 does not use a PlayStation lightgun protocol.",
   "SindenPS support works by emulating the Sony Dual Analog controller.",
-  "Four Player configuration requires SindenPS running on two Raspberry Pi's running SindenPS.",
   "The PlayStation version supports up to four players, but additional multiplayer configuration may be required.",
   "Controls: Trigger fires weapon (PS1 R2). Back-right button adds players on Player Select and pauses gameplay (PS1 Start). Back-left button starts calibration when held for five seconds and cancels when pressed again.",
   "Menu controls: Pump must be held to enable D-pad and lock virtual analog sticks. D-pad navigates menus only while pump is held. Front-left/right buttons act as Select/Back depending on region. When multiple guns are connected, all players must hold pump to prevent virtual stick interference.",
