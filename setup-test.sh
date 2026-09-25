@@ -399,8 +399,6 @@ else
   log "PS2 config missing, skipping backup."
 fi
 
-log "Backup complete."
-
 # --- Remote paths ---
 PS1_REMOTE="driver/version/${ARCH}/latest/PS1"
 PS2_REMOTE="driver/version/${ARCH}/latest/PS2"
