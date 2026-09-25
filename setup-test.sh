@@ -509,25 +509,25 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 log "=== 4) Backend: Flask app  ==="
 
-sudo wget -O ${APP_DIR}/app.py \
+sudo wget -q -O ${APP_DIR}/app.py \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/app.py
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 log "Flask Application downloaded to ${APP_DIR}/app.py"
 
 log "=== Downloading clean UTF-8 index.html from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/index.html \
+sudo wget -q -O /opt/lightgun-dashboard/index.html \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
 
 log "=== Downloading manifest.json from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/manifest.json \
+sudo wget -q -O /opt/lightgun-dashboard/manifest.json \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/manifest.json
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/manifest.json"
 log "manifest.json Downloaded to ${APP_DIR}/manifest.json"
 
 log "=== Downloading ps1_games.json from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/ps1_games.json \
+sudo wget -q -O /opt/lightgun-dashboard/ps1_games.json \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/ps1_games.json
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/ps1_games.json"
 log "manifest.json Downloaded to ${APP_DIR}/ps1_games.json"
