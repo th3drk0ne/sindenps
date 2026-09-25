@@ -479,7 +479,7 @@ PY_BIN="python3"
 SYSTEMCTL="/usr/bin/systemctl"
 SUDO="/usr/bin/sudo"
 GUNICORN_BIND="0.0.0.0:5000"
-SITEVERSION="lightgun-dashboard-test"
+SITEVERSION="lightgun-dashboard"
 
 # PS config files
 CFG_PS1="/home/${APP_USER}/Lightgun/PS1/LightgunMono.exe.config"
@@ -589,7 +589,7 @@ done
 (
   cd /home/sinden/Lightgun/PS1/profiles
   log "Downloading PS1 profiles."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Default.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/High-Resolution.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Light.config" \
@@ -604,7 +604,7 @@ done
 
   cd /home/sinden/Lightgun/PS2/profiles
   log "Downloading PS2 profiles."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Default.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/High-Resolution.config"  \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Light.config" \
@@ -678,7 +678,6 @@ else
 
         sudo -u "${APP_USER}" wget \
             --quiet \
-            --show-progress \
             --https-only \
             --timestamping \
             -O "$dest" \
