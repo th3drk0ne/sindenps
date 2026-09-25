@@ -206,9 +206,9 @@ sudo apt-get clean
 log "Package cleanup complete."
 
 #-----------------------------------------------------------
-# Step 6) Create folders, download VERSION-based assets
+# Step 6) Create folders, download assets
 #-----------------------------------------------------------
-log "Preparing /opt/sinden and user directories; downloading VERSION-based PS1/PS2 assets."
+log "Preparing /opt/sinden and user directories; downloading PS1/PS2 assets."
 
 install -d -o root -g root /opt
 install -d -o sinden -g sinden /opt/sinden
