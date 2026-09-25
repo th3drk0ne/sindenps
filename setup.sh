@@ -17,7 +17,7 @@ case "$UNAME_ARCH:$DEB_ARCH" in
         ARCH="arm32"
         ;;
     aarch64:armhf)
-        ARCH="arm32"
+        ARCH="arm32"   # 32‑bit userland, 64‑bit kernel
         ;;
     aarch64:arm64)
         ARCH="aarch64"
@@ -51,6 +51,11 @@ esac
 log "Detected board: ${MODEL_FULL:-unknown}  =>  ${PI_MODEL}"
 
 log "ARCH=$ARCH"
+
+#if [ "$ARCH" != "aarch64" ]; then
+#    warn "This script must be run on aarch64 (64‑bit ARM). Detected: $ARCH"
+#    exit 1
+#fi
 
 #-----------------------------------------------------------
 # Step 1) Check if root
@@ -523,6 +528,12 @@ sudo wget -O /opt/lightgun-dashboard/manifest.json \
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/manifest.json"
 log "manifest.json Downloaded to ${APP_DIR}/manifest.json"
 
+log "=== Downloading ps1_games.json from GitHub ==="
+sudo wget -O /opt/lightgun-dashboard/ps1_games.json \
+  https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/ps1_games.json
+sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/ps1_games.json"
+log "manifest.json Downloaded to ${APP_DIR}/ps1_games.json"
+
 log "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
 [Unit]
@@ -730,10 +741,16 @@ fi
 #-----------------------------------------------------------
 # Step 9) GCON2 UDEV Rules and performance tweaks for Pi4 and Pi5
 #-----------------------------------------------------------
+#
 # Creates exactly TWO symlinks via udev:
 #   /dev/ttyGCON2S_0  -> the active primary UART (whatever /dev/serial0 resolves to)
 #   /dev/ttyGCON2S_1  -> UART5 (ttyAMA5 or ttyS5, depending on overlay/SoC)
-#-----------------------------------------------------------
+#
+# And TWO picocom aliases (loaded system-wide):
+#   ttyGCON2S_0
+#   ttyGCON2S_1
+#
+# Default baud: 115200 (override: export BAUD=9600 before running)
 
 if [ "$ARCH" != "x86_64" ]; then
 ### Performance Optimization
@@ -947,6 +964,10 @@ detect_model() {
 }
 
 ensure_tools_and_groups() {
+  if ! command -v picocom >/dev/null 2>&1; then
+    log "picocom not found; installing via apt..."
+    apt-get update -y && apt-get install -y picocom
+  fi
   getent group dialout >/dev/null 2>&1 || groupadd dialout
   local u="${SUDO_USER:-$USER}"
   if ! id -nG "$u" | grep -qw dialout; then

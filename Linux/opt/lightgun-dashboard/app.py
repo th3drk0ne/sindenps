@@ -1512,6 +1512,46 @@ def manifest_json():
 def index():
     with open("/opt/lightgun-dashboard/index.html", "r", encoding="utf-8") as f:
         return render_template_string(f.read())
+        
+@app.route("/api/ps1/games")
+def api_ps1_games():
+    path = "/opt/lightgun-dashboard/ps1_games.json"
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            games = json.load(f)
+
+        if not isinstance(games, list):
+            raise ValueError(
+                "PS1 game data must be a JSON array"
+            )
+
+        return jsonify({
+            "ok": True,
+            "games": games
+        })
+
+    except FileNotFoundError:
+        return jsonify({
+            "ok": False,
+            "error": "PS1 game data file not found"
+        }), 404
+
+    except json.JSONDecodeError as e:
+        return jsonify({
+            "ok": False,
+            "error": (
+                f"Invalid JSON at line {e.lineno}, "
+                f"column {e.colno}"
+            )
+        }), 500
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
+        
 
 @app.route("/api/version")
 def api_version():
