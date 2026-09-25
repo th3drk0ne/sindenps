@@ -247,7 +247,7 @@ cd /home/sinden/Firmware
 
 LOG="/var/log/platform-update.log"
 
-echo "Preparing update log file..."
+log "Preparing update log file..."
 
 # create if missing
 touch "$LOG"
