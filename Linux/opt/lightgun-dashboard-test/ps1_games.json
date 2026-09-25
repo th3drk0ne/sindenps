@@ -19,9 +19,39 @@
     "ports": [],
     "requirements": [],
     "notes": [
-      "An improvement over PCSX-ReARMed emulation, which only worked with a specific region and revision ROM."
+        "SindenPS should be configured for Konami firmware using the latest adapter revision connected to the Konami Interface Board"
     ]
   },
+  {
+  "title": "Chaos Break",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Guncon / G-Con45 lightgun adapter"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Supports Guncon-compatible lightguns.",
+    "Gameplay combines lightgun shooting with survival horror elements.",
+    "SindenPS should be configured for Guncon / G-Con45 firmware."
+  ]
+},
   {
     "title": "Crypt Killer",
     "players": 2,
@@ -207,6 +237,40 @@
   "Calibration cancellation: Press back-left again or wait 30 seconds to cancel without overwriting."
 ]
 },
+{
+  "title": "Ghoul Panic",
+  "players": 2,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Player 1 Guncon / G-Con45"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 Guncon / G-Con45"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Known as Oh! Bakyuuun in Japan.",
+    "Supports two-player Guncon gameplay.",
+    "SindenPS should be configured for Guncon / G-Con45 firmware."
+  ]
+},
   {
     "title": "Judge Dredd",
     "players": 2,
@@ -319,6 +383,31 @@
     "notes": []
   },
   {
+  "title": "Moorhuhn",
+  "players": 2,
+  "regions": {
+    "pal": true,
+    "ntsc": null
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "Native"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [],
+  "requirements": [],
+  "notes": [
+    "The calibration screen displays G-Con regardless of the gun type.",
+    "All Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
+    "The alignment and scaling behaviour is accurate to original hardware."
+  ]
+},
+{
     "title": "Moorhuhn 2",
     "players": 2,
     "regions": {
@@ -339,7 +428,7 @@
     "requirements": [],
     "notes": [
       "The calibration screen displays G-Con regardless of the gun type.",
-      "All three Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
+      "All Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
       "The alignment and scaling behaviour is accurate to original hardware."
     ]
   },
@@ -363,7 +452,7 @@
     "ports": [],
     "requirements": [],
     "notes": [
-      "All three Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
+      "All Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
       "The alignment and scaling behaviour is accurate to original hardware."
     ]
   },
@@ -387,7 +476,7 @@
     "ports": [],
     "requirements": [],
     "notes": [
-      "All three Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
+      "All Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
       "The alignment and scaling behaviour is accurate to original hardware."
     ]
   },
@@ -536,7 +625,72 @@
       "The imperfect Guncon patch for this game prevents the calibration screen from working.",
       "Calibration works with the Konami adapter and an unpatched version of the game."
     ]
+  },{
+  "title": "Rescue Shot",
+  "players": 2,
+  "regions": {
+    "pal": null,
+    "ntsc": true
   },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Player 1 Guncon / G-Con45"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 Guncon / G-Con45"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Japan-exclusive title.",
+    "Supports one or two Guncon-compatible lightguns.",
+    "SindenPS should be configured for Guncon / G-Con45 firmware."
+  ]
+},
+  {
+  "title": "Resident Evil Survivor",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Guncon / G-Con45 lightgun adapter"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Resident Evil Survivor was designed specifically around Guncon support.",
+    "The PAL release allows both Guncon and controller input.",
+    "The NTSC-U release disables Guncon functionality and is controller-only.",
+    "Use a PAL or NTSC-J version to obtain lightgun support.",
+    "SindenPS should be configured for Guncon / G-Con45 firmware."
+  ]
+},
   {
     "title": "Silent Hill",
     "players": 0,
@@ -561,6 +715,78 @@
       "Having the Hyper Blaster connected awards the player a secret weapon."
     ]
   },
+  {
+  "title": "Simple 1500 Series Vol. 24: The Gun Shooting",
+  "players": 2,
+  "regions": {
+    "pal": null,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Player 1 Guncon / G-Con45"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 Guncon / G-Con45"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Japanese-exclusive budget title in the Simple 1500 series.",
+    "Designed for Guncon-compatible lightguns.",
+    "Supports two-player play when two Guncon-compatible devices are connected.",
+    "SindenPS should be configured for Guncon / G-Con45 firmware.",
+    "A Guncon-compatible device is required for normal gameplay."
+  ]
+},
+{
+  "title": "Simple 1500 Series Vol. 63: The Gun Shooting 2",
+  "players": 2,
+  "regions": {
+    "pal": null,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "Guncon / G-Con45",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Player 1 Guncon / G-Con45"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 Guncon / G-Con45"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Japanese-exclusive sequel to The Gun Shooting.",
+    "Designed for Guncon-compatible lightguns.",
+    "Supports two-player play when two Guncon-compatible devices are connected.",
+    "SindenPS should be configured for Guncon / G-Con45 firmware.",
+    "A Guncon-compatible device is required for normal gameplay."
+  ]
+},
   {
     "title": "Sporting Clays",
     "players": 1,
