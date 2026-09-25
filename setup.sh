@@ -217,7 +217,7 @@ install -d -o sinden -g sinden /opt/sinden
 (
   cd /opt/sinden
   log "Downloading lightgun scripts to /opt/sinden."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh" \
@@ -237,7 +237,7 @@ install -d -o sinden -g sinden "${FW_DIR}"
 
 cd /home/sinden/Firmware
   log "Downloading Firmware files to /home/sinden/Firmware."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex" \
@@ -247,7 +247,7 @@ cd /home/sinden/Firmware
 
 LOG="/var/log/platform-update.log"
 
-echo "Preparing update log file..."
+log "Preparing update log file..."
 
 # create if missing
 touch "$LOG"
@@ -268,7 +268,7 @@ download_assets() {
     cd "$dest"
     if [[ $# -gt 0 ]]; then
       log "Downloading $(($#)) assets into ${dest}."
-      wget --quiet --show-progress --https-only --timestamping "$@"
+      wget --quiet --https-only --timestamping "$@"
     else
       warn "No asset URLs provided for ${dest}."
     fi
@@ -399,8 +399,6 @@ else
   log "PS2 config missing, skipping backup."
 fi
 
-log "Backup complete."
-
 # --- Remote paths ---
 PS1_REMOTE="driver/version/${ARCH}/latest/PS1"
 PS2_REMOTE="driver/version/${ARCH}/latest/PS2"
@@ -448,7 +446,7 @@ install -d -o sinden -g sinden "PS1/backups"
 install -d -o sinden -g sinden "PS2/backups"
 
 cd "${LIGHTGUN_DIR}/log"
-wget --quiet --show-progress --https-only --timestamping \
+wget --quiet --https-only --timestamping \
   "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
 
 log "Assets deployment complete."
@@ -511,25 +509,25 @@ pip install "flask==3.*" "gunicorn==21.*"
 
 log "=== 4) Backend: Flask app  ==="
 
-sudo wget -O ${APP_DIR}/app.py \
+sudo wget -nv -O ${APP_DIR}/app.py \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/app.py
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/app.py"
 log "Flask Application downloaded to ${APP_DIR}/app.py"
 
 log "=== Downloading clean UTF-8 index.html from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/index.html \
+sudo wget -nv -O /opt/lightgun-dashboard/index.html \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/index.html
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/index.html"
 log "Flask html Downloaded to ${APP_DIR}/index.html"
 
 log "=== Downloading manifest.json from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/manifest.json \
+sudo wget -nv -O /opt/lightgun-dashboard/manifest.json \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/manifest.json
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/manifest.json"
 log "manifest.json Downloaded to ${APP_DIR}/manifest.json"
 
 log "=== Downloading ps1_games.json from GitHub ==="
-sudo wget -O /opt/lightgun-dashboard/ps1_games.json \
+sudo wget -nv -O /opt/lightgun-dashboard/ps1_games.json \
   https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/${SITEVERSION}/ps1_games.json
 sudo chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/ps1_games.json"
 log "manifest.json Downloaded to ${APP_DIR}/ps1_games.json"
@@ -589,7 +587,7 @@ done
 (
   cd /home/sinden/Lightgun/PS1/profiles
   log "Downloading PS1 profiles."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Default.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/High-Resolution.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS1/profiles/Recoil-Arcade-Light.config" \
@@ -604,7 +602,7 @@ done
 
   cd /home/sinden/Lightgun/PS2/profiles
   log "Downloading PS2 profiles."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Default.config" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/High-Resolution.config"  \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/home/sinden/Lightgun/PS2/profiles/Recoil-Arcade-Light.config" \
@@ -670,7 +668,7 @@ mapfile -t image_files < <(
 if [[ ${#image_files[@]} -eq 0 ]]; then
     warn "No image files found in GitHub repository."
 else
-    log "Downloading ${#image_files[@]} image(s)..."
+    log "Downloading ${#image_files[@]} image(s) from ${SITEVERSION}/images"
 
     for url in "${image_files[@]}"; do
         filename="$(basename "$url")"
@@ -678,14 +676,12 @@ else
 
         sudo -u "${APP_USER}" wget \
             --quiet \
-            --show-progress \
             --https-only \
             --timestamping \
             -O "$dest" \
             "$url"
 
         chown "${APP_USER}:${APP_GROUP}" "$dest"
-        log "Downloaded: ${filename}"
     done
 fi
 
