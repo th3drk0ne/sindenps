@@ -670,7 +670,7 @@ mapfile -t image_files < <(
 if [[ ${#image_files[@]} -eq 0 ]]; then
     warn "No image files found in GitHub repository."
 else
-    log "Downloading ${#image_files[@]} image(s)..."
+    log "Downloading ${#image_files[@]} image(s) from ${SITEVERSION}/images"
 
     for url in "${image_files[@]}"; do
         filename="$(basename "$url")"
@@ -684,7 +684,6 @@ else
             "$url"
 
         chown "${APP_USER}:${APP_GROUP}" "$dest"
-        log "Downloaded: ${filename}"
     done
 fi
 
