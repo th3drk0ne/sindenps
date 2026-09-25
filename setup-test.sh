@@ -217,7 +217,7 @@ install -d -o sinden -g sinden /opt/sinden
 (
   cd /opt/sinden
   log "Downloading lightgun scripts to /opt/sinden."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun-monitor.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/lightgun.sh" \
     "https://raw.githubusercontent.com/th3drk0ne/sindenps/refs/heads/main/Linux/opt/sinden/update-sindenps.sh" \
@@ -237,7 +237,7 @@ install -d -o sinden -g sinden "${FW_DIR}"
 
 cd /home/sinden/Firmware
   log "Downloading Firmware files to /home/sinden/Firmware."
-  wget --quiet --show-progress --https-only --timestamping \
+  wget --quiet --https-only --timestamping \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-NTSC.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/GCON45-PAL.hex" \
     "https://github.com/th3drk0ne/sindenps/raw/refs/heads/main/Firmware/PSX/KONAMI.hex" \
@@ -268,7 +268,7 @@ download_assets() {
     cd "$dest"
     if [[ $# -gt 0 ]]; then
       log "Downloading $(($#)) assets into ${dest}."
-      wget --quiet --show-progress --https-only --timestamping "$@"
+      wget --quiet --https-only --timestamping "$@"
     else
       warn "No asset URLs provided for ${dest}."
     fi
@@ -448,7 +448,7 @@ install -d -o sinden -g sinden "PS1/backups"
 install -d -o sinden -g sinden "PS2/backups"
 
 cd "${LIGHTGUN_DIR}/log"
-wget --quiet --show-progress --https-only --timestamping \
+wget --quiet --https-only --timestamping \
   "https://raw.githubusercontent.com/th3drk0ne/sindenps/master/Linux/home/sinden/Lightgun/log/sinden.log"
 
 log "Assets deployment complete."
