@@ -1,4 +1,4 @@
-[
+f[
   {
     "title": "Area 51",
 	"system": "PS1",
@@ -22,6 +22,42 @@
     "notes": [
         "SindenPS should be configured for Konami firmware using the latest adapter revision connected to the Konami Interface Board"
     ]
+  },
+  {
+    "title": "Cellophanes",
+	"system": "PS1",
+    "players": 1,
+    "regions": {
+      "pal": false,
+      "ntsc": true
+    },
+    "gun_support": [
+      {
+        "name": "Hyper Blaster / Justifier",
+        "support": "No"
+      }
+	  {
+        "name": "G-Con45 / Guncon",
+        "support": "Native"
+      },
+    ],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Standard controller"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Gun or lightgun adapter"
+      }
+    ],
+    "requirements": [],
+    "notes": [
+      "This game is mostly in Japanese",
+      "Use the controller to navigate the menus: Circle = select, Cross = cancel.",
+      "The bottom three games in the list are gun games.",
+      "Press the controller's circle button to approve the calibration."
+	]
   },
   {
     "title": "Crypt Killer",
@@ -78,10 +114,11 @@
     "requirements": [
       "Only one gun or lightgun adapter must be connected to the console.",
       "Connect the gun or lightgun adapter to Controller Port 1.",
-      "Guncon support requires a patch."
+      "Guncon support requires a patch, but is imperfect."
     ],
     "notes": [
-      "The adapter has been calibrated for Die Hard Trilogy because it is the only official game without in-game calibration.",
+      "The Konami firmware has been calibrated for Die Hard Trilogy because it is the only official game without in-game calibration.",
+	  "The Sinden front-right button behaves as a Trigger + Special combo button if pressed while aiming on-screen in order to easily fire rockets in Die Hard Trilogy (Konami firmware).",
       "The Guncon patch is imperfect, so the Hyper Blaster solution is preferable."
     ]
   },
@@ -163,8 +200,8 @@
     "requirements": [],
     "notes": [
       "The game does not officially support or document Hyper Blaster compatibility.",
-      "One player using only one gun can use the game if the gun behaves like a G-Con.",
-      "Two guns can connect, but the guns interfere with each other, matching the behaviour of real hardware."
+      "Two players can use the game if both guns behave like a G-Con.",
+      "Only a single player can play if a Konami gun is used. Two Konami guns can connect, but the guns interfere with each other, matching the behaviour of real hardware."
     ]
   },
   {
@@ -185,24 +222,24 @@
       "support": "No"
     },
     {
-      "name": "Sony Dual Analog",
+      "name": "Sony Analog",
       "support": "Custom Firmware"
     }
   ],
   "ports": [
     {
       "port": "Controller Port 1",
-      "device": "SindenPS adapter running Sony Dual Analog firmware"
+      "device": "SindenPS adapter running Sony Analog firmware"
     }
   ],
   "requirements": [
-    "Flash or select the custom Sony Dual Analog firmware.",
-    "SindenPS supports 2 Players, to use 4 Players requires two Raspberry Pi's running SindenPS.",
+    "Flash or select the custom Sony Analog firmware.",
+    "SindenPS supports 2 Players, to use 4 Players requires two Raspberry Pi's running SindenPS and a Playstation multitap.",
     "Do not use Hyper Blaster / Justifier or G-Con45 / Guncon firmware."
   ],
   "notes": [
   "Galaxian 3 does not use a PlayStation lightgun protocol.",
-  "SindenPS support works by emulating the Sony Dual Analog controller.",
+  "SindenPS support works by emulating the Sony Analog controller.",
   "The PlayStation version supports up to four players, but additional multiplayer configuration may be required.",
   "Controls: Trigger fires weapon (PS1 R2). Back-right button adds players on Player Select and pauses gameplay (PS1 Start). Back-left button starts calibration when held for five seconds and cancels when pressed again.",
   "Menu controls: Pump must be held to enable D-pad and lock virtual analog sticks. D-pad navigates menus only while pump is held. Front-left/right buttons act as Select/Back depending on region. When multiple guns are connected, all players must hold pump to prevent virtual stick interference.",
@@ -249,6 +286,105 @@
     "SindenPS should be configured for G-Con45 / Guncon firmware."
   ]
 },
+{
+  "title": "Gun Bare! The Game Paradise 2",
+  "system": "PS1",
+  "players": 1,
+  "regions": {
+    "pal": false,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Standard controller"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [
+    "The gun is only usable in 2-player mode."
+  ],
+  "notes": [
+    "This game is almost entirely in Japanese.",
+	"Known in Japan as Gun Bare! Game Tengoku2",
+    "At the main menu, choose the bottom option twice in order to calibrate the gun (mandatory). Front-right button = restart calibration, Controller X button = approve calibration.",
+    "Choose the left option after selecting a level to activate the 2-player mode.",
+    "Player 1 (ship) = controller, Player 2 (unseen) = gun 1."
+  ]
+},
+{
+  "title": "Gunfighter: The Legend of Jesse James",
+  "system": "PS1",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "G-Con45 / Guncon lightgun adapter"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Uses the standard Time Crisis cover and reload mechanic."
+  ]
+},
+{
+  "title": "Guntu Western Front June, 1944: Iron Memories",
+  "system": "PS1",
+  "players": 1,
+  "regions": {
+    "pal": false,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "G-Con45 / Guncon lightgun adapter"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Known in Japan as Guntu Western Front June, 1944: Tetsu no Kioku",
+    "Front-right button = pause.",
+    "Fire while holding Guncon A (Sinden front-left) to shoot an exploding shell."
+  ]
+},
   {
     "title": "Judge Dredd",
 	"system": "PS1",
@@ -270,7 +406,7 @@
     "ports": [],
     "requirements": [],
     "notes": [
-      "The NTSC version warns against third-party peripherals but allows the game to be played with the adapters anyway."
+      "If using Konami firmware, the NTSC version warns against third-party peripherals but allows the game to be played with the adapters anyway."
     ]
   },
   {
@@ -392,7 +528,7 @@
   ]
 },
 {
-    "title": "Moorhuhn 2",
+    "title": "Moorhuhn 2: Die Jagd geht weiter",
 	"system": "PS1",
     "players": 2,
     "regions": {
@@ -418,7 +554,7 @@
     ]
   },
   {
-    "title": "Moorhuhn 3",
+    "title": "Moorhen 3: Chicken Chase",
 	"system": "PS1",
     "players": 2,
     "regions": {
@@ -488,7 +624,8 @@
     "ports": [],
     "requirements": [],
     "notes": [
-      "Also known as The Keisatsukan: Shinjuku Ni Ju Yon Ji in Japan."
+      "Also known as The Keisatsukan: Shinjuku Ni Ju Yon Ji in Japan.",
+	  "Cover mechanic can be controlled with a controller's analog stick, or by physical body movement when using a compatible USB camera."
     ]
   },
 {
@@ -617,7 +754,45 @@
       "The imperfect Guncon patch for this game prevents the calibration screen from working.",
       "Calibration works with the Konami adapter and an unpatched version of the game."
     ]
-  },{
+  },
+{
+  "title": "Puffy's P.S. I Love You",
+  "system": "PS1",
+  "players": 1,
+  "regions": {
+    "pal": false,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Standard controller"
+    }
+	{
+      "port": "Controller Port 2",
+      "device": "G-Con45 / Guncon lightgun adapter"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Game is almost entirely in Japanese.",
+	"Known in Japan as Puffy no P.S. I Love You.",
+	"Shoot the pink mushroom at the bottom of the game-select screen to calibrate.",
+    "Only the top and bottom games on the main menu are gun games.",
+    "Controller 1's Cross button soft resets."
+  ]
+},
+{
   "title": "Rescue Shot",
   "system": "PS1",
   "players": 2,
@@ -681,7 +856,7 @@
     "Resident Evil Survivor was designed specifically around Guncon support.",
     "The PAL release allows both Guncon and controller input.",
     "The NTSC-U release disables Guncon functionality and is controller-only.",
-    "Use a PAL or NTSC-J version to obtain lightgun support.",
+    "Use a PAL, NTSC-J or patched NTSC-U version to obtain lightgun support.",
     "SindenPS should be configured for G-Con45 / Guncon firmware."
   ]
 },
@@ -703,11 +878,21 @@
         "support": "No"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Standard controller"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Gun or lightgun adapter"
+      }
+    ],
     "requirements": [],
     "notes": [
       "The game has no shooting gameplay.",
-      "Having the Hyper Blaster connected awards the player a secret weapon."
+      "Having the Hyper Blaster connected awards the player a secret weapon.",
+	  "The Konami Interface Board does not need to be connected."
     ]
   },
   {
@@ -908,133 +1093,83 @@
   ]
 },
 {
+  "title": "Cocoto Funfair",
+  "system": "PS2",
+  "players": 2,
+  "regions": {
+    "pal": true,
+    "ntsc": false
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "No"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "Controller Port 1",
+      "device": "Player 1 G-Con45 / Guncon"
+    }
+	  "port": "Controller Port 2",
+      "device": "Player 2 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [],
+  "notes": []
+},
+{
+  "title": "Gunvari Collection + Time Crisis",
+  "system": "PS2",
+  "players": 2,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "Native"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "No"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+    {
+      "port": "USB Port 2",
+      "device": "Player 2 G-Con2 / GunCon2"
+    },
+  ],
+  "requirements": [],
+  "notes": [
+    "Japanese collection of all three PS1 Point Blank Games and Time Crisis",
+    "The Gunvari (Point Blank) games support one or two players.",
+	"Time Crisis supports only one player.",
+    "Supports only GunCon2 devices.",
+    "Time Crisis uses the Time Crisis cover and reload mechanic.",
+    "Calibration can be performed through the game's built-in calibration menu."
+  ]
+},
+{
   "title": "Endgame",
-  "system": "PS2",
-  "players": 1,
-  "regions": {
-    "pal": true,
-    "ntsc": true
-  },
-  "gun_support": [
-    {
-      "name": "G-Con2 / GunCon2",
-      "support": "Native"
-    },
-    {
-      "name": "G-Con45 / Guncon",
-      "support": "Native"
-    },
-    {
-      "name": "Hyper Blaster / Justifier",
-      "support": "No"
-    }
-  ],
-  "ports": [
-    {
-      "port": "USB Port 1",
-      "device": "Player 1 G-Con2 / GunCon2"
-    },
-    {
-      "port": "Controller Port 1",
-      "device": "Player 1 G-Con45 / Guncon"
-    }
-  ],
-  "requirements": [],
-  "notes": [
-    "Single-player only.",
-    "Supports both GunCon and GunCon2 devices.",
-    "Features on-rails shooting and driving sequences.",
-    "Calibration can be performed through the game's built-in calibration menu."
-  ]
-},
-{
-  "title": "Resident Evil Dead Aim",
-  "system": "PS2",
-  "players": 1,
-  "regions": {
-    "pal": true,
-    "ntsc": true
-  },
-  "gun_support": [
-    {
-      "name": "G-Con2 / GunCon2",
-      "support": "Native"
-    },
-    {
-      "name": "G-Con45 / Guncon",
-      "support": "Native"
-    },
-    {
-      "name": "Hyper Blaster / Justifier",
-      "support": "No"
-    }
-  ],
-  "ports": [
-    {
-      "port": "USB Port 1",
-      "device": "Player 1 G-Con2 / GunCon2"
-    },
-    {
-      "port": "Controller Port 1",
-      "device": "Player 1 G-Con45 / Guncon"
-    }
-  ],
-  "requirements": [],
-  "notes": [
-  "Single-player only.",
-  "Part of the Gun Survivor series.",
-  "Supports both GunCon and GunCon2 devices.",
-  "Directional movement controls are only available when using a GunCon2-compatible device.",
-  "When using G-Con45 / Guncon mode, additional controller input may be required for movement functions.",
-  "Switches between exploration and shooting segments.",
-  "Calibration can be performed through the game's built-in calibration menu."
-]
-},
-{
-  "title": "Dino Stalker",
-  "system": "PS2",
-  "players": 1,
-  "regions": {
-    "pal": true,
-    "ntsc": true
-  },
-  "gun_support": [
-    {
-      "name": "G-Con2 / GunCon2",
-      "support": "Native"
-    },
-    {
-      "name": "G-Con45 / Guncon",
-      "support": "Native"
-    },
-    {
-      "name": "Hyper Blaster / Justifier",
-      "support": "No"
-    }
-  ],
-  "ports": [
-    {
-      "port": "USB Port 1",
-      "device": "Player 1 G-Con2 / GunCon2"
-    },
-    {
-      "port": "Controller Port 1",
-      "device": "Player 1 G-Con45 / Guncon"
-    }
-  ],
-  "requirements": [],
-  "notes": [
-    "Single-player only.",
-    "Requires G-Con2 mode.",
-    "Part of the Gun Survivor series.",
-    "Supports free movement combined with lightgun aiming.",
-	"Directional movement controls are only available when using a GunCon2-compatible device.",
-	"When using G-Con45 / Guncon mode, additional controller input may be required for movement functions.",
-    "Calibration can be performed through the game's built-in calibration menu."
-  ]
-},
-{
-  "title": "Starsky & Hutch",
   "system": "PS2",
   "players": 2,
   "regions": {
@@ -1067,6 +1202,236 @@
     {
       "port": "Controller Port 1",
       "device": "Player 1 G-Con45 / Guncon"
+    }
+	  "port": "Controller Port 2",
+      "device": "Player 2 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Uses the standard Time Crisis cover and reload mechanic."
+  ]
+},
+{
+  "title": "Resident Evil Dead Aim",
+  "system": "PS2",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "Native"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+	{
+      "port": "Controller Port 1",
+      "device": "Standard controller"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 1 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [
+    "If using a G-Con45/Guncon, a DualShock Controller must be connected to controller Port 1.",
+    "Be sure to disable DPad calibration in the Sinden configuration (EnableCalbration = 0)."
+  ],
+  "notes": [
+  "Single-player only.",
+  "Part of the Gun Survivor series.",
+  "Known in Japan as  Gun Survivor 4 Biohazard Heroes Never Die",
+  "Supports both GunCon and GunCon2 devices.",
+  "Directional movement controls are only available when using a GunCon2-compatible device.",
+  "When using G-Con45 / Guncon mode, additional controller input may be required for movement functions.",
+  "Switches between exploration and shooting segments.",
+  "Calibration can be performed through the game's built-in calibration menu."
+]
+},
+{
+  "title": "Resident Evil Survivor 2: Code: Veronica",
+  "system": "PS2",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "Native"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+	{
+      "port": "Controller Port 1",
+      "device": "Player 1 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Single-player only.",
+    "Part of the Gun Survivor series.",
+    "Known in Japan as  Gun Survivor 2 Biohazard Code: Veronica",
+    "Supports both GunCon and GunCon2 devices.",
+    "Directional movement controls are only available when using a GunCon2-compatible device.",
+    "When using G-Con45 / Guncon mode, additional controller input may be required for movement functions.",
+    "Switches between exploration and shooting segments.",
+    "Calibration can be performed through the game's built-in calibration menu."
+]
+},
+{
+  "title": "Dino Stalker",
+  "system": "PS2",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "Native"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+    {
+      "port": "Controller Port 1",
+      "device": "Player 2 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Single-player only.",
+    "Part of the Gun Survivor series.",
+	"Known in Japan as  Gun Survivor 3 Dino Crisis.",
+    "Supports free movement combined with lightgun aiming.",
+	"Directional movement controls are only available when using a GunCon2-compatible device.",
+	"When using G-Con45 / Guncon mode, additional controller input may be required for movement functions.",
+    "Calibration can be performed through the game's built-in calibration menu."
+  ]
+},
+{
+  "title": "Starsky & Hutch",
+  "system": "PS2",
+  "players": 1,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "Native"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+    {
+      "port": "USB Port 2",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+    {
+      "port": "Controller Port 1",
+      "device": "Player 1 DualShock Controller or Steering Wheel"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [
+    "The gun is only usable in 2-player mode."
+  ],
+  "notes": [
+    "Player 1 drives while Player 2 uses the lightgun.",
+    "Calibration can be performed through the game's built-in calibration menu."
+]
+},
+{
+  "title": "Gun Com 2",
+  "system": "PS2",
+  "players": 2,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "Native"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+    {
+      "port": "USB Port 2",
+      "device": "Player 2 G-Con2 / GunCon2"
+    },
+	{
+      "port": "Controller Port 1",
+      "device": "Player 1 G-Con45 / Guncon"
     },
     {
       "port": "Controller Port 2",
@@ -1075,15 +1440,62 @@
   ],
   "requirements": [],
   "notes": [
-  "Supports one or two players.",
-  "Requires G-Con2 mode.",
-  "Player 1 drives while Player 2 uses the lightgun.",
-  "Single-player mode allows one player to control both roles.",
-  "Calibration can be performed through the game's built-in calibration menu."
-]
-}
-,
+    "Supports one or two players.",
+    "Supports both GunCon and GunCon2 devices.",
+    "Known in Japan as Deatth Crimson OX+.",
+	"Also released on Dreamcast as Death Crimson OX."
+    "Calibration can be performed through the game's built-in calibration menu."
+  ]
+},
 {
+  "title": "Time Crisis II",
+  "system": "PS2",
+  "players": 2,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "Native"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+    {
+      "port": "USB Port 2",
+      "device": "Player 2 G-Con2 / GunCon2"
+    },
+	{
+      "port": "Controller Port 1",
+      "device": "Player 1 G-Con45 / Guncon"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 G-Con45 / Guncon"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Supports one or two players.",
+    "Supports both GunCon and GunCon2 devices.",
+    "Uses the standard Time Crisis cover and reload mechanic.",
+    "Calibration can be performed through the game's built-in calibration menu."
+  ]
+},
+
   "title": "Gunfighter II: Revenge of Jesse James",
   "system": "PS2",
   "players": 2,
@@ -1146,11 +1558,11 @@
     },
     {
       "name": "G-Con45 / Guncon",
-      "support": "No"
+      "support": "Native"
     },
     {
       "name": "Hyper Blaster / Justifier",
-      "support": "Native"
+      "support": "No"
     }
   ],
   "ports": [
@@ -1255,8 +1667,16 @@
       "device": "Player 1 G-Con2 / GunCon2"
     },
     {
+      "port": "USB Port 2",
+      "device": "Player 2 G-Con2 / GunCon2"
+    },
+	{
       "port": "Controller Port 1",
       "device": "Player 1 G-Con45 / Guncon"
+    },
+    {
+      "port": "Controller Port 2",
+      "device": "Player 2 G-Con45 / Guncon"
     }
   ],
   "requirements": [],
@@ -1364,6 +1784,46 @@
     "Calibration can be performed through the game's built-in calibration menu.",
     "Co-developed by Namco and Sega.",
     "Features branching paths and cooperative gameplay."
+  ]
+},
+{
+  "title": "Virtua Cop: Elite Edition",
+  "system": "PS2",
+  "players": 2,
+  "regions": {
+    "pal": true,
+    "ntsc": true
+  },
+  "gun_support": [
+    {
+      "name": "G-Con2 / GunCon2",
+      "support": "No"
+    },
+    {
+      "name": "G-Con45 / Guncon",
+      "support": "Native"
+    },
+    {
+      "name": "Hyper Blaster / Justifier",
+      "support": "No"
+    }
+  ],
+  "ports": [
+    {
+      "port": "USB Port 1",
+      "device": "Player 1 G-Con2 / GunCon2"
+    },
+    {
+      "port": "USB Port 2",
+      "device": "Player 2 G-Con2 / GunCon2"
+    }
+  ],
+  "requirements": [],
+  "notes": [
+    "Supports one or two players.",
+	"Known in Japan as Virtua Cop: Re-Birth.",
+	"Consists of Virtua Cop and Virtua Cop 2.",
+    "Calibration can be performed through the game's built-in calibration menu."
   ]
 }
 ]
