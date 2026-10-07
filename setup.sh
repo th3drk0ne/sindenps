@@ -81,7 +81,6 @@ else
   log "User 'sinden' already exists."
 fi
 
-
 #-----------------------------------------------------------
 # Step 3a) Add 'sinden' to sudoers (validated)
 #-----------------------------------------------------------
@@ -112,7 +111,6 @@ else
   err "visudo validation failed; NOT installing sudoers change."
   exit 1
 fi
-
 
 #-----------------------------------------------------------
 # Step 4) Install systemd services
@@ -435,9 +433,7 @@ if ! download_files_from_list "$PS2_DIR" ps2_files; then
   exit 9
 fi
 
-
 ##################################################################
-
 # Create PS1/PS2 and download according to version
 install -d -o sinden -g sinden "${LIGHTGUN_DIR}/log"
 
@@ -457,7 +453,6 @@ systemctl start "${svc2}" || warn "Failed to start ${svc2}. Check logs: journalc
 
 systemctl is-active "${svc1}" &>/dev/null && log "${svc1} is active." || warn "${svc1} is not active."
 systemctl is-active "${svc2}" &>/dev/null && log "${svc2} is active." || warn "${svc2} is not active."
-
 
 #-----------------------------------------------------------
 # Step 7) Lightgun Dashboard - Setup (PS1/PS2 + XML)
@@ -537,7 +532,6 @@ OLD_CFG="${APP_DIR}/ps1_games.json"
 if [ -L "$OLD_CFG" ] || [ -e "$OLD_CFG" ]; then
     sudo rm -f "$OLD_CFG"
 fi
-
 
 log "=== 6) Systemd unit for dashboard ==="
 sudo bash -c "cat > /etc/systemd/system/lightgun-dashboard.service" <<UNIT_EOF
@@ -725,7 +719,6 @@ EOF
 
 configure_samba
 
-
 log "=== 10) Ensure Sinden log path/file exists ==="
 sudo mkdir -p "${SINDEN_LOG_DIR}"
 sudo touch "${SINDEN_LOG_FILE}"
@@ -753,10 +746,6 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
   sudo rm /etc/nginx/sites-enabled/default
 fi
 sudo nginx -t && sudo systemctl restart nginx
-
-
-
-
 
 log "=== 12) Deploy/images from ${SITEVERSION} ==="
 
@@ -800,8 +789,6 @@ sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 
 log "=== Done! Browse: http://sindenps.local ==="
-
-
 
 # ------------------------------------------------------------
 # step 8) libjpeg8 (libjpeg.so.8) symlink to 62 turbo on aarch64
@@ -1089,7 +1076,6 @@ enable_overlays_and_mini_uart() {
   bak="$(backup_file "$CONFIG_FILE")"
   log "Config backup created: $bak"
 
-
   if [[ $IS_PI5 -eq 1 ]]; then
     # Pi 5 specific settings
     grep -q "^enable_uart=" "$CONFIG_FILE" && sed -i 's/^enable_uart=.*/enable_uart=0/' "$CONFIG_FILE" || echo "enable_uart=0" >> "$CONFIG_FILE"
@@ -1172,7 +1158,6 @@ EOF
 
   chmod 644 "$STATUS_FILE"
 }
-
 
 show_status() {
 	links=( "/dev/${PREFIX0}" )
