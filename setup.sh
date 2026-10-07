@@ -627,6 +627,13 @@ configure_samba() {
     log "=== Configuring Samba Shares ==="
 
     apt-get install -y samba smbclient >/dev/null
+	
+	if grep -q "^\[homes\]" /etc/samba/smb.conf; then
+	log "Disabling Samba [homes] share."
+
+	sed -i '/^\[homes\]/,/^\[/ s/^/# DISABLED BY SINDENPS: /' \
+		/etc/samba/smb.conf
+	fi
 
     cat > /etc/samba/sindenps-shares.conf << 'EOF'
 [Firmware]
