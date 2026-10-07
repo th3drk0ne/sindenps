@@ -635,7 +635,7 @@ configure_samba() {
     apt-get install -y samba smbclient >/dev/null
 
     cat > /etc/samba/sindenps-shares.conf << 'EOF'
-[SindenPS-Firmware]
+[Firmware]
 path = /home/sinden/Firmware
 browseable = yes
 read only = no
@@ -644,7 +644,7 @@ force user = sinden
 create mask = 0664
 directory mask = 0775
 
-[SindenPS-PS1-Profiles]
+[PS1-Profiles]
 path = /home/sinden/Lightgun/PS1/profiles
 browseable = yes
 read only = no
@@ -653,7 +653,7 @@ force user = sinden
 create mask = 0664
 directory mask = 0775
 
-[SindenPS-PS2-Profiles]
+[PS2-Profiles]
 path = /home/sinden/Lightgun/PS2/profiles
 browseable = yes
 read only = no
