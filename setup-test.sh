@@ -623,6 +623,107 @@ done
   chown sinden:sinden Default.config High-Resolution.config Recoil-Arcade-Light.config Recoil-Arcade-Strong.config Recoil-MachineGun.config Recoil-Shotgun.config Recoil-Soft.config Recoil-MachineGun-SMG.config Recoil-MachineGun-HMG.config
 )
 
+#-----------------------------------------------------------
+# Samba Shares
+#-----------------------------------------------------------
+configure_samba() {
+
+    log "=== Configuring Samba Shares ==="
+
+    apt-get install -y samba smbclient >/dev/null
+
+    cat > /etc/samba/sindenps-shares.conf << 'EOF'
+[SindenPS-Firmware]
+path = /home/sinden/Firmware
+browseable = yes
+read only = no
+valid users = sinden
+force user = sinden
+create mask = 0664
+directory mask = 0775
+
+[SindenPS-PS1-Profiles]
+path = /home/sinden/Lightgun/PS1/profiles
+browseable = yes
+read only = no
+valid users = sinden
+force user = sinden
+create mask = 0664
+directory mask = 0775
+
+[SindenPS-PS2-Profiles]
+path = /home/sinden/Lightgun/PS2/profiles
+browseable = yes
+read only = no
+valid users = sinden
+force user = sinden
+create mask = 0664
+directory mask = 0775
+EOF
+
+    if ! grep -qF "include = /etc/samba/sindenps-shares.conf" /etc/samba/smb.conf; then
+        echo "" >> /etc/samba/smb.conf
+        echo "include = /etc/samba/sindenps-shares.conf" >> /etc/samba/smb.conf
+        log "Added Samba include."
+    else
+        log "Samba include already present."
+    fi
+
+    chown -R sinden:sinden \
+        /home/sinden/Firmware \
+        /home/sinden/Lightgun/PS1/profiles \
+        /home/sinden/Lightgun/PS2/profiles
+
+    chmod 755 /home/sinden
+    chmod 755 /home/sinden/Lightgun
+    chmod 755 /home/sinden/Lightgun/PS1
+    chmod 755 /home/sinden/Lightgun/PS2
+
+    chmod -R 775 /home/sinden/Firmware
+    chmod -R 775 /home/sinden/Lightgun/PS1/profiles
+    chmod -R 775 /home/sinden/Lightgun/PS2/profiles
+
+    if pdbedit -L 2>/dev/null | cut -d: -f1 | grep -qx "sinden"; then
+        log "Samba account already exists."
+        smbpasswd -e sinden >/dev/null 2>&1 || true
+    else
+        warn "Samba account not configured."
+        warn "Run: sudo smbpasswd -a sinden"
+    fi
+
+
+    smbpasswd -e sinden >/dev/null 2>&1 || true
+
+    if testparm -s >/dev/null 2>&1; then
+        systemctl enable smbd >/dev/null 2>&1
+        systemctl restart smbd
+        if systemctl is-active --quiet smbd; then
+            log "Samba service responding."
+            log "Samba configured successfully."
+        else
+            warn "Samba service may not be responding."
+        fi
+ 
+    else
+        warn "Samba configuration validation failed."
+        return 1
+    fi
+    
+    if command -v ufw >/dev/null 2>&1; then
+        ufw allow Samba >/dev/null 2>&1 || true
+    fi
+
+    IP=$(hostname -I | awk '{print $1}')
+
+    log "Samba Shares:"
+    log "  \\\\$IP\\SindenPS-Firmware"
+    log "  \\\\$IP\\SindenPS-PS1-Profiles"
+    log "  \\\\$IP\\SindenPS-PS2-Profiles"
+}
+
+configure_samba
+
+
 log "=== 10) Ensure Sinden log path/file exists ==="
 sudo mkdir -p "${SINDEN_LOG_DIR}"
 sudo touch "${SINDEN_LOG_FILE}"
