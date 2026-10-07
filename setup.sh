@@ -628,12 +628,30 @@ configure_samba() {
 
     apt-get install -y samba smbclient >/dev/null
 	
-	if grep -q "^\[homes\]" /etc/samba/smb.conf; then
-	log "Disabling Samba [homes] share."
+	log "Writing clean Samba configuration."
 
-	sed -i '/^\[homes\]/,/^\[/ s/^/# DISABLED BY SINDENPS: /' \
-		/etc/samba/smb.conf
+	if [ ! -f /etc/samba/smb.conf.sindenps-original ]; then
+		cp -a /etc/samba/smb.conf \
+			/etc/samba/smb.conf.sindenps-original
 	fi
+
+	cat > /etc/samba/smb.conf <<'EOF'
+[global]
+    workgroup = WORKGROUP
+    server role = standalone server
+    security = user
+    map to guest = Bad User
+
+    log file = /var/log/samba/log.%m
+    max log size = 1000
+    logging = file
+
+    load printers = no
+    disable spoolss = yes
+    printcap name = /dev/null
+
+    include = /etc/samba/sindenps-shares.conf
+EOF
 
     cat > /etc/samba/sindenps-shares.conf << 'EOF'
 [Firmware]
