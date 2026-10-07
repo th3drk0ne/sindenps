@@ -543,7 +543,7 @@ After=network.target
 User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin:${VENV_DIR}/bin"
-ExecStart=${VENV_DIR}/bin/gunicorn -w 2 -b ${GUNICORN_BIND} app:app
+ExecStart=${VENV_DIR}/bin/gunicorn -w 1 -b ${GUNICORN_BIND} app:app
 Restart=always
 
 [Install]
