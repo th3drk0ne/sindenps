@@ -200,8 +200,8 @@
     "requirements": [],
     "notes": [
       "The game does not officially support or document Hyper Blaster compatibility.",
-      "One player using only one gun can use the game if the gun behaves like a G-Con.",
-      "Two guns can connect, but the guns interfere with each other, matching the behaviour of real hardware."
+      "Two players can use the game if both guns behave like a G-Con.",
+      "Only a single player can play if a Konami gun is used. Two Konami guns can connect, but the guns interfere with each other, matching the behaviour of real hardware."
     ]
   },
   {
@@ -214,7 +214,7 @@
     },
     "gun_support": [
       {
-        "name": "Sony Dual Analog",
+        "name": "Sony Analog Joystick",
         "support": "Custom Firmware"
       },
       {
@@ -229,17 +229,17 @@
     "ports": [
       {
         "port": "Controller Port 1",
-        "device": "SindenPS adapter running Sony Dual Analog firmware"
+        "device": "SindenPS adapter running Sony Analog firmware"
       }
     ],
     "requirements": [
       "Flash the SindenPS Adapter with the custom SONY-ANALOG firmware.",
-      "SindenPS supports 2 Players, to use 4 Players requires two Raspberry Pi's running SindenPS.",
+      "SindenPS supports 2 Players, to use 4 Players requires two Raspberry Pis running SindenPS.",
       "Do not use Hyper Blaster / Justifier or G-Con45 / Guncon firmware."
     ],
     "notes": [
       "Galaxian 3 does not use a PlayStation lightgun protocol.",
-      "SindenPS support works by emulating the Sony Dual Analog controller.",
+      "SindenPS support works by emulating the Sony Analog Joystick.",
       "The PlayStation version supports up to four players, but additional multiplayer configuration may be required.",
       "Controls: Trigger fires weapon (PS1 R2). Back-right button adds players on Player Select and pauses gameplay (PS1 Start). Back-left button starts calibration when held for five seconds and cancels when pressed again.",
       "Menu controls: Pump must be held to enable D-pad and lock virtual analog sticks. D-pad navigates menus only while pump is held. Front-left/right buttons act as Select/Back depending on region. When multiple guns are connected, all players must hold pump to prevent virtual stick interference.",
@@ -406,7 +406,7 @@
     "ports": [],
     "requirements": [],
     "notes": [
-      "The NTSC version warns against third-party peripherals but allows the game to be played with the adapters anyway."
+      "If using Konami firmware, the NTSC version warns against third-party peripherals but allows the game to be played with the adapters anyway."
     ]
   },
   {
@@ -528,7 +528,7 @@
     ]
   },
   {
-    "title": "Moorhuhn 2",
+    "title": "Moorhuhn 2: Die Jagd geht weiter",
     "system": "PS1",
     "players": 2,
     "regions": {
@@ -554,7 +554,7 @@
     ]
   },
   {
-    "title": "Moorhuhn 3",
+    "title": "Moorhen 3: Chicken Chase",
     "system": "PS1",
     "players": 2,
     "regions": {
@@ -574,6 +574,7 @@
     "ports": [],
     "requirements": [],
     "notes": [
+      "Known in Germany as Moorhuhn 3 ...es gibt Huhn!",
       "All Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
       "The alignment and scaling behaviour is accurate to original hardware."
     ]
@@ -806,7 +807,7 @@
     "system": "PS1",
     "players": 2,
     "regions": {
-      "pal": null,
+      "pal": true,
       "ntsc": true
     },
     "gun_support": [
@@ -831,7 +832,7 @@
     ],
     "requirements": [],
     "notes": [
-      "Japan-exclusive title.",
+	  "Known in Japan as Rescue Shot Bubibo",
       "Supports one or two Guncon-compatible lightguns.",
       "SindenPS should be configured for G-Con45 / Guncon firmware."
     ]
@@ -865,7 +866,7 @@
       "Resident Evil Survivor was designed specifically around Guncon support.",
       "The PAL release allows both Guncon and controller input.",
       "The NTSC-U release disables Guncon functionality and is controller-only.",
-           "SindenPS should be configured for G-Con45 / Guncon firmware.",
+      "SindenPS should be configured for G-Con45 / Guncon firmware.",
       "Use a PAL, NTSC-J or patched NTSC-U version to obtain lightgun support."
     ]
   },
@@ -887,7 +888,16 @@
         "support": "No"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Standard controller"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Gun or lightgun adapter"
+      }
+    ],
     "requirements": [],
     "notes": [
       "The game has no shooting gameplay.",
@@ -1164,7 +1174,7 @@
     "notes": [
       "Single-player only.",
       "Supports both GunCon and GunCon2 devices.",
-      "Features on-rails shooting and driving sequences.",
+      "Uses the standard Time Crisis cover and reload mechanic.",
       "Calibration can be performed through the game's built-in calibration menu."
     ]
   },
@@ -1197,13 +1207,21 @@
       },
       {
         "port": "Controller Port 1",
+        "device": "Standard controller"
+      },
+      {
+        "port": "Controller Port 2",
         "device": "Player 1 G-Con45 / Guncon"
       }
     ],
-    "requirements": [],
-    "notes": [
+    "requirements": [
+      "If using a G-Con45/Guncon, a DualShock Controller must be connected to controller Port 1.",
+      "Be sure to disable DPad calibration in the Sinden configuration (EnableCalbration = 0)."
+    ],
+  "notes": [
       "Single-player only.",
       "Part of the Gun Survivor series.",
+	  "Known in Japan as  Gun Survivor 4 Biohazard Heroes Never Die",
       "Supports both GunCon and GunCon2 devices.",
       "Directional movement controls are only available when using a GunCon2-compatible device.",
       "When using G-Con45 / Guncon mode, additional controller input may be required for movement functions.",
@@ -1248,6 +1266,7 @@
       "Single-player only.",
       "Requires G-Con2 mode.",
       "Part of the Gun Survivor series.",
+	  "Known in Japan as  Gun Survivor 3 Dino Crisis.",
       "Supports free movement combined with lightgun aiming.",
       "Directional movement controls are only available when using a GunCon2-compatible device.",
       "When using G-Con45 / Guncon mode, additional controller input may be required for movement functions.",
@@ -1278,28 +1297,24 @@
     ],
     "ports": [
       {
-        "port": "USB Port 1",
-        "device": "Player 1 G-Con2 / GunCon2"
-      },
-      {
-        "port": "USB Port 2",
+        "port": "USB Port 1 or 2",
         "device": "Player 2 G-Con2 / GunCon2"
       },
       {
         "port": "Controller Port 1",
-        "device": "Player 1 G-Con45 / Guncon"
+        "device": "Player 1 DualShock Controller or Steering Wheel"
       },
       {
         "port": "Controller Port 2",
         "device": "Player 2 G-Con45 / Guncon"
       }
     ],
-    "requirements": [],
+    "requirements": [
+	  "The gun is only usable in 2-player mode."
+	],
     "notes": [
-      "Supports one or two players.",
-      "Supports both GunCon and GunCon2 devices.",
       "Player 1 drives while Player 2 uses the lightgun.",
-      "Single-player mode allows one player to control both roles.",
+      "Supports both GunCon and GunCon2 devices.",
       "Calibration can be performed through the game's built-in calibration menu."
     ]
   },
@@ -1673,9 +1688,9 @@
     ]
   },
   {
-    "title": "GunCom 2 (Death Crimson OX+)",
+    "title": "Guncom 2",
     "system": "PS2",
-    "players": 1,
+    "players": 2,
     "regions": {
       "pal": true,
       "ntsc": false
@@ -1700,14 +1715,22 @@
         "device": "Player 1 G-Con2 / GunCon2"
       },
       {
+        "port": "USB Port 2",
+        "device": "Player 2 G-Con2 / GunCon2"
+      },
+      {
         "port": "Controller Port 1",
         "device": "Player 1 G-Con45 / Guncon"
+      }
+	  {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon"
       }
     ],
     "requirements": [],
     "notes": [
-      "European release of Death Crimson OX+.",
-      "Single-player lightgun shooter.",
+      "Known in Japan as Death Crimson OX+.",
+	  "Also released on Dreamcast as Death Crimson OX."
       "Supports both GunCon and GunCon2 devices.",
       "Calibration can be performed through the game's built-in calibration menu."
     ]
