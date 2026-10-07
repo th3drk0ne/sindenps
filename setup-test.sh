@@ -683,16 +683,16 @@ EOF
     chmod -R 775 /home/sinden/Lightgun/PS1/profiles
     chmod -R 775 /home/sinden/Lightgun/PS2/profiles
 
-    if pdbedit -L 2>/dev/null | cut -d: -f1 | grep -qx "sinden"; then
-        log "Samba account already exists."
+    log "Configuring Samba account."
+
+    if printf 'sinden\nsinden\n' | smbpasswd -a -s sinden >/dev/null 2>&1; then
         smbpasswd -e sinden >/dev/null 2>&1 || true
+        log "Samba account configured."
     else
-        warn "Samba account not configured."
-        warn "Run: sudo smbpasswd -a sinden"
+        err "Failed to configure Samba account."
+        return 1
     fi
 
-
-    smbpasswd -e sinden >/dev/null 2>&1 || true
 
     if testparm -s >/dev/null 2>&1; then
         systemctl enable smbd >/dev/null 2>&1
