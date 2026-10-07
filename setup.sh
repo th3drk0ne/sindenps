@@ -712,9 +712,9 @@ EOF
     IP=$(hostname -I | awk '{print $1}')
 
     log "Samba Shares:"
-    log "  \\\\sindenps.local\\SindenPS-Firmware"
-    log "  \\\\sindenps.local\\SindenPS-PS1-Profiles"
-    log "  \\\\sindenps.local\\SindenPS-PS2-Profiles"
+    log "  \\\\sindenps.local\\Firmware"
+    log "  \\\\sindenps.local\\PS1-Profiles"
+    log "  \\\\sindenps.local\\PS2-Profiles"
 }
 
 configure_samba
