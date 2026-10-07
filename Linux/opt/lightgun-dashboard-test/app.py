@@ -1235,19 +1235,30 @@ def _category_for(key: str) -> str:
 def _settings_with_comments(appsettings: ET.Element):
     children = list(appsettings)
     out = []
+
     for i, el in enumerate(children):
         if not (isinstance(el.tag, str) and el.tag == "add"):
             continue
+
         key = el.attrib.get("key", "")
         val = el.attrib.get("value", "")
         comment_text = ""
-        if i + 1 < len(children) and children[i + 1].tag is ET.Comment:
-            comment_text = (children[i + 1].text or "").strip()
-        elif i - 1 >= 0 and children[i - 1].tag is ET.Comment:
-            comment_text = (children[i - 1].text or "").strip()
-        out.append({"key": key, "value": val, "comment": comment_text})
-    return out
 
+        if (
+            i + 1 < len(children)
+            and children[i + 1].tag is ET.Comment
+        ):
+            comment_text = (
+                children[i + 1].text or ""
+            ).strip()
+
+        out.append({
+            "key": key,
+            "value": val,
+            "comment": comment_text
+        })
+
+    return out
 
 def _group_by_category(items):
     buckets = OrderedDict([(name, []) for _, name in CATEGORIES] + [('Other', [])])

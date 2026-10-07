@@ -74,6 +74,10 @@
 	.config-section-content {
 	  padding: 0 12px 12px 12px;
 	}
+    #advanced-settings-row {
+        flex-basis: 100%;
+        margin-top: 4px;
+    }
 	.fan-curve-row,
 	.fan-curve-header {
 		display: grid;
@@ -104,6 +108,21 @@
         color: var(--theme-dark-text) !important;
     }
 	body.konami-mode .update-banner button { color: var(--theme-light-text) !important; }
+	/* Philips theme text colours */
+	body.philips-mode .tabs button,
+	body.philips-mode .log-toggle,
+	body.philips-mode .btn-secondary,
+	body.philips-mode .btn-tertiary { color: var(--theme-light-text) !important; }
+	body.philips-mode #system-actions .btn-secondary { color: var(--theme-dark-text) !important; }
+	body.philips-mode .tabs button.active,
+    body.philips-mode .tabs button:hover,
+    body.philips-mode .btn-danger,
+    body.philips-mode #scroll-top-btn,
+    body.philips-mode .service-buttons button:nth-child(2),
+    body.philips-mode .system-toggle button.active {
+        color: var(--theme-dark-text) !important;
+    }
+	body.philips-mode .update-banner button { color: var(--theme-light-text) !important; }
 	/* Sony theme text colours */
 	body.sony-mode .tabs button,
 	body.sony-mode .log-toggle,
@@ -163,13 +182,13 @@
 		border-radius: 6px;
 	}
 
-	.ps1-game-title {
+	.game-guide-title {
 		color: var(--theme-accent);
 		font-size: 24px;
 		margin: 18px 0 12px;
 	}
 
-	.ps1-game-summary {
+	.game-guide-summary {
 		display: grid;
 		grid-template-columns: repeat(
 			auto-fit,
@@ -179,7 +198,7 @@
 		margin-bottom: 12px;
 	}
 
-	.ps1-game-summary-card {
+	.game-guide-summary-card {
 		background: #181818;
 		border: 1px solid #333;
 		border-radius: 6px;
@@ -187,19 +206,19 @@
 		text-align: center;
 	}
 
-	.ps1-game-summary-label {
+	.game-guide-summary-label {
 		color: #aaa;
 		font-size: 13px;
 		margin-bottom: 6px;
 	}
 
-	.ps1-game-summary-value {
+	.game-guide-summary-value {
 		color: #fff;
 		font-size: 18px;
 		font-weight: 700;
 	}
 
-	.ps1-game-section {
+	.game-guide-section {
 		background: #0d0d0d;
 		border: 1px solid #333;
 		border-left: 6px solid var(--theme-border);
@@ -208,18 +227,18 @@
 		padding: 12px;
 	}
 
-	.ps1-game-section h3 {
+	.game-guide-section h3 {
 		color: var(--theme-accent);
 		margin: 0 0 10px;
 	}
 
-	.ps1-game-list {
+	.game-guide-list {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 	}
 
-	.ps1-game-list li {
+	.game-guide-list li {
 		background: #181818;
 		border: 1px solid #333;
 		border-radius: 6px;
@@ -227,20 +246,20 @@
 		padding: 10px;
 	}
 
-	.ps1-game-empty {
+	.game-guide-empty {
 		color: #888;
 		font-style: italic;
 	}
 
-	.ps1-game-native {
+	.game-guide-native {
 		color: #66ff99;
 	}
 
-	.ps1-game-patch {
+	.game-guide-patch {
 		color: #ffcc44;
 	}
 
-	.ps1-game-unsupported {
+	.game-guide-unsupported {
 		color: #ff6666;
 	}
 	.system-toggle {
@@ -282,10 +301,31 @@
 	.log-toggle { background:#333 !important; color:#fff !important; }
     .log-box { width:100%; background:#000; border:1px solid var(--theme-border); padding:10px; display:none; max-height:300px; overflow:auto; border-radius:6px; }
     .log-content { white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#ccc; }
-    .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 16px; }
+    .config-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+    #save-restart,
+    #btn-ps2-calibration,
+    #btn-game-guide {
+        white-space: nowrap;
+        height: 31px;
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     .config-toolbar .group { display:flex; gap:10px; align-items:center; }
-    .config-path { color:#888; font-size:11px; text-align:left; }
-    .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:right; }
+    .config-status-inline {
+        flex-basis: 100%;
+        text-align: left;
+        color: #ccc;
+        font-size: 11px;
+        min-height: 14px;
+    }
     .player { font-size:26px; font-weight:800; }
     .btn-secondary { background:#444; color:#fff; font-weight:700; padding:6px 8px; border:none; border-radius:6px; cursor:pointer; }
     .btn-tertiary { background:#222; color:#fff; font-weight:700; padding:6px 8px; border:1px solid #444; border-radius:6px; cursor:pointer; }
@@ -321,7 +361,15 @@
       .service-buttons { flex-direction:column; width:100%; align-items:stretch; }
       .service-buttons button, .service-buttons select { width:100%; padding:12px; font-size:16px; }
       .config-toolbar { flex-direction:column; align-items:stretch; margin:10px 8px; }
-      .config-toolbar .group, .config-toolbar select, .config-toolbar button { width:100%; }
+      .config-toolbar .group,
+      .config-toolbar select,
+      .config-toolbar button { width:100%; }
+      #save-restart,
+      #btn-ps2-calibration,
+      #btn-game-guide {
+          min-height: 40px;
+          padding: 12px;
+      }
       .config-panels { margin:0 8px 20px; }
       .config-card { flex:1 1 100%; }
 	  .mode-indicator-img {	height: 21px; width: auto; }
@@ -342,21 +390,21 @@
 		#game-guide-card {
 			padding-bottom: 6px;
 		}
-		.ps1-game-summary {
+		.game-guide-summary {
 			grid-template-columns: 1fr 1fr;
 		}
 
-		.ps1-game-summary-card:nth-child(1) {
+		.game-guide-summary-card:nth-child(1) {
 			grid-column: 1 / -1;
 			grid-row: 2;
 		}
 
-		.ps1-game-summary-card:nth-child(2) {
+		.game-guide-summary-card:nth-child(2) {
 			grid-column: 1;
 			grid-row: 1;
 		}
 
-		.ps1-game-summary-card:nth-child(3) {
+		.game-guide-summary-card:nth-child(3) {
 			grid-column: 2;
 			grid-row: 1;
 		}
@@ -634,33 +682,37 @@
           <span id="platform-display" style="font-weight:700;color:#fff;">loading…</span>
           <select id="platform-select"><option value="ps2">PlayStation 2</option><option value="ps1">PlayStation 1</option></select>
         </div>
-        <div class="group">
+      <div class="group">
           <label for="profile-select">Profile:</label>
           <select id="profile-select"><option value="">(none)</option></select>
-        </div>
+      </div>
         <div class="group">
           <button id="btn-activate-profile" class="btn-danger">Activate Profile</button>
           <button id="btn-save-profile" class="btn-secondary">Save as Profile</button>
           <button id="btn-delete-profile" class="btn-secondary" style="background:#600;">Delete Profile</button>
           <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="chk-restore-mode"/> Restore</label>
-        </div>
-        <span id="config-file-path" class="config-path"></span>   
+      </div>
         <button id="save-restart" class="btn-danger">Save & Restart</button>
 		<button id="btn-ps2-calibration" class="btn-secondary" onclick="openPs2CalibrationModal()">
 		  ⌖ Calibration
 		</button>
-		<button
-			id="btn-game-guide"
-			class="btn-secondary"
-			style="display:none;"
-			onclick="openGameGuideModal()">
-			Game Guide
-		</button>
-		<span id="config-status" class="config-status-inline"></span>
-		<label style="display:flex;align-items:center;gap:6px;">
-			<input type="checkbox" id="show-advanced-settings">
-				Advanced Settings
-			</label>
+        <button
+            id="btn-game-guide"
+            class="btn-secondary"
+            style="display:none;"
+            onclick="openGameGuideModal()">
+            Guide
+        </button>
+
+        <span id="config-status"
+              class="config-status-inline">
+        </span>
+
+        <label id="advanced-settings-row"
+               style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="show-advanced-settings">
+            Advanced Settings
+        </label>
       </div>
       <div class="config-panels">
         <div class="config-card">
@@ -1374,7 +1426,7 @@ function ps1GunSupportClass(value) {
         support === 'preferred' ||
         support === 'secret weapon'
     ) {
-        return 'ps1-game-native';
+        return 'game-guide-native';
     }
 
     if (
@@ -1383,14 +1435,14 @@ function ps1GunSupportClass(value) {
         support.includes('needs work') ||
         support === 'unofficial'
     ) {
-        return 'ps1-game-patch';
+        return 'game-guide-patch';
     }
 
     if (
         support.includes('not supported') ||
         support === 'no'
     ) {
-        return 'ps1-game-unsupported';
+        return 'game-guide-unsupported';
     }
 
     return '';
@@ -1398,14 +1450,14 @@ function ps1GunSupportClass(value) {
 
 function createGameSummaryCard(labelText, valueText) {
     const card = document.createElement('div');
-    card.className = 'ps1-game-summary-card';
+    card.className = 'game-guide-summary-card';
 
     const label = document.createElement('div');
-    label.className = 'ps1-game-summary-label';
+    label.className = 'game-guide-summary-label';
     label.textContent = labelText;
 
     const value = document.createElement('div');
-    value.className = 'ps1-game-summary-value';
+    value.className = 'game-guide-summary-value';
     value.textContent = valueText;
 
     card.appendChild(label);
@@ -1416,7 +1468,7 @@ function createGameSummaryCard(labelText, valueText) {
 
 function createPs1GameSection(titleText) {
     const section = document.createElement('section');
-    section.className = 'ps1-game-section';
+    section.className = 'game-guide-section';
 
     const heading = document.createElement('h3');
     heading.textContent = titleText;
@@ -1433,14 +1485,14 @@ function appendPs1TextList(
 ) {
     if (!Array.isArray(items) || !items.length) {
         const empty = document.createElement('div');
-        empty.className = 'ps1-game-empty';
+        empty.className = 'game-guide-empty';
         empty.textContent = emptyText;
         section.appendChild(empty);
         return;
     }
 
     const list = document.createElement('ul');
-    list.className = 'ps1-game-list';
+    list.className = 'game-guide-list';
 
     items.forEach(item => {
         const row = document.createElement('li');
@@ -1477,7 +1529,7 @@ function renderGameGuideCard() {
     }
 
     const title = document.createElement('h2');
-    title.className = 'ps1-game-title';
+    title.className = 'game-guide-title';
     title.textContent =
         game.title || 'Unknown Game';
 
@@ -1486,7 +1538,7 @@ function renderGameGuideCard() {
     const regions = game.regions || {};
 
     const summary = document.createElement('div');
-    summary.className = 'ps1-game-summary';
+    summary.className = 'game-guide-summary';
 
     summary.appendChild(
         createGameSummaryCard(
@@ -1524,7 +1576,7 @@ function renderGameGuideCard() {
             document.createElement('div');
 
         empty.className =
-            'ps1-game-empty';
+            'game-guide-empty';
 
         empty.textContent =
             'No gun support information documented.';
@@ -1534,7 +1586,7 @@ function renderGameGuideCard() {
         const list =
             document.createElement('ul');
 
-        list.className = 'ps1-game-list';
+        list.className = 'game-guide-list';
 
         gunSupport.forEach(item => {
             const row =
@@ -1584,7 +1636,7 @@ function renderGameGuideCard() {
             document.createElement('div');
 
         empty.className =
-            'ps1-game-empty';
+            'game-guide-empty';
 
         empty.textContent =
             'No special port configuration documented.';
@@ -1594,7 +1646,7 @@ function renderGameGuideCard() {
         const list =
             document.createElement('ul');
 
-        list.className = 'ps1-game-list';
+        list.className = 'game-guide-list';
 
         ports.forEach(port => {
             const row =
@@ -2917,11 +2969,6 @@ async function loadConfig(platform) {
             }
         ];
 
-    document.getElementById(
-        'config-file-path'
-    ).textContent = data.path
-        ? `File: ${data.path}`
-        : '';
 
     const p2Card = document.getElementById(
         'p2-card'
