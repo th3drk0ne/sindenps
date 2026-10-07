@@ -775,21 +775,21 @@ def api_firmware_flash():
             _fw_set_state("error", "Flash failed", last_result="failed")
             return jsonify({"ok": False, "error": "Flash failed", "detail": "Check the firmware logs in the dashboard."}), 500
 
-        
         name = os.path.splitext(os.path.basename(full_path))[0]
         port_name = port.replace("/dev/", "")
 
         _fw_set_state(
-            "flashing",
-            f"Flashing {name} ({port_name})",
+            "complete",
+            f"Flash complete: {name} ({port_name})",
             port=port,
             file=os.path.basename(full_path),
             device=device["name"],
             baud=baud,
-            last_result=""
+            last_result="success"
         )
-        
+
         return jsonify({"ok": True, "message": "Flash complete"})
+        
     except FileNotFoundError as e:
         _fw_append_log(f"ERROR: {e}")
         _fw_set_state("error", str(e), last_result="error")
