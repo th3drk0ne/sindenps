@@ -630,7 +630,8 @@ configure_samba() {
 	
 	log "Writing clean Samba configuration."
 
-	if [ ! -f /etc/samba/smb.conf.sindenps-original ]; then
+	if [ ! -f /etc/samba/smb.conf.sindenps-original ] && \
+	   [ -f /etc/samba/smb.conf ]; then
 		cp -a /etc/samba/smb.conf \
 			/etc/samba/smb.conf.sindenps-original
 	fi
@@ -682,15 +683,7 @@ create mask = 0664
 directory mask = 0775
 EOF
 
-    if ! grep -qF "include = /etc/samba/sindenps-shares.conf" /etc/samba/smb.conf; then
-        echo "" >> /etc/samba/smb.conf
-        echo "include = /etc/samba/sindenps-shares.conf" >> /etc/samba/smb.conf
-        log "Added Samba include."
-    else
-        log "Samba include already present."
-    fi
-
-    chown -R sinden:sinden \
+     chown -R sinden:sinden \
         /home/sinden/Firmware \
         /home/sinden/Lightgun/PS1/profiles \
         /home/sinden/Lightgun/PS2/profiles
