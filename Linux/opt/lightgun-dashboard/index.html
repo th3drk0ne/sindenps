@@ -74,10 +74,15 @@
 	.config-section-content {
 	  padding: 0 12px 12px 12px;
 	}
-    #advanced-settings-row {
-        flex-basis: 100%;
-        margin-top: 4px;
-    }
+	#advanced-settings-row {
+		flex-basis: 100%;
+		margin-top: 4px;
+	}
+
+	#advanced-settings-row label,
+	#advanced-settings-row {
+		width: fit-content;
+	}
 	.fan-curve-row,
 	.fan-curve-header {
 		display: grid;
@@ -708,11 +713,12 @@
               class="config-status-inline">
         </span>
 
-        <label id="advanced-settings-row"
-               style="display:flex;align-items:center;gap:6px;">
-            <input type="checkbox" id="show-advanced-settings">
-            Advanced Settings
-        </label>
+		<div id="advanced-settings-row">
+			<label style="display:flex;align-items:center;gap:6px;">
+				<input type="checkbox" id="show-advanced-settings">
+				Advanced Settings
+			</label>
+		</div>
       </div>
       <div class="config-panels">
         <div class="config-card">
