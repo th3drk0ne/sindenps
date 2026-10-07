@@ -1236,5 +1236,7 @@ log "Setting Version Number - $remote_version"
 curl -fsSL "$URL" -o "$LOCAL_FILE"
 
 #  restart services
+sudo systemctl daemon-reload
+sudo systemctl enable lightgun-dashboard.service
 (sh -c "sleep 3; systemctl restart lightgun-dashboard.service") &
 sudo systemctl restart lightgun-monitor.service
