@@ -297,8 +297,17 @@
 	.log-toggle { background:#333 !important; color:#fff !important; }
     .log-box { width:100%; background:#000; border:1px solid var(--theme-border); padding:10px; display:none; max-height:300px; overflow:auto; border-radius:6px; }
     .log-content { white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#ccc; }
-    .config-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 16px; }
-	.config-toolbar > button { min-height: 40px; padding: 10px 12px; font-size: 16px; line-height: 20px; }
+    .config-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+    #btn-ps2-calibration,
+    #btn-game-guide {
+        white-space: nowrap;
+    }
     .config-toolbar .group { display:flex; gap:10px; align-items:center; }
     .config-path { color:#888; font-size:11px; text-align:left; }
     .config-status-inline { color:#ccc; font-size:11px; margin-left:auto; text-align:right; }
@@ -337,7 +346,15 @@
       .service-buttons { flex-direction:column; width:100%; align-items:stretch; }
       .service-buttons button, .service-buttons select { width:100%; padding:12px; font-size:16px; }
       .config-toolbar { flex-direction:column; align-items:stretch; margin:10px 8px; }
-      .config-toolbar .group, .config-toolbar select, .config-toolbar button { width:100%; }
+      .config-toolbar .group,
+      .config-toolbar select,
+      .config-toolbar button { width:100%; }
+      #save-restart,
+      #btn-ps2-calibration,
+      #btn-game-guide {
+          min-height: 40px;
+          padding: 12px;
+      }
       .config-panels { margin:0 8px 20px; }
       .config-card { flex:1 1 100%; }
 	  .mode-indicator-img {	height: 21px; width: auto; }
