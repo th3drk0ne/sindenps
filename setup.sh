@@ -730,9 +730,9 @@ EOF
     IP=$(hostname -I | awk '{print $1}')
 
     log "Samba Shares:"
-    log "  \\\\sindenps.local\\Firmware"
-    log "  \\\\sindenps.local\\PS1-Profiles"
-    log "  \\\\sindenps.local\\PS2-Profiles"
+    log "  \\\\$HOSTNAME\\Firmware"
+    log "  \\\\$HOSTNAME\\PS1-Profiles"
+    log "  \\\\$HOSTNAME\\PS2-Profiles"
 }
 
 configure_samba
@@ -806,7 +806,7 @@ log "=== 13) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 
-log "=== Done! Browse: http://sindenps.local ==="
+log "=== Done! Browse: http://$HOSTNAME.local ==="
 
 # ------------------------------------------------------------
 # step 8) libjpeg8 (libjpeg.so.8) symlink to 62 turbo on aarch64
@@ -1221,7 +1221,7 @@ main() {
   log "Next steps:"
   log "  • Connect: ${PREFIX0} (primary UART) or ${PREFIX1} (secondary UART)"
   log "  • Check:   gcon2_serial_status"
-  log "  • Dashboard: Running at http://sindenps.local/"
+  log "  • Dashboard: Running at http://$HOSTNAME.local"
   log "  • If this is your initial install a reboot is required"
 }
 main
