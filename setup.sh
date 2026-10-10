@@ -624,7 +624,7 @@ done
 #-----------------------------------------------------------
 configure_samba() {
 
-    log "=== Configuring Samba Shares ==="
+    log "=== 10) Configuring Samba Shares ==="
 
     apt-get install -y samba smbclient >/dev/null
 	
@@ -737,13 +737,13 @@ EOF
 
 configure_samba
 
-log "=== 10) Ensure Sinden log path/file exists ==="
+log "=== 11) Ensure Sinden log path/file exists ==="
 sudo mkdir -p "${SINDEN_LOG_DIR}"
 sudo touch "${SINDEN_LOG_FILE}"
 sudo chown "${APP_USER}:${APP_GROUP}" "${SINDEN_LOG_FILE}"
 sudo chmod 644 "${SINDEN_LOG_FILE}"
 
-log "=== 11) Nginx reverse proxy on :80 ==="
+log "=== 12) Nginx reverse proxy on :80 ==="
 sudo bash -c 'cat > /etc/nginx/sites-available/lightgun-dashboard' <<'NGINX_EOF'
 server {
     listen 80;
@@ -765,7 +765,7 @@ if [ -L /etc/nginx/sites-enabled/default ]; then
 fi
 sudo nginx -t && sudo systemctl restart nginx
 
-log "=== 12) Deploy/images from ${SITEVERSION} ==="
+log "=== 13) Deploy/images from ${SITEVERSION} ==="
 
 IMAGE_REPO_PATH="Linux/opt/${SITEVERSION}/images"
 IMAGE_DEST="${APP_DIR}/images"
@@ -802,7 +802,7 @@ else
     done
 fi
 
-log "=== 13) Enable & restart dashboard ==="
+log "=== 14) Enable & restart dashboard ==="
 sudo systemctl daemon-reload
 sudo systemctl enable lightgun-dashboard.service
 
