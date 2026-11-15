@@ -17,7 +17,16 @@
         "support": "No"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": [
       "SindenPS should be configured for Konami firmware using the latest adapter revision connected to the Konami Interface Board"
@@ -48,7 +57,7 @@
       },
       {
         "port": "Controller Port 2",
-        "device": "Gun or lightgun adapter"
+        "device": "G-Con45 / Guncon"
       }
     ],
     "requirements": [],
@@ -77,7 +86,16 @@
         "support": "Patch"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [
       "Guncon support requires a patch."
     ],
@@ -104,7 +122,7 @@
     "ports": [
       {
         "port": "Controller Port 1",
-        "device": "Gun or lightgun adapter"
+        "device": "Hyper Blaster / Justifier"
       },
       {
         "port": "Controller Port 2",
@@ -147,7 +165,7 @@
       },
       {
         "port": "Controller Port 2",
-        "device": "Gun or lightgun adapter"
+        "device": "G-Con45 / Guncon or Hyper Blaster / Justifier"
       }
     ],
     "requirements": [
@@ -174,9 +192,20 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
-    "notes": []
+    "notes": [
+	  "There is a flash removal code available for this game, but only works for G-Con45."
+	]
   },
   {
     "title": "Extreme Ghostbusters",
@@ -196,7 +225,16 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 G-Con45 / Guncon"
+      }
+    ],
     "requirements": [],
     "notes": [
       "The game does not officially support or document Hyper Blaster compatibility.",
@@ -229,7 +267,11 @@
     "ports": [
       {
         "port": "Controller Port 1",
-        "device": "SindenPS adapter running Sony Analog firmware"
+        "device": "Player 1 SindenPS adapter running Sony Analog firmware"
+      },
+	  {
+        "port": "Controller Port 2",
+        "device": "Player 2 SindenPS adapter running Sony Analog firmware, or a Multi-Tap adapter with up to 3 SindenPS adapters running Sony Analog firmware for players 2-4"
       }
     ],
     "requirements": [
@@ -287,7 +329,7 @@
     ]
   },
 {
-  "title": "Gun Bare! The Game Paradise 2",
+  "title": "Gun For It! The Game Paradise 2",
   "system": "PS1",
   "players": 1,
   "regions": {
@@ -307,7 +349,7 @@
   "ports": [
     {
       "port": "Controller Port 1",
-      "device": "Standard controller"
+      "device": "Player 1 Standard controller"
     },
     {
       "port": "Controller Port 2",
@@ -319,7 +361,7 @@
   ],
   "notes": [
     "This game is almost entirely in Japanese.",
-	"Known in Japan as Gun Bare! Game Tengoku2",
+	"Known in Japan as Gun Bare! Game Tengoku2 or Gun Bare! The Game Paradise 2",
     "At the main menu, choose the bottom option twice in order to calibrate the gun (mandatory). Front-right button = restart calibration, Controller X button = approve calibration.",
     "Choose the left option after selecting a level to activate the 2-player mode.",
     "Player 1 (ship) = controller, Player 2 (unseen) = gun 1."
@@ -347,6 +389,10 @@
     {
       "port": "Controller Port 1",
       "device": "G-Con45 / Guncon lightgun adapter"
+    },
+	{
+      "port": "Controller Port 2",
+      "device": "Optional standard controller"
     }
   ],
   "requirements": [],
@@ -355,7 +401,7 @@
   ]
 },
 {
-  "title": "Guntu Western Front June, 1944: Iron Memories",
+  "title": "Guntu Western Front June, 1944: Memories of Steel",
   "system": "PS1",
   "players": 1,
   "regions": {
@@ -403,10 +449,19 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": [
-      "If using Konami firmware, the NTSC version warns against third-party peripherals but allows the game to be played with the adapters anyway."
+      "The game might warn against third-party peripherals but allows the game to be played with the adapters anyway."
     ]
   },
   {
@@ -427,12 +482,21 @@
         "support": "Patch"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [
       "Guncon support requires a patch."
     ],
     "notes": [
-      "Known as Lethal Enforcers I & II in PAL regions."
+      "Known as Lethal Enforcers I & II in NTSC regions."
     ]
   },
   {
@@ -453,7 +517,16 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": []
   },
@@ -475,7 +548,16 @@
         "support": "No"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": []
   },
@@ -497,7 +579,16 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": []
   },
@@ -519,7 +610,16 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": [
       "The calibration screen displays G-Con regardless of the gun type.",
@@ -545,7 +645,16 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": [
       "The calibration screen displays G-Con regardless of the gun type.",
@@ -571,7 +680,16 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": [
       "Known in Germany as Moorhuhn 3 ...es gibt Huhn!",
@@ -597,7 +715,16 @@
         "support": "Native"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": [
       "All Moorhuhn games have severe alignment and scaling issues regardless of gun type.",
@@ -630,6 +757,14 @@
       {
         "port": "Controller Port 1",
         "device": "Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Optional Standard controller"
+      },
+	  {
+        "port": "USB Port",
+        "device": "Optional compatible USB camera"
       }
     ],
     "requirements": [],
@@ -756,7 +891,16 @@
         "support": "Patch"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port ",
+        "device": "Player 2 Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [
       "Guncon support requires a patch."
     ],
@@ -895,7 +1039,7 @@
       },
       {
         "port": "Controller Port 2",
-        "device": "Gun or lightgun adapter"
+        "device": "Hyper Blaster / Justifier"
       }
     ],
     "requirements": [],
@@ -997,7 +1141,16 @@
         "support": "Needs Work"
       }
     ],
-    "ports": [],
+    "ports": [
+      {
+        "port": "Controller Port 1",
+        "device": "Player 1 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Player 2 G-Con45 / Guncon or Hyper Blaster / Justifier"
+      }
+    ],
     "requirements": [],
     "notes": [
       "This is a homebrew game.",
@@ -1031,7 +1184,7 @@
       },
       {
         "port": "Controller Port 2",
-        "device": "Gun or lightgun adapter"
+        "device": "Hyper Blaster / Justifier"
       }
     ],
     "requirements": [
@@ -1063,6 +1216,10 @@
       {
         "port": "Controller Port 1",
         "device": "G-Con45 / Guncon lightgun adapter"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Optional standard controller"
       }
     ],
     "requirements": [],
@@ -1093,6 +1250,10 @@
       {
         "port": "Controller Port 1",
         "device": "G-Con45 / Guncon lightgun adapter"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Optional standard controller"
       }
     ],
     "requirements": [],
@@ -1168,6 +1329,10 @@
       {
         "port": "Controller Port 1",
         "device": "Player 1 G-Con45 / Guncon"
+      },
+      {
+        "port": "Controller Port 2",
+        "device": "Optional standard controller"
       }
     ],
     "requirements": [],
